@@ -318,7 +318,7 @@ int CKerr_J2EQL(double *J, double *EQL, double M, double astar) {
   /* The rest of this is a 2D nonlinear equation solver.  We first guess the Carter constant,
    * and then iterate until the desired J_theta is obtained.
    */
-  EQL[1] = J[1]*J[1]; /* Guess */
+  EQL[1] = J[1]*J[1]+2*J[1]*J[2]; /* Guess */
 
   /* Final bisection in negative powers of 2 */
   delta = sqrt(2.);
