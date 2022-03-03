@@ -8,14 +8,14 @@
 /* dOmega/dJ_i will be numerically computed using symmetric difference quotient */
 /* N = (n, k, m) */
 
-double dOmega_dt(int n_res, int k_res, int m_res, double ra, double rp, double I, double astar, double M, double radius_outer, double delta_t){
+double dOmega_dt(int nl, int n_res, int k_res, int m_res, double ra, double rp, double I, double astar, double M, double radius_outer, double delta_t){
 	int k;
 	double Minv_plus[9], Minv_minus[9];
 	double J_step[3], Jplus[3], Jminus[3];
 	double EQL[3], J[3], Omega_inner_plus[3], Omega_inner_minus[3], omega_dot[3];
 	double dOmegai_dJj[9];
 	double Gamma;
-	int nl = 3, nmax = 3, kmax = 3, mmax = 3;
+	int nmax = 1, kmax = 1, mmax = 1;
 	double Jdotr, Jdottheta, Jdotphi;
 
 	ra_rp_I2EQL(ra, EQL, rp, I, astar, M);
@@ -53,6 +53,7 @@ double dOmega_dt(int n_res, int k_res, int m_res, double ra, double rp, double I
 	return(Gamma);
 }
 
+#if 0
 int main(){
 	double jstep[3];
 	int n, k, m;
@@ -81,3 +82,4 @@ int main(){
 	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
 	return(0);
 }
+#endif
