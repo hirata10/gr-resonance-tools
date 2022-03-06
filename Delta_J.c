@@ -93,7 +93,7 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 			/* Get the scattering coefficients of the outer body radiation */
 			CKerr_GWScatMatrix(M, astar, omega_nkm, i_m_inner, E0_outer[il], cscat, aux);
 			/* Define frequency of inner body (omega_nkm) and other functions that depends on n,k,m,l */
-			lambda = -E0_inner[il] - 2 * astar * i_m_inner * omega_nkm + astar * astar * omega_nkm * omega_nkm - 2;
+			lambda = E0_inner[il] - 2 * astar * i_m_inner * omega_nkm + astar * astar * omega_nkm * omega_nkm - 2;
 			P = omega_nkm - i_m_inner * astar / (2 * M * rH);
 			numer = 256 * pow(2 * M * rH,5) * P * (P*P + 4 * epsilon*epsilon) * (P*P + 16 * epsilon*epsilon) * omega_nkm * omega_nkm * omega_nkm;
 			C2 = ((lambda + 2)*(lambda + 2) + 4 * astar *omega_nkm - 4 * astar*astar * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m_inner * astar *omega_nkm - 36 * astar*astar * omega_nkm*omega_nkm) + (2 * lambda +3) * (96 * astar*astar * omega_nkm*omega_nkm - 48 * i_m_inner * astar * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar);
