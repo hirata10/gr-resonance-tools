@@ -4,6 +4,10 @@
 
 #include "CKerr.h"
 
+/* function declarations */
+double ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, double M);
+double Omega_outer_direct(double radius, double M, double spin);
+
 /* Computing the J_dot due to self-force from arXiv:1905.00030v2 Eq. (12) */
 
 double J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_r, double *J_dot_theta, double *J_dot_phi){
