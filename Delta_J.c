@@ -31,13 +31,12 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 
 
 	/* Outer Body */
-	CKerr_FindEQL_IRCirc(I, radius_outer, EQL_outer, M, astar);
+	CKerr_FindEQL_IRCirc(0, radius_outer, EQL_outer, M, astar);
 	CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
 	CKerr_Minverse(J_outer, Minv_outer, M, astar);
 	printf("Minv for outer body = \n %lg %lg %lg \n", Minv_outer[0], Minv_outer[1], Minv_outer[2]);
 	printf(" %lg %lg %lg \n", Minv_outer[3], Minv_outer[4], Minv_outer[5]);
 	printf(" %lg %lg %lg \n", Minv_outer[6], Minv_outer[7], Minv_outer[8]);
-	Omega_outer = Omega_outer_direct(radius_outer, M, astar);
 
 	/* Torus origin for inner body orbit */
 	CKerr_TorusOrigin(J_inner, xuorig_inner, M, astar);
