@@ -70,13 +70,13 @@ double find_resonance_apo(int n, int k, int m, double radius, double guess1, dou
 
 /* J_dot.c: finds the time derivative of the J components for the self-force and tidal field */
 
-double J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_r, double *J_dot_theta, double *J_dot_phi);
+int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_r, double *J_dot_theta, double *J_dot_phi);
 
-double J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_r_tidal, double *J_dot_theta_tidal, double *J_dot_phi_tidal);
+int J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_r_tidal, double *J_dot_theta_tidal, double *J_dot_phi_tidal);
 
 /* Gamma.c: Computes the change in omega for orbits */
 
-double dOmega_dt(int nl, int n_res, int k_res, int m_res, double ra, double rp, double I, double astar, double M, double radius_outer, double delta_t);
+double omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double ra, double rp, double I, double astar, double M, double radius_outer, double delta_t);
 
 /* Delta_J.c computes the change in J due to external field (Eq. (12) in arXiv:1905.00030v2) */
 
