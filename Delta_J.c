@@ -11,7 +11,7 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 	int i_n_outer, i_k_outer, i_m_outer;
 	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer, info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
 	double term, another_term, last_term;
-	double Gamma, sgn_Gamma;
+	double Gamma[2], sgn_Gamma, tot_Gamma, mu_inner, mu_outer;
 	double omega_nkm, omegagw_inner, omegagw_outer;
 	double rH;
 	double Rtheta = 1, Itheta = 0;
@@ -58,9 +58,10 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 
 	rH = M + sqrt(M*M - astar*astar);
 	epsilon = sqrt(M*M - astar*astar) / (4 * M * rH);
-	Gamma = -1 * dOmega_dt(nl, n_res_inner, k_res_inner, m_res_inner, apo, rp, I, astar, M, radius_outer, 1e-4);
-	sgn_Gamma = Gamma/fabs(Gamma);
-	printf("Gamma and its sign are: %lg %lg \n", Gamma, sgn_Gamma);
+	omega_dot(nl, n_res_inner, k_res_inner, m_res_inner, apo, rp, I, astar, M, radius_outer, 1e-4, Gamma);
+	tot_Gamma = Gamma[0] * mu_inner + Gamma[1] * mu_outer;
+	sgn_Gamma = tot_Gamma/fabs(tot_Gamma);
+	printf("Gamma and its sign are: %lg %lg \n", tot_Gamma, sgn_Gamma);
 
 	Delta_J_r_tidal[0] = 0;
 	Delta_J_r_tidal[1] = 0; 
@@ -113,12 +114,12 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 			*J_dot_phi_tidal += -i_m_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm);
 			#endif
 			/* \Delta J_td of inner body due to tidal field of outer body, for the real [0] and imaginary [1] parts */
-			Delta_J_r_tidal[0] += -i_n_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(Gamma));
-			Delta_J_r_tidal[1] += -i_n_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(Gamma));
-			Delta_J_theta_tidal[0] += -i_k_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(Gamma));
-			Delta_J_theta_tidal[1] += -i_k_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(Gamma));
-			Delta_J_phi_tidal[0] += -i_m_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(Gamma));
-			Delta_J_phi_tidal[1] += -i_m_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(Gamma));
+			Delta_J_r_tidal[0] += -i_n_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			Delta_J_r_tidal[1] += -i_n_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			Delta_J_theta_tidal[0] += -i_k_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			Delta_J_theta_tidal[1] += -i_k_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			Delta_J_phi_tidal[0] += -i_m_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			Delta_J_phi_tidal[1] += -i_m_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
 				}
 			}
 	free((char*)E0_inner);
