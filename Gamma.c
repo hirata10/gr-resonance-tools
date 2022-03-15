@@ -8,8 +8,9 @@
 /* \dot{\Omega}_j = dOmega_j_dt = dOmega_j/dJ_i * J_dot_i */
 /* dOmega/dJ_i will be numerically computed using symmetric difference quotient */
 /* N = (n, k, m) */
+/* Outputs the inner and outer body's change in angular velocity as an array Gamma[0] = Gamma_inner, Gamma[1] = Gamma_outer */
 
-double omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double ra, double rp, double I, double astar, double M, double radius_outer, double delta_t){
+int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double ra, double rp, double I, double astar, double M, double radius_outer, double delta_t, double *Gamma){
 	int k;
 	double Minv_inner_plus[9], Minv_inner_minus[9];
 	double Minv_outer_plus[9], Minv_outer_minus[9];
@@ -18,7 +19,6 @@ double omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, doub
 	double EQL_inner[3], J_inner[3], Omega_inner_plus[3], Omega_inner_minus[3], omega_dot_inner[3];
 	double EQL_outer[3], J_outer[3], Omega_outer_plus[3], Omega_outer_minus[3], omega_dot_outer[3];
 	double dOmegai_dJj[9];
-	double Gamma;
 	int nmax = 1, kmax = 1, mmax = 1;
 	double Jdotr_inner, Jdottheta_inner, Jdotphi_inner;
 	double Jdotr_outer, Jdottheta_outer, Jdotphi_outer;
@@ -41,12 +41,17 @@ double omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, doub
 	printf("J dot for outer: %lg %lg %lg \n", Jdotr_outer, Jdottheta_outer, Jdotphi_outer);
 
 	/* Step size in Jr, Jtheta, and Jphi */
+	/* We set J_step_outer for Jr and Jtheta to zero since they should be identically zero */
 	J_step_inner[0] = Jdotr_inner * delta_t;
 	J_step_inner[1] = Jdottheta_inner * delta_t;
 	J_step_inner[2] = Jdotphi_inner * delta_t;
-	J_step_outer[0] = Jdotr_outer * delta_t;
-	J_step_outer[1] = Jdottheta_outer * delta_t;
+	J_step_outer[0] = 0;
+	J_step_outer[1] = 0;
 	J_step_outer[2] = Jdotphi_outer * delta_t;
+
+	//J_step_outer[0] = Jdotr_outer * delta_t;
+	//J_step_outer[1] = Jdottheta_outer * delta_t;
+	//J_step_outer[2] = Jdotphi_outer * delta_t;
 	printf("Steps in J for outer: %lg %lg %lg \n", J_step_outer[0], J_step_outer[1], J_step_outer[2]);
 
 	/* Defining a small increment in J in both +/- */
@@ -102,8 +107,9 @@ double omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, doub
 
 	/* Gamma = \vec{N}_{outer} \cdot \vec{\dot{\Omega}}_{outer} - \vec{N}_{inner} \cdot \vec{\dot{\Omega}}_{inner}  */
 	/* For circular equatorial orbits, we set n,k for outer obrit modes to zero. And the m mode matches the inner orbit */
-	Gamma = -1 * n_res_inner * omega_dot_inner[0] - k_res_inner * omega_dot_inner[1] - m_res_inner * (omega_dot_inner[2] - omega_dot_outer[2]);
-	return(Gamma);
+	Gamma[0] = n_res_inner * omega_dot_inner[0] + k_res_inner * omega_dot_inner[1] + m_res_inner * omega_dot_inner[2];
+	Gamma[1] = m_res_inner * omega_dot_outer[2];
+	return(0);
 }
 
 
@@ -111,7 +117,7 @@ int main(){
 	double jstep[3];
 	int n, k, m, nl;
 	double apo_res, peri, incline, mass, spin, radius_outer, guess1, guess2;
-	double Gam;
+	double Gamma[2];
 
 	printf("Enter pericenter: ");
 	scanf("%lf", &peri);
@@ -130,8 +136,8 @@ int main(){
 	scanf("%i %i %i %i", &nl, &n, &k, &m);
 
 	
-	Gam = omega_dot(nl, n, k, m, apo_res, peri, incline, spin, mass, radius_outer, 1e-4);
-	printf("Gamma is  = %lg \n", Gam);
+	omega_dot(nl, n, k, m, apo_res, peri, incline, spin, mass, radius_outer, 1e-4, Gamma);
+	printf("Gamma for inner and outer body are: %lg %lg \n", Gamma[0], Gamma[1]);
 	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
 	return(0);
 }
