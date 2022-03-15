@@ -24,10 +24,10 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 		CKerr_EQL2J(EQL, J, M, astar, NULL);
 		CKerr_Minverse(J, Minv, M, astar);
 		CKerr_Minv2Omega(Minv, Omega);
-		printf("Minv for circular equitorial case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
-		printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
-		printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
-		printf("Omega for circular equitorial is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+		//printf("Minv for circular equitorial case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
+		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
+		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
+		//printf("Omega for circular equitorial is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
 
 		/* Torus Origin for circular equitorial orbits */
 		CKerr_TorusOrigin(J, xuorig, M, astar);
@@ -45,10 +45,10 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 		CKerr_EQL2J(EQL, J, M, astar, NULL);
 		CKerr_Minverse(J, Minv, M, astar);
 		CKerr_Minv2Omega(Minv, Omega);
-		printf("Minv for generic case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
-		printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
-		printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
-		printf("Omega for generic is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+		//printf("Minv for generic case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
+		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
+		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
+		//printf("Omega for generic is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
 
 		/* Torus origin for inner body orbit */
 		CKerr_TorusOrigin(J, xuorig, M, astar);
@@ -94,7 +94,7 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 
 					Z_out_square = C0[4*il]*C0[4*il] + C0[4*il+1]*C0[4*il+1];
 					Z_down_square = C0[4*il+2]*C0[4*il+2] + C0[4*il+3]*C0[4*il+3];
-					printf("%i \t %i \t %i \t %i \t %lg \t %lg \n", i_n, i_k, i_k, il, Z_down_square, Z_out_square);
+					printf("%i \t %i \t %i \t %i \t %lg \t %lg \n", i_n, i_k, i_m, il, Z_down_square, Z_out_square);
 					//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, C0[4*il], C0[4*il+1], C0[4*il+2], C0[4*il+3], Z_down_square, Z_out_square);
 					
 					*J_dot_r += -i_n * (Z_out_square + alphankm * Z_down_square) / (2. * omega_nkm*omega_nkm*omega_nkm);
@@ -112,7 +112,7 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 int J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_r_tidal, double *J_dot_theta_tidal, double *J_dot_phi_tidal){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
 	int i_n_outer, i_k_outer, i_m_outer;
-	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer, info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
+	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
 	double term, another_term, last_term;
 	double Gamma, sgn_Gamma;
 	double omega_nkm, omegagw_inner, omegagw_outer;
@@ -139,7 +139,6 @@ int J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k
 	//printf("Minv for outer body = \n %lg %lg %lg \n", Minv_outer[0], Minv_outer[1], Minv_outer[2]);
 	//printf(" %lg %lg %lg \n", Minv_outer[3], Minv_outer[4], Minv_outer[5]);
 	//printf(" %lg %lg %lg \n", Minv_outer[6], Minv_outer[7], Minv_outer[8]);
-	Omega_outer = Omega_outer_direct(radius_outer, M, astar);
 
 	/* Torus origin for inner body orbit */
 	CKerr_TorusOrigin(J_inner, xuorig_inner, M, astar);
@@ -160,7 +159,7 @@ int J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k
 
 	rH = M + sqrt(M*M - astar*astar);
 	epsilon = sqrt(M*M - astar*astar) / (4 * M * rH);
-	//Gamma = -1 * dOmega_dt(nl, n_res_inner, k_res_inner, m_res_inner, apo, rp, I, astar, M, radius_outer, 1e-4);
+	//Gamma = omega_dot(nl, n_res_inner, k_res_inner, m_res_inner, apo, rp, I, astar, M, radius_outer, 1e-4);
 	//sgn_Gamma = Gamma/fabs(Gamma);
 	//printf("Gamma and its sign are: %lg %lg \n", Gamma, sgn_Gamma);
 
@@ -236,7 +235,7 @@ int J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k
 	free((char*)E0_outer);
 }
 
-
+#if 0
 int main(){
 	int j;
 	double J_dot_r, J_dot_theta, J_dot_phi;
@@ -289,3 +288,4 @@ int main(){
 	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
 	return(0);
 }
+#endif
