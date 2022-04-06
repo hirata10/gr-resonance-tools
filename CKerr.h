@@ -76,7 +76,7 @@ int J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k
 
 /* Gamma.c: Computes the change in omega for orbits */
 
-double omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double ra, double rp, double I, double astar, double M, double radius_outer, double delta_t);
+int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double ra, double rp, double I, double astar, double M, double radius_outer, double delta_t, double *Gamma);
 
 /* Delta_J.c computes the change in J due to external field (Eq. (12) in arXiv:1905.00030v2) */
 
