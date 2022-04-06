@@ -27,9 +27,10 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 		//printf("Minv for circular equitorial case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
 		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
 		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
-		//printf("Omega for circular equitorial is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+		printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
+		printf("Omega for circular equatorial is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
 
-		/* Torus Origin for circular equitorial orbits */
+		/* Torus Origin for circular equatorial orbits */
 		CKerr_TorusOrigin(J, xuorig, M, astar);
 	}
 
@@ -48,7 +49,8 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 		//printf("Minv for generic case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
 		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
 		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
-		//printf("Omega for generic is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+		printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
+		printf("Omega for generic is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
 
 		/* Torus origin for inner body orbit */
 		CKerr_TorusOrigin(J, xuorig, M, astar);
@@ -80,6 +82,8 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 			for (i_m = -mmax; i_m <= mmax; i_m++){
 				if(i_n == 0 && i_k == 0 && i_m == 0)
 					continue;
+				if(astar == 0 && i_n == 0 && i_k == -i_m) //Schwarzschild case a == 0
+					continue;
 				CKerr_RadialFunc(Minv, xuorig, M, astar, i_n, i_k, i_m, 14, 14, nl, C0, &omegagw, E0);
 				for (il = 0; (il) < nl; il++){
 					
@@ -92,8 +96,8 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 					//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg\n", i_n, i_k, i_k, il, omega_nkm, lambda, alphankm);
 
 
-					Z_out_square = C0[4*il]*C0[4*il] + C0[4*il+1]*C0[4*il+1];
-					Z_down_square = C0[4*il+2]*C0[4*il+2] + C0[4*il+3]*C0[4*il+3];
+					Z_down_square = C0[4*il]*C0[4*il] + C0[4*il+1]*C0[4*il+1];
+					Z_out_square = C0[4*il+2]*C0[4*il+2] + C0[4*il+3]*C0[4*il+3];
 					printf("%i \t %i \t %i \t %i \t %lg \t %lg \n", i_n, i_k, i_m, il, Z_down_square, Z_out_square);
 					//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, C0[4*il], C0[4*il+1], C0[4*il+2], C0[4*il+3], Z_down_square, Z_out_square);
 					
@@ -235,7 +239,7 @@ int J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k
 	free((char*)E0_outer);
 }
 
-#if 0
+
 int main(){
 	int j;
 	double J_dot_r, J_dot_theta, J_dot_phi;
@@ -288,4 +292,3 @@ int main(){
 	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
 	return(0);
 }
-#endif
