@@ -11,7 +11,7 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 	int i_n_outer, i_k_outer, i_m_outer;
 	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer, info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
 	double term, another_term, last_term;
-	double Gamma[2], sgn_Gamma, tot_Gamma, mu_inner, mu_outer;
+	double Gamma[2], sgn_Gamma, tot_Gamma, mu_inner = 1, mu_outer = 1;
 	double omega_nkm, omegagw_inner, omegagw_outer;
 	double rH;
 	double Rtheta = 1, Itheta = 0;
