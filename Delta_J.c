@@ -114,12 +114,12 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 			*J_dot_phi_tidal += -i_m_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm);
 			#endif
 			/* \Delta J_td of inner body due to tidal field of outer body, for the real [0] and imaginary [1] parts */
-			Delta_J_r_tidal[0] += -i_n_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
-			Delta_J_r_tidal[1] += -i_n_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
-			Delta_J_theta_tidal[0] += -i_k_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
-			Delta_J_theta_tidal[1] += -i_k_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
-			Delta_J_phi_tidal[0] += -i_m_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
-			Delta_J_phi_tidal[1] += -i_m_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			Delta_J_r_tidal[0] += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			Delta_J_r_tidal[1] += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			Delta_J_theta_tidal[0] += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			Delta_J_theta_tidal[1] += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			Delta_J_phi_tidal[0] += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * cos(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			Delta_J_phi_tidal[1] += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sin(i * theta_res_F + sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(tot_Gamma));
 				}
 			}
 	free((char*)E0_inner);
