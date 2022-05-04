@@ -113,7 +113,7 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 }
 
 /* Computing the J_dot_tidal,i */
-int J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_r_tidal, double *J_dot_theta_tidal, double *J_dot_phi_tidal){
+int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_r_tidal, double *J_dot_theta_tidal, double *J_dot_phi_tidal){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
 	int i_n_outer, i_k_outer, i_m_outer;
 	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
@@ -184,7 +184,7 @@ int J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k
 	//printf("About to start for-loops \n");
 
 	/* Resonant sum, so it is over integer mulitples of the initial resonance modes for the inner body */
-	for (i = -1; i <= 1; i++){
+	for (i = -N_res; i <= N_res; i++){
 		i_n_inner = i*n_res_inner;
 		i_k_inner = i*k_res_inner;
 		i_m_inner = i*m_res_inner;
@@ -231,7 +231,7 @@ int J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k
 			*J_dot_r_tidal += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) ;
 			*J_dot_theta_tidal += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
 			*J_dot_phi_tidal += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
-			//printf("%lg \t %lg \t %lg \n", *J_dot_r_tidal, *J_dot_theta_tidal, *J_dot_phi_tidal);
+			printf("%lg \t %lg \t %lg \n", *J_dot_r_tidal, *J_dot_theta_tidal, *J_dot_phi_tidal);
 			#if 0
 			/* \Delta J_td of inner body due to tidal field of outer body, for the real [0] and imaginary [1] parts */
 			Delta_J_r_tidal[0] += -i_n_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) * cos(sgn_Gamma * M_PI/4.) * sqrt(2. * M_PI / fabs(Gamma));
@@ -248,6 +248,31 @@ int J_dot_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k
 	free((char*)E0_outer);
 }
 
+/* Keplerian expression for evolution of L_z, while only keeping the resonant prefactor terms. We will compare this to our general machine for computing J_phi_dot since it equals L_z_dot */
+double J_dot_phi_Kepler(double mu_outer, double r_outer, double apo, double peri, double incline){
+//double resonant_angle;
+double x_orbitplane_square, y_orbitplane_square;
+double a, eccen;
+double torque_res;
+
+/* Semi-major axis and eccentricity as a function of apocenter and pericenter */
+a = (apo + peri) / 2;
+eccen = (apo - peri) / (apo + peri);
+//resonant_angle = 2 * (Omega + omega);
+
+/* x^2 and y^2 in the orbit plane after being averaged over mean anomly, M */
+x_orbitplane_square = a*a * (1 + 4 * eccen*eccen) / 2;
+y_orbitplane_square = a*a * (1 - eccen*eccen) / 2;
+
+printf("Semi-major axis: %lg \n", a);
+printf("Eccentricity: %lg \n", eccen);
+printf("<x^2>_orbitplane = %lg \n", x_orbitplane_square);
+printf("<y^2>_orbitplane = %lg \n", y_orbitplane_square);
+
+/* Expression for L_z_dot in the observer frame and only keeping the prefactor of the term sin(resonant_angle) */
+torque_res = -3 * mu_outer / (8 * r_outer*r_outer*r_outer) * (x_orbitplane_square - y_orbitplane_square) * (1 + cos(incline))*(1 + cos(incline));
+return(torque_res);
+}
 
 int main(){
 	int j;
@@ -255,7 +280,7 @@ int main(){
 	double J_dot_r_tidal, J_dot_theta_tidal, J_dot_phi_tidal;
 	double Delta_J_r_tidal[2], Delta_J_theta_tidal[2], Delta_J_phi_tidal[2];
 	double angle_space, angle_step, L_dot[50];
-	int nl, nmax, kmax, mmax;
+	int nl, nmax, kmax, mmax, N_res;
 	int n_res_inner, k_res_inner, m_res_inner;
 	int n_res_outer, k_res_outer, m_res_outer;
 	double apo_res, peri, incline, mass, spin, radius_outer, guess1, guess2;
@@ -273,26 +298,34 @@ int main(){
 	printf("Enter corresponding apocenter at resonance: ");
 	scanf("%lf", &apo_res);
 
+	#if 0
 	printf("Number of modes and max n,k,m: ");
 	scanf("%i %i %i %i", &nl, &nmax, &kmax, &mmax);
+	#endif
 
 	printf("Number of modes and mode vector for inner orbit: ");
 	scanf("%i %i %i %i", &nl, &n_res_inner, &k_res_inner, &m_res_inner);
 
+	printf("Number of resonance terms: ");
+	scanf("%i", &N_res);
+
 	printf("Mode vector for outer orbit: ");
 	scanf("%i %i %i", &n_res_outer, &k_res_outer, &m_res_outer);
 	
-	#if 0
-	J_dot(nl, nmax, kmax, mmax, apo_res, peri, radius_outer, incline, mass, spin, &J_dot_r, &J_dot_theta, &J_dot_phi);
-	J_dot_tidal(nl, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_res, peri, radius_outer, incline, mass, spin, 0, &J_dot_r_tidal, &J_dot_theta_tidal, &J_dot_phi_tidal);
-	printf("J_dot_r_sf = %lg \n", J_dot_r);
-	printf("J_dot_theta_sf = %lg \n", J_dot_theta);
-	printf("J_dot_phi_sf = %lg \n", J_dot_phi);
-
+	printf("About to compute tidal J_dots \n");
+	
+	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_res, peri, radius_outer, incline, mass, spin, 0, &J_dot_r_tidal, &J_dot_theta_tidal, &J_dot_phi_tidal);
 	printf("J_dot_r_tidal = %lg \n", J_dot_r_tidal);
 	printf("J_dot_theta_tidal = %lg \n", J_dot_theta_tidal);
 	printf("J_dot_phi_tidal = %lg \n", J_dot_phi_tidal);
-	#endif
+	printf("Keplerian J_dot_phi at resonance = %lg \n", J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline));
+
+	#if 0
+	J_dot(nl, nmax, kmax, mmax, apo_res, peri, radius_outer, incline, mass, spin, &J_dot_r, &J_dot_theta, &J_dot_phi);
+	printf("J_dot_r_sf = %lg \n", J_dot_r);
+	printf("J_dot_theta_sf = %lg \n", J_dot_theta);
+	printf("J_dot_phi_sf = %lg \n", J_dot_phi);
+	
 
 	
 	printf("About to start L_dot \n");
@@ -305,4 +338,5 @@ int main(){
 	}
 	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
 	return(0);
+	#endif
 }
