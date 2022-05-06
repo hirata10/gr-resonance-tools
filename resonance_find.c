@@ -180,7 +180,7 @@ double find_resonance_apo(int n, int k, int m, double radius, double guess1, dou
 	do{
         	mold = mid_apo;
         	mid_apo = (guess1 + guess2)/2;
-        	printf("%2d\t%4.6f\t%4.6f\t%4.6f\t%4.6f\t",i++,guess1,guess2,mid_apo,ra_rp_I2Omega(n, k, m, radius, mid_apo, rp, I, astar, M));
+        	printf("%2d\t%4.6f\t%4.6f\t%4.6f\t%lg\t",i++,guess1,guess2,mid_apo,ra_rp_I2Omega(n, k, m, radius, mid_apo, rp, I, astar, M));
         	if(ra_rp_I2Omega(n, k, m, radius, mid_apo, rp, I, astar, M)==0){
                 	printf("Root is %4.6f\n",mid_apo);
         	}else if ((ra_rp_I2Omega(n, k, m, radius, guess1, rp, I, astar, M)*ra_rp_I2Omega(n, k, m, radius, mid_apo, rp, I, astar, M))<0){
@@ -194,5 +194,54 @@ double find_resonance_apo(int n, int k, int m, double radius, double guess1, dou
 	printf("Approximate Root is %4.6f \n",mid_apo);
 	return(mid_apo);
 	}
+#if 0
+int main(){
+	int j;
+	int n, k, m;
+	double step, next_step, Omega_condition;
+	double apo_res, peri, incline, mass, spin, radius_outer, guess1, guess2;
 
+	printf("Enter pericenter: ");
+	scanf("%lf", &peri);
+	printf("Enter inlincation angle (radians): ");
+	scanf("%lf", &incline);
+	printf("Enter central mass: ");
+	scanf("%lf", &mass);
+	printf("Enter spin parameter of BH: ");
+	scanf("%lf", &spin);
+	printf("Enter radius of outer orbit: ");
+	scanf("%lf", &radius_outer);
+	//printf("Enter corresponding apocenter at resonance: ");
+	//scanf("%lf", &apo_res);
+
+	//printf("Number of modes and max n,k,m: ");
+	//scanf("%i %i %i %i", &nl, &nmax, &kmax, &mmax);
+
+	printf("Enter mode vector: ");
+	scanf("%i %i %i", &n, &k, &m);
+
+	//printf("Mode vector for outer orbit: ");
+	//scanf("%i %i %i", &n_res_outer, &k_res_outer, &m_res_outer);
+
+	guess1 = peri + 2.;
+	guess2 = radius_outer - 2.;
+
+	apo_res = find_resonance_apo(n, k, m, radius_outer, guess1, guess2, peri, incline, spin, mass);
+	printf("Apocenter for this resonance is = %lg \n", apo_res);
+	#if 0
+	for (j = 0; j <= 500; j++){
+		step = (guess2 - guess1)/500;
+		next_step = guess1 + step * j;
+		Omega_condition = ra_rp_I2Omega(n, k, m, radius_outer, next_step, peri, incline, spin, mass);
+		printf("%i %lg %lg \n", j, next_step, Omega_condition);
+	}
+	
+	printf("Delta_J_r_tidal Re & Im = %lg %lg \n", Delta_J_r_tidal[0], Delta_J_r_tidal[1]);
+	printf("Delta_J_theta_tidal = %lg %lg \n", Delta_J_theta_tidal[0], Delta_J_theta_tidal[1]);
+	printf("Delta_J_phi_tidal = %lg %lg \n", Delta_J_phi_tidal[0], Delta_J_phi_tidal[1]);
+	#endif
+	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
+	return(0);
+}
+#endif
 
