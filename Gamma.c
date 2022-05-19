@@ -9,8 +9,9 @@
 /* dOmega/dJ_i will be numerically computed using symmetric difference quotient */
 /* N = (n, k, m) */
 /* Outputs the inner and outer body's change in angular velocity as an array Gamma[0] = Gamma_inner, Gamma[1] = Gamma_outer */
+/* m_res_inner = m_res_outer by selection rules */
 
-int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double ra, double rp, double I, double astar, double M, double radius_outer, double delta_t, double *Gamma){
+int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_res_outer, int k_res_outer, double ra, double rp, double I, double astar, double M, double radius_outer, double delta_t, double *Gamma){
 	int k;
 	double Minv_inner_plus[9], Minv_inner_minus[9];
 	double Minv_outer_plus[9], Minv_outer_minus[9];
@@ -41,12 +42,12 @@ int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double 
 	printf("J dot for outer: %lg %lg %lg \n", Jdotr_outer, Jdottheta_outer, Jdotphi_outer);
 
 	/* Step size in Jr, Jtheta, and Jphi */
-	/* We set J_step_outer for Jr and Jtheta to zero since they should be identically zero */
+	/* We set J_step_outer for Jr and Jtheta to zero since they should be identically zero for the case of a circular equatorial orbit */
 	J_step_inner[0] = Jdotr_inner * delta_t;
 	J_step_inner[1] = Jdottheta_inner * delta_t;
 	J_step_inner[2] = Jdotphi_inner * delta_t;
-	J_step_outer[0] = 0;
-	J_step_outer[1] = 0;
+	J_step_outer[0] = Jdotr_outer * delta_t;
+	J_step_outer[1] = Jdottheta_outer * delta_t;
 	J_step_outer[2] = Jdotphi_outer * delta_t;
 
 	//J_step_outer[0] = Jdotr_outer * delta_t;
@@ -57,8 +58,8 @@ int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double 
 	/* Defining a small increment in J in both +/- */
 	for(k=0;k<3;k++){Jplus_inner[k] = J_inner[k] + J_step_inner[k]; Jminus_inner[k] = J_inner[k] - J_step_inner[k];}
 	for(k=0;k<3;k++){Jplus_outer[k] = J_outer[k] + J_step_outer[k]; Jminus_outer[k] = J_outer[k] - J_step_outer[k];}
-	printf("J plus outer: %lg %lg %lg \n", Jplus_outer[0], Jplus_outer[1], Jplus_outer[2]);
-	printf("J minus outer: %lg %lg %lg \n", Jminus_outer[0], Jminus_outer[1], Jminus_outer[2]);
+	//printf("J plus outer: %lg %lg %lg \n", Jplus_outer[0], Jplus_outer[1], Jplus_outer[2]);
+	//printf("J minus outer: %lg %lg %lg \n", Jminus_outer[0], Jminus_outer[1], Jminus_outer[2]);
 	//if(Jminus_outer[0] < 0){Jminus_outer[0] = fabs(Jminus_outer[0]);}
 	//printf("The new J minus outer if Jr<0: %lg %lg %lg \n", Jminus_outer[0], Jminus_outer[1], Jminus_outer[2]);
 
@@ -75,6 +76,7 @@ int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double 
 	CKerr_Minv2Omega(Minv_outer_plus, Omega_outer_plus);
 	CKerr_Minv2Omega(Minv_outer_minus, Omega_outer_minus);
 
+	#if 0
 	printf("Minv_plus for outer body = \n %lg %lg %lg \n", Minv_outer_plus[0], Minv_outer_plus[1], Minv_outer_plus[2]);
 	printf(" %lg %lg %lg \n", Minv_outer_plus[3], Minv_outer_plus[4], Minv_outer_plus[5]);
 	printf(" %lg %lg %lg \n",  Minv_outer_plus[6], Minv_outer_plus[7], Minv_outer_plus[8]);
@@ -85,6 +87,7 @@ int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double 
 
 	printf("Omega_outer for plus: %lg %lg %lg \n", Omega_outer_plus[0], Omega_outer_plus[1], Omega_outer_plus[2]);
 	printf("Omega_outer for minus: %lg %lg %lg \n", Omega_outer_minus[0], Omega_outer_minus[1], Omega_outer_minus[2]);
+	#endif
 
 	/* Symmetric derivative: d\Omega_i/dJ_j \approx (\Omega_i(J_j+J_step_j) - \Omega_i(J_j-J_step_j))/(2 * J_step_j) */
 	/* dOmegai/dJj[0] = dOmegar/dJr, dOmegai/dJj[1] = dOmegar/dJtheta, ... */
@@ -97,8 +100,10 @@ int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double 
 	omega_dot_outer[1] = (Omega_outer_plus[1] - Omega_outer_minus[1])/(2 * delta_t);
 	omega_dot_outer[2] = (Omega_outer_plus[2] - Omega_outer_minus[2])/(2 * delta_t);
 
+	#if 0
 	printf("%lg %lg %lg \n", omega_dot_inner[0], omega_dot_inner[1], omega_dot_inner[2]);
 	printf("%lg %lg %lg \n", omega_dot_outer[0], omega_dot_outer[1], omega_dot_outer[2]);
+	#endif
 
 	/* omega_dot[0] = omega_r_dot, omega_dot[1] = omega_theta_dot, omega_dot[2] = omega_phi_dot */
 	/*omega_dot[0] = dOmegai_dJj[0] * Jdotr + dOmegai_dJj[1] * Jdottheta + dOmegai_dJj[2] * Jdotphi;
@@ -108,36 +113,6 @@ int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, double 
 	/* Gamma = \vec{N}_{outer} \cdot \vec{\dot{\Omega}}_{outer} - \vec{N}_{inner} \cdot \vec{\dot{\Omega}}_{inner}  */
 	/* For circular equatorial orbits, we set n,k for outer obrit modes to zero. And the m mode matches the inner orbit */
 	Gamma[0] = n_res_inner * omega_dot_inner[0] + k_res_inner * omega_dot_inner[1] + m_res_inner * omega_dot_inner[2];
-	Gamma[1] = m_res_inner * omega_dot_outer[2];
-	return(0);
-}
-
-
-int main(){
-	double jstep[3];
-	int n, k, m, nl;
-	double apo_res, peri, incline, mass, spin, radius_outer, guess1, guess2;
-	double Gamma[2];
-
-	printf("Enter pericenter: ");
-	scanf("%lf", &peri);
-	printf("Enter inlincation angle (radians): ");
-	scanf("%lf", &incline);
-	printf("Enter central mass: ");
-	scanf("%lf", &mass);
-	printf("Enter spin parameter of BH: ");
-	scanf("%lf", &spin);
-	printf("Enter radius of outer orbit: ");
-	scanf("%lf", &radius_outer);
-	printf("Enter corresponding apocenter at resonance: ");
-	scanf("%lf", &apo_res);
-
-	printf("Resonance condition for nl,n,k,m : ");
-	scanf("%i %i %i %i", &nl, &n, &k, &m);
-
-	
-	omega_dot(nl, n, k, m, apo_res, peri, incline, spin, mass, radius_outer, 1e-4, Gamma);
-	printf("Gamma for inner and outer body are: %lg %lg \n", Gamma[0], Gamma[1]);
-	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
+	Gamma[1] = n_res_outer * omega_dot_outer[0] + k_res_outer * omega_dot_outer[1] + m_res_inner * omega_dot_outer[2];
 	return(0);
 }
