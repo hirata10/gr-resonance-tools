@@ -19,6 +19,7 @@ double CKerr_FindLindbladResonance(double M, double astar, double r0, double mm)
 int CKerr_FindEQL_IRR(double Ic, double rp, double ra, double *EQL, double M, double astar);
 int CKerr_FindEQL_IRCirc(double Ic, double r, double *EQL, double M, double astar);
 int CKerr_FindResCirc(int fratio, double Ic, double *J, double M, double astar);
+double Ckerr_FindISCO(double Ic, double M, double astar);
 
 /* kerrmode.c: Angular & radial mode functions for the Teukolsky equations */
 
