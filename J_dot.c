@@ -6,7 +6,7 @@
 
 /* Computing the J_dot due to self-force from arXiv:1905.00030v2 Eq. (12) */
 
-int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_r, double *J_dot_theta, double *J_dot_phi){
+int J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_sf){
 	int i, i_n, i_k, i_m, il;
 	double EQL[3], J[3], Minv[9], Omega[3], info[6], info_outer[6], xuorig[6], xuorig_outer[6];
 	int n_res_inner = 1, k_res_inner = 2, m_res_inner = -2;
@@ -27,8 +27,8 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 		//printf("Minv for circular equitorial case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
 		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
 		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
-		printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
-		printf("Omega for circular equatorial is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+		//printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
+		//printf("Omega for circular equatorial is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
 
 		/* Torus Origin for circular equatorial orbits */
 		CKerr_TorusOrigin(J, xuorig, M, astar);
@@ -72,9 +72,9 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 	rH = M + sqrt(M*M - astar*astar);
 	epsilon = sqrt(M*M - astar*astar) / (4 * M * rH);
 
-	*J_dot_r = 0;
-	*J_dot_theta = 0; 
-	*J_dot_phi = 0;
+	J_dot_sf[0] = 0;
+	J_dot_sf[1] = 0; 
+	J_dot_sf[2] = 0;
 	//printf("IM HERE 4 \n");
 	/* Compute the J_dots for the inner orbit */
 	for (i_n = -nmax; i_n <= nmax; i_n++){
@@ -98,12 +98,12 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 
 					Z_down_square = C0[4*il]*C0[4*il] + C0[4*il+1]*C0[4*il+1];
 					Z_out_square = C0[4*il+2]*C0[4*il+2] + C0[4*il+3]*C0[4*il+3];
-					printf("%i \t %i \t %i \t %i \t %lg \t %lg \n", i_n, i_k, i_m, il, Z_down_square, Z_out_square);
+					//printf("%i \t %i \t %i \t %i \t %lg \t %lg \n", i_n, i_k, i_m, il, Z_down_square, Z_out_square);
 					//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, C0[4*il], C0[4*il+1], C0[4*il+2], C0[4*il+3], Z_down_square, Z_out_square);
 					
-					*J_dot_r += -i_n * (Z_out_square + alphankm * Z_down_square) / (2. * omega_nkm*omega_nkm*omega_nkm);
-					*J_dot_theta += -i_k * (Z_out_square + alphankm * Z_down_square) / (2. * omega_nkm*omega_nkm*omega_nkm);
-					*J_dot_phi += -i_m * (Z_out_square + alphankm * Z_down_square) / (2. * omega_nkm*omega_nkm*omega_nkm);
+					J_dot_sf[0] += -i_n * (Z_out_square + alphankm * Z_down_square) / (2. * omega_nkm*omega_nkm*omega_nkm);
+					J_dot_sf[1] += -i_k * (Z_out_square + alphankm * Z_down_square) / (2. * omega_nkm*omega_nkm*omega_nkm);
+					J_dot_sf[2] += -i_m * (Z_out_square + alphankm * Z_down_square) / (2. * omega_nkm*omega_nkm*omega_nkm);
 
 				}
 			}
@@ -113,7 +113,7 @@ int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double ra
 }
 
 /* Computing the J_dot_tidal,i */
-int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_r_tidal, double *J_dot_theta_tidal, double *J_dot_phi_tidal){
+int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_td){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
 	int i_n_outer, i_k_outer, i_m_outer;
 	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
@@ -177,9 +177,9 @@ int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_i
 	Delta_J_phi_tidal[0] = 0;
 	Delta_J_phi_tidal[1] = 0;
 	#endif
-	*J_dot_r_tidal = 0;
-	*J_dot_theta_tidal = 0;
-	*J_dot_phi_tidal = 0;
+	J_dot_td[0] = 0;
+	J_dot_td[1] = 0;
+	J_dot_td[2] = 0;
 	
 	//printf("About to start for-loops \n");
 	//printf("il \t i_n \t i_k \t i_m \t C01_in \t C02_in \t C03_in \t C04_in \t C01_out \t C02_out \t term \t another_term \t last_term \n");
@@ -228,9 +228,9 @@ int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_i
 			//printf("%lg \t %lg \t %lg \n", term, another_term, alphankm * last_term);
 
 			/* J_dot of inner body due to tidal field of outer body */
-			*J_dot_r_tidal += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) ;
-			*J_dot_theta_tidal += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
-			*J_dot_phi_tidal += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
+			J_dot_td[0] += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) ;
+			J_dot_td[1] += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
+			J_dot_td[2] += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
 			//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \n", il, i_n_inner, i_k_inner, i_m_inner, C0_inner[4*il], C0_inner[4*il+1], C0_inner[4*il+2], C0_inner[4*il+3], C0_outer[4*il], C0_outer[4*il+1], term, another_term, alphankm * last_term);
 			//printf("%lg \t %lg \t %lg \n", *J_dot_r_tidal, *J_dot_theta_tidal, *J_dot_phi_tidal);
 			#if 0
