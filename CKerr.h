@@ -65,14 +65,15 @@ double CKerr_LindbladResonanceStrength(double M, double astar, double r0, long m
 
 double ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, double M);
 double Omega_outer_direct(double radius, double M, double spin);
-double ra_rp_I2Omega(int n, int k, int m, double radius, double ra, double rp, double I, double astar, double M);
-double find_resonance_apo(int n, int k, int m, double radius, double guess1, double guess2, double rp, double I, double astar, double M);
+double ra_rp_I2Omega_OuterCirc(int n, int k, int m, double radius, double ra, double rp, double I, double astar, double M);
+double ra_rp_I2Omega_generic(int n_inner, int k_inner, int m_inner, int n_outer, int k_outer, double ra_inner, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M);
+double find_resonance_apo_OuterCirc(int n, int k, int m, double radius, double guess1, double guess2, double rp, double I, double astar, double M);
 
 /* J_dot.c: finds the time derivative of the J components for the self-force and tidal field */
 
-int J_dot(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_r, double *J_dot_theta, double *J_dot_phi);
+int J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_sf);
 
-int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_r_tidal, double *J_dot_theta_tidal, double *J_dot_phi_tidal);
+int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_td);
 
 double J_dot_phi_Kepler(double mu_outer, double r_outer, double apo, double peri, double incline, double Theta_res);
 /* Gamma.c: Computes the change in omega for orbits */
