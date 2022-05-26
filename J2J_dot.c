@@ -35,9 +35,8 @@ int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, doubl
 }
 
 /* This takes a step size (dt), an inital J_inital components, and return arrays of size n for each J components at each time step */
-void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final)
-{
-	int i;
+void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final){
+    int i;
     int nl = 2, nmax = 1, kmax = 1, mmax = 1;
     double M = 1, astar = 0.5;
 	double *k1r, *k2r, *k3r, *k4r;
