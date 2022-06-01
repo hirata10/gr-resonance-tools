@@ -5,16 +5,17 @@
 #include "CKerr.h"
 
 /* Computing the Delta J_tidal,i */
-/* Outputs arrays with two entries: [0] --> real part; [1] --> imaginary part */
+/* Input: resonance mode vector for inner and outer body, number of modes to sum over (nl), orbital data (apo, peri, incline), mass and spin of BH, and resonance angle */
+/* Output: Delta_J_tidal_{r, \theta, \phi} */
 double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *Delta_J_r_tidal, double *Delta_J_theta_tidal, double *Delta_J_phi_tidal){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
 	int i_n_outer, i_k_outer, i_m_outer;
 	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer, info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
 	double term, another_term, last_term;
-	double Gamma[2], sgn_Gamma, tot_Gamma, mu_inner = 1, mu_outer = 1;
+	double Gamma[2], sgn_sGamma, tot_Gamma, mu_inner = 1, mu_outer = 1;
 	double omega_nkm, omegagw_inner, omegagw_outer;
 	double rH;
-	double Rtheta = 1, Itheta = 0;
+	double Rtheta, Itheta;
 	double epsilon, lambda, numer, C2, P, alphankm;
 	double *C0_inner, *E0_inner, *E1_inner, *C0_outer, *E0_outer, *E1_outer;
 
@@ -56,19 +57,19 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
   	E1_outer = E0_outer + nl;
   	C0_outer = E1_outer + nl;
 
-	rH = M + sqrt(M*M - astar*astar);
-	epsilon = sqrt(M*M - astar*astar) / (4 * M * rH);
+	rH = M + sqrt(M*M - astar*astar*M*M);
+	epsilon = sqrt(M*M - astar*astar*M*M) / (4 * M * rH);
 	omega_dot(nl, n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, apo, rp, I, astar, M, radius_outer, 1e-4, Gamma);
 	tot_Gamma = Gamma[0] * mu_inner + Gamma[1] * mu_outer;
-	sgn_Gamma = tot_Gamma/fabs(tot_Gamma);
+	//sgn_Gamma = tot_Gamma/fabs(tot_Gamma);
 	//printf("Gamma and its sign are: %lg %lg \n", tot_Gamma, sgn_Gamma);
 
-	Delta_J_r_tidal[0] = 0;
-	Delta_J_r_tidal[1] = 0; 
-	Delta_J_theta_tidal[0] = 0;
-	Delta_J_theta_tidal[1] = 0;	
-	Delta_J_phi_tidal[0] = 0;
-	Delta_J_phi_tidal[1] = 0;
+	*Delta_J_r_tidal = 0;
+	//Delta_J_r_tidal[1] = 0; 
+	*Delta_J_theta_tidal = 0;
+	//Delta_J_theta_tidal[1] = 0;	
+	*Delta_J_phi_tidal = 0;
+	//Delta_J_phi_tidal[1] = 0;
 	
 	//printf("About to start for-loops \n");
 
@@ -80,8 +81,9 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 		i_n_outer = i*n_res_outer;
 		i_k_outer = i*k_res_outer;
 		i_m_outer = i*m_res_outer;
-		Rtheta = cos(i * theta_res_F + sgn_Gamma * M_PI/4.);
-		Itheta = sin(i * theta_res_F + sgn_Gamma * M_PI/4.);
+		sgn_sGamma = (i * tot_Gamma) / fabs(i * tot_Gamma);
+		Rtheta = cos(i * theta_res_F + sgn_sGamma * M_PI/4.);
+		Itheta = sin(i * theta_res_F + sgn_sGamma * M_PI/4.);
 		if((i_n_outer == 0 && i_k_outer == 0 && i_m_outer == 0) || (i_n_inner == 0 && i_k_inner == 0 && i_m_inner == 0))
 			continue;
 		/* Create the amplitude data for inner body*/
@@ -93,10 +95,10 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 			/* Get the scattering coefficients of the outer body radiation */
 			CKerr_GWScatMatrix(M, astar, omega_nkm, i_m_inner, E0_outer[il], cscat, aux);
 			/* Define frequency of inner body (omega_nkm) and other functions that depends on n,k,m,l */
-			lambda = E0_inner[il] - 2 * astar * i_m_inner * omega_nkm + astar * astar * omega_nkm * omega_nkm - 2;
-			P = omega_nkm - i_m_inner * astar / (2 * M * rH);
+			lambda = E0_inner[il] - 2 * astar * M * i_m_inner * omega_nkm + astar * M * astar * M * omega_nkm * omega_nkm - 2;
+			P = omega_nkm - i_m_inner * astar * M / (2 * M * rH);
 			numer = 256 * pow(2 * M * rH,5) * P * (P*P + 4 * epsilon*epsilon) * (P*P + 16 * epsilon*epsilon) * omega_nkm * omega_nkm * omega_nkm;
-			C2 = ((lambda + 2)*(lambda + 2) + 4 * astar *omega_nkm - 4 * astar*astar * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m_inner * astar *omega_nkm - 36 * astar*astar * omega_nkm*omega_nkm) + (2 * lambda +3) * (96 * astar*astar * omega_nkm*omega_nkm - 48 * i_m_inner * astar * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar);
+			C2 = ((lambda + 2)*(lambda + 2) + 4 * i_m_inner * astar * M *omega_nkm - 4 * astar * M * astar * M * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m_inner * astar * M * omega_nkm - 36 * astar * M * astar * M * omega_nkm*omega_nkm) + (2 * lambda +3) * (96 * astar*astar * M * M * omega_nkm*omega_nkm - 48 * i_m_inner * astar * M * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar*M*M);
 			alphankm = numer / C2;
 			//printf("%i \t %i \t %i \t %i \t %lf \t %lf \t %lf\n", i_n, i_k, i_k, il, omega_nkm, lambda, alphankm);
 
@@ -114,12 +116,10 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 			*J_dot_phi_tidal += -i_m_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm);
 			#endif
 			/* \Delta J_td of inner body due to tidal field of outer body, for the real [0] and imaginary [1] parts */
-			Delta_J_r_tidal[0] += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm)  * sqrt(2. * M_PI / fabs(tot_Gamma));
-			Delta_J_r_tidal[1] += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm)  * sqrt(2. * M_PI / fabs(tot_Gamma));
-			Delta_J_theta_tidal[0] += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(tot_Gamma));
-			Delta_J_theta_tidal[1] += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(tot_Gamma));
-			Delta_J_phi_tidal[0] += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(tot_Gamma));
-			Delta_J_phi_tidal[1] += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(tot_Gamma));
+			*Delta_J_r_tidal += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm)  * sqrt(2. * M_PI / fabs(i * tot_Gamma));
+			*Delta_J_theta_tidal += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(i * tot_Gamma));
+			*Delta_J_phi_tidal+= -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(i * tot_Gamma));
+			//Delta_J_phi_tidal[1] += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(tot_Gamma));
 				}
 			}
 	free((char*)E0_inner);
