@@ -2,7 +2,7 @@ from cmath import sqrt
 from json.tool import main
 import random
 import math
-from c_to_python import ckerr_j2eql, ckerr_eql2j, ckerr_minverse, ckerr_minv2omega
+from gr_wrapper import ckerr_j2eql, ckerr_eql2j, ckerr_minverse, ckerr_minv2omega
 
 
 
@@ -71,7 +71,7 @@ while i < max:
    if J_r_outer + J_theta_outer + J_phi_outer != sqrt_sm_axis_outer or J_r_inner + J_theta_inner + J_phi_inner != sqrt_sm_axis_inner:
       continue
 
-   #Check 2: Closed orbit (EQL[0] > 0)
+   #Check 2: Closed orbit (EQL[0] < 1)
    _, EQL_outer = ckerr_j2eql(J_outer, M, astar)
    _, EQL_inner = ckerr_j2eql(J_inner, M, astar)
    if EQL_outer[0] > 1 or EQL_inner[0] > 1:
@@ -90,10 +90,9 @@ while i < max:
    Om_inner = ckerr_minv2omega(Minv_inner)
 
 
-   rk4_list_outer += [Om_outer]
-   rk4_list_inner += [Om_inner]
+   rk4_list_outer += [J_outer]
+   rk4_list_inner += [J_inner]
    i += 1
 
 print(rk4_list_outer, rk4_list_inner)
-
 
