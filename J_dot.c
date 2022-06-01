@@ -69,8 +69,8 @@ int J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp,
 	
 	//printf("IM HERE 3 \n");
 
-	rH = M + sqrt(M*M - astar*astar);
-	epsilon = sqrt(M*M - astar*astar) / (4 * M * rH);
+	rH = M + sqrt(M*M - astar*M*astar*M);
+	epsilon = sqrt(M*M - astar*M*astar*M) / (4 * M * rH);
 
 	J_dot_sf[0] = 0;
 	J_dot_sf[1] = 0; 
@@ -88,10 +88,10 @@ int J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp,
 				for (il = 0; (il) < nl; il++){
 					
 					omega_nkm = i_n * Omega[0] + i_k * Omega[1] + i_m * Omega[2];
-					lambda = E0[il] - 2 * astar * i_m * omega_nkm + astar * astar * omega_nkm * omega_nkm - 2;
-					P = omega_nkm - i_m * astar / (2 * M * rH);
+					lambda = E0[il] - 2 * astar * M * i_m * omega_nkm + astar * M * astar * M * omega_nkm * omega_nkm - 2;
+					P = omega_nkm - i_m * astar * M / (2 * M * rH);
 					numer = 256 * pow(2 * M * rH,5) * P * (P*P + 4 * epsilon*epsilon) * (P*P + 16 * epsilon*epsilon) * omega_nkm * omega_nkm * omega_nkm;
-					C2 = ((lambda + 2)*(lambda + 2) + 4 * astar *omega_nkm - 4 * astar*astar * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m * astar *omega_nkm - 36 * astar*astar * omega_nkm*omega_nkm) + (2 * lambda +3) * (96 * astar*astar * omega_nkm*omega_nkm - 48 * i_m * astar * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar);
+					C2 = ((lambda + 2)*(lambda + 2) + 4 * i_m * astar * omega_nkm - 4 * astar * M * astar * M * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m * astar * M *omega_nkm - 36 * astar * M * astar * M * omega_nkm*omega_nkm) + (2 * lambda +3) * (96 * astar * M * astar * M * omega_nkm*omega_nkm - 48 * i_m * astar * M * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar*M*M);
 					alphankm = numer / C2;
 					//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg\n", i_n, i_k, i_k, il, omega_nkm, lambda, alphankm);
 
@@ -163,8 +163,8 @@ int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_i
   	E1_outer = E0_outer + nl;
   	C0_outer = E1_outer + nl;
 
-	rH = M + sqrt(M*M - astar*astar);
-	epsilon = sqrt(M*M - astar*astar) / (4 * M * rH);
+	rH = M + sqrt(M*M - astar*astar*M*M);
+	epsilon = sqrt(M*M - astar*astar*M*M) / (4 * M * rH);
 	//Gamma = omega_dot(nl, n_res_inner, k_res_inner, m_res_inner, apo, rp, I, astar, M, radius_outer, 1e-4);
 	//sgn_Gamma = Gamma/fabs(Gamma);
 	//printf("Gamma and its sign are: %lg %lg \n", Gamma, sgn_Gamma);
@@ -204,10 +204,10 @@ int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_i
 			/* Get the scattering coefficients of the outer body radiation */
 			CKerr_GWScatMatrix(M, astar, omega_nkm, i_m_inner, E0_outer[il], cscat, aux);
 			/* Define frequency of inner body (omega_nkm) and other functions that depends on n,k,m,l */
-			lambda = E0_inner[il] - 2 * astar * i_m_inner * omega_nkm + astar * astar * omega_nkm * omega_nkm - 2;
-			P = omega_nkm - i_m_inner * astar / (2 * M * rH);
+			lambda = E0_inner[il] - 2 * astar * M * i_m_inner * omega_nkm + astar * M * astar * M * omega_nkm * omega_nkm - 2;
+			P = omega_nkm - i_m_inner * astar * M / (2 * M * rH);
 			numer = 256 * pow(2 * M * rH,5) * P * (P*P + 4 * epsilon*epsilon) * (P*P + 16 * epsilon*epsilon) * omega_nkm * omega_nkm * omega_nkm;
-			C2 = ((lambda + 2)*(lambda + 2) + 4 * astar *omega_nkm - 4 * astar*astar * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m_inner * astar *omega_nkm - 36 * astar*astar * omega_nkm*omega_nkm) + (2 * lambda +3) * (96 * astar*astar * omega_nkm*omega_nkm - 48 * i_m_inner * astar * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar);
+			C2 = ((lambda + 2)*(lambda + 2) + 4 * i_m_inner * astar * M * omega_nkm - 4 * astar*astar*M*M * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m_inner * astar * M *omega_nkm - 36 * astar*astar*M*M * omega_nkm*omega_nkm) + (2 * lambda +3) * (96 * astar*astar*M*M * omega_nkm*omega_nkm - 48 * i_m_inner * astar * M * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar*M*M);
 			alphankm = numer / C2;
 			//printf("%i \t %lg \t %lg \t %lg\n", il, omega_nkm, lambda, alphankm);
 
@@ -228,7 +228,7 @@ int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_i
 			//printf("%lg \t %lg \t %lg \n", term, another_term, alphankm * last_term);
 
 			/* J_dot of inner body due to tidal field of outer body */
-			J_dot_td[0] += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) ;
+			J_dot_td[0] += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
 			J_dot_td[1] += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
 			J_dot_td[2] += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
 			//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \n", il, i_n_inner, i_k_inner, i_m_inner, C0_inner[4*il], C0_inner[4*il+1], C0_inner[4*il+2], C0_inner[4*il+3], C0_outer[4*il], C0_outer[4*il+1], term, another_term, alphankm * last_term);
