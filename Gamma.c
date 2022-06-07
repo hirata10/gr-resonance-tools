@@ -11,7 +11,7 @@
 /* Outputs the inner and outer body's change in angular velocity as an array Gamma[0] = Gamma_inner, Gamma[1] = Gamma_outer */
 /* m_res_inner = m_res_outer by selection rules */
 
-int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_res_outer, int k_res_outer, double ra, double rp, double I, double astar, double M, double radius_outer, double delta_t, double *Gamma){
+int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_res_outer, int k_res_outer, double ra_inner, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M, double radius_outer, double delta_t, double *Gamma){
 	int k;
 	double Minv_inner_plus[9], Minv_inner_minus[9];
 	double Minv_outer_plus[9], Minv_outer_minus[9];
@@ -21,34 +21,41 @@ int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_r
 	double EQL_outer[3], J_outer[3], Omega_outer_plus[3], Omega_outer_minus[3], omega_dot_outer[3];
 	double dOmegai_dJj[9];
 	int nmax = 1, kmax = 1, mmax = 1;
-	double Jdotr_inner, Jdottheta_inner, Jdotphi_inner;
-	double Jdotr_outer, Jdottheta_outer, Jdotphi_outer;
+	//double Jdotr_inner, Jdottheta_inner, Jdotphi_inner;
+	double J_dot_inner[3], J_dot_outer[3];
+	//double Jdotr_outer, Jdottheta_outer, Jdotphi_outer;
 
 	/* Inner Body: Generic Orbit */
-	ra_rp_I2EQL(ra, EQL_inner, rp, I, astar, M);
+	ra_rp_I2EQL(ra_inner, EQL_inner, rp_inner, I_inner, astar, M);
 	CKerr_EQL2J(EQL_inner, J_inner, M, astar, NULL);
 	printf("Inner J's: %lg %lg %lg \n", J_inner[0], J_inner[1], J_inner[2]);
 
+	/* Outer body: Generic Orbit */
+	ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
+	CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+	printf("Inner J's: %lg %lg %lg \n", J_outer[0], J_outer[1], J_outer[2]);
+	
+	#if 0
 	/* Outer Body: Circular Equitorial Orbit */
 	CKerr_FindEQL_IRCirc(0, radius_outer, EQL_outer, M, astar);
 	CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
 	printf("Outer J's: %lg %lg %lg \n", J_outer[0], J_outer[1], J_outer[2]);
-	
+	#endif
 
 	//WRITE A ROUTINE FOR BOTH INNER AND OUTER BODY INSPIRALS
-	J_dot(nl, nmax, kmax, mmax, ra, rp, radius_outer, I, M, astar, &Jdotr_inner, &Jdottheta_inner, &Jdotphi_inner);
-	J_dot(nl, nmax, kmax, mmax, 0, 0, radius_outer, 0, M, astar, &Jdotr_outer, &Jdottheta_outer, &Jdotphi_outer);
-	printf("J dot for inner: %lg %lg %lg \n", Jdotr_inner, Jdottheta_inner, Jdotphi_inner);
-	printf("J dot for outer: %lg %lg %lg \n", Jdotr_outer, Jdottheta_outer, Jdotphi_outer);
+	J_dot_selfforce(nl, nmax, kmax, mmax, ra_inner, rp_inner, radius_outer, I_inner, M, astar, J_dot_inner);
+	J_dot_selfforce(nl, nmax, kmax, mmax, ra_outer, rp_outer, radius_outer, I_outer, M, astar, J_dot_outer);
+	printf("J dot for inner: %lg %lg %lg \n", J_dot_inner[0], J_dot_inner[1], J_dot_inner[2]);
+	printf("J dot for outer: %lg %lg %lg \n", J_dot_outer[0], J_dot_outer[1], J_dot_outer[2]);
 
 	/* Step size in Jr, Jtheta, and Jphi */
 	/* We set J_step_outer for Jr and Jtheta to zero since they should be identically zero for the case of a circular equatorial orbit */
-	J_step_inner[0] = Jdotr_inner * delta_t;
-	J_step_inner[1] = Jdottheta_inner * delta_t;
-	J_step_inner[2] = Jdotphi_inner * delta_t;
-	J_step_outer[0] = Jdotr_outer * delta_t;
-	J_step_outer[1] = Jdottheta_outer * delta_t;
-	J_step_outer[2] = Jdotphi_outer * delta_t;
+	J_step_inner[0] = J_dot_inner[0] * delta_t;
+	J_step_inner[1] = J_dot_inner[1] * delta_t;
+	J_step_inner[2] = J_dot_inner[2] * delta_t;
+	J_step_outer[0] = J_dot_outer[0] * delta_t;
+	J_step_outer[1] = J_dot_outer[1] * delta_t;
+	J_step_outer[2] = J_dot_outer[2] * delta_t;
 
 	//J_step_outer[0] = Jdotr_outer * delta_t;
 	//J_step_outer[1] = Jdottheta_outer * delta_t;
