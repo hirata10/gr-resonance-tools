@@ -7,6 +7,8 @@ import numpy as np
 # The documentation here covers primarily things concerning data management.
 # If you were looking for math documentation, see "CKerr.h"
 
+# Depends on libc.stdlib for everything and numpy for just CKerr_SbCoefN
+
 
 
 
@@ -483,20 +485,15 @@ def ckerr_sbcoefn(s, m, nu, arrE, chi, errtol):
     try:
         nb = gr_wrapper.CKerr_SbCoefN(<long> s, <long> m, <long> nu, arrE_cpy, my_b, <double> chi, <double> errtol)
     finally:
-        output_array = np.zeros((nb,nb))
-        for i in range(nb):
-            for j in range(nb):
-                output_array[i,j] = 
-                
-                
-                
-                gr_wrapper.CKerr_SbCoefN(<long> s, <long> m, <long> nu, arrE_cpy, &my_b[nb*i+j], <double> chi, <double> errtol)
+        output_array = np.zeros((nb*nb))
+        for i in range(nb*nb):
+            output_array[i] = my_b[0][i]
         output = [arrE_cpy[i] for i in range(nu)]
         free(my_b)
         free(my_b[0])
         free(arrE_cpy)
 
-    return output_array, output, nb
+    return output_array.reshape((nb,nb)), output, nb
   
 
 
