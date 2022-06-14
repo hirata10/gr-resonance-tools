@@ -7,10 +7,10 @@
 /* Computing the Delta J_tidal,i */
 /* Input: resonance mode vector for inner and outer body, number of modes to sum over (nl), orbital data (apo, peri, incline), mass and spin of BH, and resonance angle */
 /* Output: Delta_J_tidal_{r, \theta, \phi} */
-double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *Delta_J_r_tidal, double *Delta_J_theta_tidal, double *Delta_J_phi_tidal){
+double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J_r_tidal, double *Delta_J_theta_tidal, double *Delta_J_phi_tidal){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
 	int i_n_outer, i_k_outer, i_m_outer;
-	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer, info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
+	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer[3], info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
 	double term, another_term, last_term;
 	double Gamma[2], sgn_sGamma, tot_Gamma, mu_inner = 1, mu_outer = 1;
 	double omega_nkm, omegagw_inner, omegagw_outer;
@@ -22,7 +22,7 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 
 	/* Converting apocenter, pericenter, and inclination angle into frequencies for: */
 	/* Inner body */
-	ra_rp_I2EQL(apo, EQL_inner, rp, I, astar, M);
+	ra_rp_I2EQL(ra_inner, EQL_inner, rp_inner, I_inner, astar, M);
 	CKerr_EQL2J(EQL_inner, J_inner, M, astar, NULL);
 	CKerr_Minverse(J_inner, Minv_inner, M, astar);
 	CKerr_Minv2Omega(Minv_inner, Omega_inner);
@@ -30,7 +30,14 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 	//printf(" %lg %lg %lg \n", Minv_inner[3], Minv_inner[4], Minv_inner[5]);
 	//printf(" %lg %lg %lg \n", Minv_inner[6], Minv_inner[7], Minv_inner[8]);
 
+	/* Converting apocenter, pericenter, and inclination angle into frequencies for: */
+	/* Outer body */
+	ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
+	CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+	CKerr_Minverse(J_outer, Minv_outer, M, astar);
+	CKerr_Minv2Omega(Minv_outer, Omega_outer);
 
+	#if 0
 	/* Outer Body */
 	CKerr_FindEQL_IRCirc(0, radius_outer, EQL_outer, M, astar);
 	CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
@@ -38,15 +45,15 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 	//printf("Minv for outer body = \n %lg %lg %lg \n", Minv_outer[0], Minv_outer[1], Minv_outer[2]);
 	//printf(" %lg %lg %lg \n", Minv_outer[3], Minv_outer[4], Minv_outer[5]);
 	//printf(" %lg %lg %lg \n", Minv_outer[6], Minv_outer[7], Minv_outer[8]);
-
-	/* Torus origin for inner body orbit */
-	CKerr_TorusOrigin(J_inner, xuorig_inner, M, astar);
-	//CKerr_TorusOrigin(J_outer, xuorig_outer, M, astar);
-
 	/* Torus origin for outer body orbit */
 	CKerr_getData_CircEq(M, astar, radius_outer, info_outer);
 	xuorig_outer[0] = radius_outer; xuorig_outer[1] = M_PI/2.; xuorig_outer[2] = 0.;
   	xuorig_outer[3] = 0.; xuorig_outer[4] = 0.;      xuorig_outer[5] = info_outer[0];
+	#endif
+
+	/* Torus origin for inner body orbit */
+	CKerr_TorusOrigin(J_inner, xuorig_inner, M, astar);
+	CKerr_TorusOrigin(J_outer, xuorig_outer, M, astar);
 
 
   	E0_inner = (double*)malloc((size_t)(nl*10*sizeof(double)));
@@ -59,7 +66,7 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 
 	rH = M + sqrt(M*M - astar*astar*M*M);
 	epsilon = sqrt(M*M - astar*astar*M*M) / (4 * M * rH);
-	omega_dot(nl, n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, apo, rp, I, astar, M, radius_outer, 1e-4, Gamma);
+	omega_dot(nl, n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, astar, M, radius_outer, 1.0e-4, Gamma);
 	tot_Gamma = Gamma[0] * mu_inner + Gamma[1] * mu_outer;
 	//sgn_Gamma = tot_Gamma/fabs(tot_Gamma);
 	//printf("Gamma and its sign are: %lg %lg \n", tot_Gamma, sgn_Gamma);
