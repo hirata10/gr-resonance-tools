@@ -35,10 +35,10 @@ int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, doubl
 }
 
 /* This takes a step size (dt), an inital J_inital components, and return arrays of size n for each J components at each time step */
-void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final){
+void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, double mu_body, double M, double astar){
     int i;
     int nl = 1, nmax = 1, kmax = 1, mmax = 1;
-    double M = 1, astar = 0.5;
+    //double M = 1, astar = 0.5;
     double k1r, k2r, k3r, k4r;
     double k1theta, k2theta, k3theta, k4theta;
     double k1phi, k2phi, k3phi, k4phi;
@@ -65,6 +65,7 @@ void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini,
     /* Define time step array, starts at inital time (input) */
     t = (double *)malloc(sizeof(double) * (n));
     t[0] = t0;
+    dt = dt * mu_body;
 
     /*
     J_dot_r = (double *)malloc(sizeof(double) * n);
@@ -125,7 +126,7 @@ void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini,
         J_theta_final[i] = J_theta_final[i-1] + (k1theta + 2. * k2theta + 2. * k3theta + k4theta) / 6.;
         J_phi_final[i] = J_phi_final[i-1] + (k1phi + 2. * k2phi + 2. * k3phi + k4phi) / 6.;
         //printf("%i\t %g\t \n", i, x[i]);
-		printf("%i \t%f \t%e \t%e \t%e \t%e \t %e \n", i-1, t[i-1], J_r_final[i-1], J_theta_final[i-1], J_phi_final[i-1], k1r, k1theta);
+		printf("%i \t%f \t%e \t%e \t%e \t%e \t %e \n", i, t[i], J_r_final[i], J_theta_final[i], J_phi_final[i]);
     }
     free((char*)t);
     #if 0

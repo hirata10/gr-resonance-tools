@@ -84,3 +84,12 @@ int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_r
 /* Delta_J.c computes the change in J due to external field (Eq. (12) in arXiv:1905.00030v2) */
 
 double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J_r_tidal, double *Delta_J_theta_tidal, double *Delta_J_phi_tidal);
+
+/* J2J_dot.c computes the evolution of the J_{i}'s for a specific orbiting body over a some time interval */
+
+int J2Jdot(int nl, int nmax, int kmax, int mmax, double *J_initial, double *J_dot_sf, double M, double astar);
+
+int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_dot_r, double *J_dot_theta, double *J_dot_phi, double M, double astar);
+
+void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, double mu_body, double M, double astar);
+

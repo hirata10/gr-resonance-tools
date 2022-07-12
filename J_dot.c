@@ -49,8 +49,8 @@ int J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp,
 		//printf("Minv for generic case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
 		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
 		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
-		printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
-		printf("Omega for generic is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+		//printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
+		//printf("Omega for generic is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
 
 		/* Torus origin for inner body orbit */
 		CKerr_TorusOrigin(J, xuorig, M, astar);
