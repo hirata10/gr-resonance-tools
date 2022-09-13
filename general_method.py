@@ -93,10 +93,10 @@ while i < max:
       continue
 
    #Check 3: r_peri_outer > 3 r_apo_inner
-   anc_outer_01 = ckerr_eql2j(list(EQL_outer_01), M, 0.1)
-   anc_inner_01 = ckerr_eql2j(list(EQL_outer_01), M, 0.1)
-   anc_outer_09 = ckerr_eql2j(list(EQL_outer_09), M, 0.9)
-   anc_inner_09 = ckerr_eql2j(list(EQL_outer_09), M, 0.9)
+   _, _, anc_outer_01 = ckerr_eql2j(list(EQL_outer_01), M, 0.1)
+   _, _, anc_inner_01 = ckerr_eql2j(list(EQL_outer_01), M, 0.1)
+   _, _, anc_outer_09 = ckerr_eql2j(list(EQL_outer_09), M, 0.9)
+   _, _, anc_inner_09 = ckerr_eql2j(list(EQL_outer_09), M, 0.9)
    if anc_outer_01[2] < 3*anc_inner_01[1]:
       if anc_outer_09[2] < 3*anc_inner_09[1]:
          print("Check 3 failed!")
