@@ -5,9 +5,9 @@ import numpy as np
 
 
 # The documentation here covers primarily things concerning data management.
-# If you were looking for math documentation, see "CKerr.h"
+# If you were looking forwhat the functions are actually doing, see "CKerr.h"
 
-# Depends on libc.stdlib for everything and numpy for just CKerr_SbCoefN
+# Depends on libc.stdlib and numpy
 
 
 
@@ -16,7 +16,7 @@ import numpy as np
 
 
 
-#Inputs: an array of 3 doubles (arrJ), a double (M), a double from 0 to 1 (astar)
+#Inputs: a list of 3 doubles (arrJ), a double (M), a double from 0 to 1 (astar)
 #Outputs: an array of 3 doubles (EQL), checker int (result)
 #int CKerr_J2EQL(double *J, double *EQL, double M, double astar);
 
@@ -32,7 +32,7 @@ def ckerr_j2eql(arrJ, M, astar):
     try:
         result = gr_wrapper.CKerr_J2EQL(arrJ_cpy, EQL, <double> M, <double> astar)
     finally:
-        output = [EQL[i] for i in range(3)]
+        output = np.array([EQL[i] for i in range(3)])
         free(EQL)
         free(arrJ_cpy)
 
@@ -42,7 +42,10 @@ def ckerr_j2eql(arrJ, M, astar):
 
 
 
-#Inputs: an array of 3 doubles (arrEQL), a double (M), a double from 0 to 1 (astar)
+
+
+
+#Inputs: a list of 3 doubles (arrEQL), a double (M), a double from 0 to 1 (astar)
 #Outputs: an array of 3 doubles (J), an array of 3 doubles (ancilliary), checker int (result)
 #int CKerr_EQL2J(double *EQL, double *J, double M, double astar, double *ancillary);
 def ckerr_eql2j(arrEQL, M, astar):
@@ -58,8 +61,8 @@ def ckerr_eql2j(arrEQL, M, astar):
     try:
         result = gr_wrapper.CKerr_EQL2J(arrEQL_cpy, J, <double> M, <double> astar, ancilliary)
     finally:
-        output1 = [J[i] for i in range(3)]
-        output2 = [ancilliary[i] for i in range(3)]
+        output1 = np.array([J[i] for i in range(3)])
+        output2 = np.array([ancilliary[i] for i in range(3)])
         free(J)
         free(ancilliary)
         free(arrEQL_cpy)
@@ -71,7 +74,8 @@ def ckerr_eql2j(arrEQL, M, astar):
 
 
 
-#Inputs: an array of 3 doubles (arrJ), a double (M), a double from 0 to 1 (astar)
+
+#Inputs: a list of 3 doubles (arrJ), a double (M), a double from 0 to 1 (astar)
 #Outputs: an array of 9 doubles (Minv), checker int (result)
 #int CKerr_Minverse(double *J, double *Minv, double M, double astar);
 def ckerr_minverse(arrJ, M, astar):
@@ -86,7 +90,7 @@ def ckerr_minverse(arrJ, M, astar):
     try:
         result = gr_wrapper.CKerr_Minverse(arrJ_cpy, Minv, <double> M, <double> astar)
     finally:
-        output = [Minv[i] for i in range(9)]
+        output = np.array([Minv[i] for i in range(9)])
         free(Minv)
         free(arrJ_cpy)
     
@@ -94,7 +98,16 @@ def ckerr_minverse(arrJ, M, astar):
 
 
 
-#Inputs: an array of 9 doubles (arrMinv)
+
+
+
+
+
+
+
+
+
+#Inputs: a list of 9 doubles (arrMinv)
 #Outputs: an array of 3 doubles (Omega)
 # void CKerr_Minv2Omega(double *Minv, double *Omega);
 def ckerr_minv2omega(arrMinv):
@@ -109,7 +122,7 @@ def ckerr_minv2omega(arrMinv):
     try:
         gr_wrapper.CKerr_Minv2Omega(arrMinv_cpy, Omega)
     finally:
-        output = [Omega[i] for i in range(3)]
+        output = np.array([Omega[i] for i in range(3)])
         free(Omega)
         free(arrMinv_cpy)
 
@@ -120,8 +133,9 @@ def ckerr_minv2omega(arrMinv):
 
 
 
+
 #Inputs: a double (Q), a double (L), a double (M), a double from 0 to 1 (astar)
-#Outputs: an array of 9 doubles (Minv), a double (emin)
+#Outputs: a double (emin)
 #double CKerr_Emin(double Q, double L, double M, double astar)
 def ckerr_emin(Q, L, M, astar):
 
@@ -133,7 +147,7 @@ def ckerr_emin(Q, L, M, astar):
 
 
 
-#Inputs: a double (Q), a double (L), a double (M), a double from 0 to 1 (astar), an array of 1 double (arrJrmax)
+#Inputs: a double (Q), a double (L), a double (M), a double from 0 to 1 (astar), a list of 1 double (arrJrmax)
 #Outputs: a double (emax)
 #double CKerr_Emax(double Q, double L, double M, double astar, double *Jrmax)
 def ckerr_emax(Q, L, M, astar, arrJrmax):
@@ -154,6 +168,9 @@ def ckerr_emax(Q, L, M, astar, arrJrmax):
 
 
 
+
+
+
 #Inputs: a double (Q), a double (L), a double (Jr), a double (M), a double from 0 to 1 (astar)
 #Outputs: an array of 1 double (energy_value) (note that it returns Jtheta if unsuccesful)
 #double CKerr_QLJr2E(double Q, double L, double Jr, double M, double astar, double *Jtheta)
@@ -164,7 +181,7 @@ def ckerr_qljr2e(Q, L, Jr, M, astar):
     try:
         energy_value = gr_wrapper.CKerr_QLJr2E(<double> Q, <double> L, <double> Jr, <double> M, <double> astar, Jtheta)
     finally:
-        output = [Jtheta[i] for i in range(1)]
+        output = np.array([Jtheta[i] for i in range(1)])
         free(Jtheta)
 
     return energy_value, output
@@ -172,7 +189,22 @@ def ckerr_qljr2e(Q, L, Jr, M, astar):
 
 
 
-#Inputs: an array of 3 doubles (arrJ), an array of 3 double (arrEQL), a double (M), a double from 0 to 1 (astar)
+
+
+
+
+
+
+#Go from there!
+
+
+
+
+
+
+
+
+#Inputs: a list of 3 doubles (arrJ), a list of 3 double (arrEQL), a double (M), a double from 0 to 1 (astar)
 #Outputs: an array of 3 doubles (dEdJ), an array of 3 doubles (dQdJ), checker int (result)
 #int CKerr_dEQdJ(double *J, double *EQL, double *dEdJ, double *dQdJ, double M, double astar)
 def ckerr_deqdj(arrJ, arrEQL, M, astar):
@@ -191,8 +223,8 @@ def ckerr_deqdj(arrJ, arrEQL, M, astar):
     try:
         result = gr_wrapper.CKerr_dEQdJ(arrJ_cpy, arrEQL_cpy, dEdJ, dQdJ, <double> M, <double> astar)
     finally:
-        output1 = [dEdJ[i] for i in range(3)]
-        output2 = [dQdJ[i] for i in range(3)]
+        output1 = np.array([dEdJ[i] for i in range(3)])
+        output2 = np.array([dQdJ[i] for i in range(3)])
         free(arrJ_cpy)
         free(arrEQL_cpy)
         free(dEdJ)
@@ -203,7 +235,7 @@ def ckerr_deqdj(arrJ, arrEQL, M, astar):
 
 
 
-#Inputs: an array of 3 doubles (arrJ), a double (M), a double from 0 to 1 (astar)
+#Inputs: a list of 3 doubles (arrJ), a double (M), a double from 0 to 1 (astar)
 #Outputs: an array of 9 doubles (Minv), checker int (result)
 #int CKerr_MinverseND(double *J, double *Minv, double M, double astar)
 def ckerr_minversend(arrJ, M, astar):
@@ -218,7 +250,7 @@ def ckerr_minversend(arrJ, M, astar):
     try:
         result = gr_wrapper.CKerr_MinverseND(arrJ_cpy, Minv, <double> M, <double> astar)
     finally:
-        output = [Minv[i] for i in range(9)]
+        output = np.array([Minv[i] for i in range(9)])
         free(Minv)
         free(arrJ_cpy)
 
@@ -227,7 +259,7 @@ def ckerr_minversend(arrJ, M, astar):
 
 
 
-#Inputs: an array of 3 doubles (arrJ), a double (M), a double from 0 to 1 (astar)
+#Inputs: a list of 3 doubles (arrJ), a double (M), a double from 0 to 1 (astar)
 #Outputs: an array of 6 doubles (xu), checker int (result)
 #int CKerr_TorusOrigin(double *J, double *xu, double M, double astar)
 def ckerr_torusorigin(arrJ, M, astar):
@@ -241,7 +273,7 @@ def ckerr_torusorigin(arrJ, M, astar):
     try:
         result = gr_wrapper.CKerr_TorusOrigin(arrJ_cpy, xu, <double> M, <double> astar)
     finally:
-        output = [xu[i] for i in range(6)]
+        output = np.array([xu[i] for i in range(6)])
         free(xu)
         free(arrJ_cpy)
 
@@ -251,7 +283,7 @@ def ckerr_torusorigin(arrJ, M, astar):
 
 
 
-#Inputs: an array of 6 doubles (arrxu), a double (M), a double from 0 to 1 (astar)
+#Inputs: a list of 6 doubles (arrxu), a double (M), a double from 0 to 1 (astar)
 #Outputs: an array of 6 doubles (xudot_H), an array of 5 doubles (xudot_Q)
 #void CKerr_FlowVectors(double *xu, double *xudot_H, double *xudot_Q, double M, double astar)
 def ckerr_flowvectors(arrxu, M, astar):
@@ -267,8 +299,8 @@ def ckerr_flowvectors(arrxu, M, astar):
     try:
         gr_wrapper.CKerr_FlowVectors(arrxu_cpy, xudot_H, xudot_Q, <double> M, <double> astar)
     finally:
-        output1 = [xudot_H[i] for i in range(6)]
-        output2 = [xudot_Q[i] for i in range(5)]
+        output1 = np.array([xudot_H[i] for i in range(6)])
+        output2 = np.array([xudot_Q[i] for i in range(5)])
         free(xudot_H)
         free(xudot_Q)
         free(arrxu_cpy)
@@ -277,8 +309,8 @@ def ckerr_flowvectors(arrxu, M, astar):
 
 
 
-#Inputs: an array of 6 doubles (arrxu), an array of 9 double (arrMinv), a double (M), a double from 0 to 1 (astar)
-#Outputs: an array of 6 doubles (xudot_r), an array of 6 doubles (xudot_theta)
+#Inputs: a list of 6 doubles (arrxu), a list of 9 double (arrMinv), a double (M), a double from 0 to 1 (astar)
+#Outputs: an array of 6 doubles (xudot_r), a list of 6 doubles (xudot_theta)
 #void CKerr_AngleFlowVectors(double *xu, double *xudot_r, double *xudot_theta, double *Minv, double M, double astar)
 def ckerr_angleflowvectors(arrxu, arrMinv, M, astar):
     assert len(arrxu) == 6
@@ -298,8 +330,8 @@ def ckerr_angleflowvectors(arrxu, arrMinv, M, astar):
     try:
         gr_wrapper.CKerr_AngleFlowVectors(arrxu_cpy, xudot_r, xudot_theta, arrMinv_cpy, <double> M, <double> astar)
     finally:
-        output1 = [xudot_r[i] for i in range(6)]
-        output2 = [xudot_theta[i] for i in range(6)]
+        output1 = np.array([xudot_r[i] for i in range(6)])
+        output2 = np.array([xudot_theta[i] for i in range(6)])
         free(xudot_r)
         free(xudot_theta)
         free(arrxu_cpy)
@@ -322,7 +354,7 @@ def ckerr_getdata_circeq(M, astar, r):
     try:
         result = gr_wrapper.CKerr_getData_CircEq(<double> M, <double> astar, <double> r, info)
     finally:
-        output = [info[i] for i in range(7)]
+        output = np.array([info[i] for i in range(7)])
         free(info)
         
     return result, output
@@ -351,7 +383,7 @@ def ckerr_findeql_irr(Ic, rp, ra, M, astar):
     try:
         result = gr_wrapper.CKerr_FindEQL_IRR(<double> Ic, <double> rp, <double> ra, EQL, <double> M, <double> astar)
     finally:
-        output = [EQL[i] for i in range(3)]
+        output = np.array([EQL[i] for i in range(3)])
         free(EQL)
         
     return result, output
@@ -368,7 +400,7 @@ def ckerr_findeql_ircirc(Ic, r, M, astar):
     try:
         result = gr_wrapper.CKerr_FindEQL_IRCirc(<double> Ic, <double> r, EQL, <double> M, <double> astar)
     finally:
-        output = [EQL[i] for i in range(3)]
+        output = np.array([EQL[i] for i in range(3)])
         free(EQL)
         
     return result, output
@@ -385,7 +417,7 @@ def ckerr_findrescirc(fratio, Ic, M, astar):
     try:
         result = gr_wrapper.CKerr_FindResCirc(<int> fratio, <double> Ic, J, <double> M, <double> astar)
     finally:
-        output = [J[i] for i in range(3)]
+        output = np.array([J[i] for i in range(3)])
         free(J)
         
     return result, output
@@ -433,8 +465,8 @@ def ckerr_yslm(theta, l, s):
     try:
         gr_wrapper.CKerr_Yslm(<double> theta, <long> l, <long> s, Y, dYdtheta)
     finally:
-        output1 = [Y[i] for i in range(2 * l + 1)]
-        output2 = [dYdtheta[i] for i in range(2 * l + 1)]
+        output1 = np.array([Y[i] for i in range(2 * l + 1)])
+        output2 = np.array([dYdtheta[i] for i in range(2 * l + 1)])
         free(Y)
         free(dYdtheta)
 
@@ -458,8 +490,8 @@ def ckerr_sbcoef(s, m, nb, chi, errtol):
     try:
         eigenvec_num = gr_wrapper.CKerr_SbCoef(<long> s, <long> m, <long> nb, E, b, <double> chi, <double> errtol)
     finally:
-        output1 = [E[i] for i in range(nb)]
-        output2 = [b[i] for i in range(nb)]
+        output1 = np.array([E[i] for i in range(nb)])
+        output2 = np.array([b[i] for i in range(nb)])
         free(E)
         free(b)
 
@@ -473,7 +505,7 @@ def ckerr_sbcoef(s, m, nb, chi, errtol):
 
 
 #Inputs: a long (s), a long (m), a long (nu), a double (chi), a double (errtol) 
-#Outputs: an array of nu doubles (E), a long (nb), a double an numpy array of nb*nb doubles (output_array)
+#Outputs: an array of nu doubles (E), a long (nb), an array of nb*nb doubles (output_array)
 #long CKerr_SbCoefN(long s, long m, long nu, double *E, double **b, double chi, double errtol)
 def ckerr_sbcoefn(s, m, nu, arrE, chi, errtol):
 
@@ -488,7 +520,7 @@ def ckerr_sbcoefn(s, m, nu, arrE, chi, errtol):
         output_array = np.zeros((nb*nb))
         for i in range(nb*nb):
             output_array[i] = my_b[0][i]
-        output = [arrE_cpy[i] for i in range(nu)]
+        output = np.array([arrE_cpy[i] for i in range(nu)])
         free(my_b)
         free(my_b[0])
         free(arrE_cpy)
@@ -506,7 +538,7 @@ def ckerr_sbcoefn(s, m, nu, arrE, chi, errtol):
 
 
 
-#Inputs: a double (theta), a long (s), a long (m), a long (nu), a double (chi), a double (errtol), an array of nu*nb doubles (arrb)
+#Inputs: a double (theta), a long (s), a long (m), a long (nu), a double (chi), a double (errtol), a list of nu*nb doubles (arrb)
 #Outputs: an array of nu doubles (S), an array of nu doubles (dSdtheta)
 #void CKerr_SpheroidalYSLM(double theta, long s, long m, long nu, long nb, double *b, double *S, double *dSdtheta)
 def ckerr_spheroidalyslm(theta, s, m, nu, nb, arrb):
@@ -520,8 +552,8 @@ def ckerr_spheroidalyslm(theta, s, m, nu, nb, arrb):
     try:
         gr_wrapper.CKerr_SpheroidalYSLM(<double> theta, <long> s, <long> m, <long> nu, <long> nb, arrb_cpy, S, dSdtheta)
     finally:
-        output1 = [S[i] for i in range(nu)]
-        output2 = [dSdtheta[i] for i in range(nu)]
+        output1 = np.array([S[i] for i in range(nu)])
+        output2 = np.array([dSdtheta[i] for i in range(nu)])
         free(arrb_cpy)
         free(S)
         free(dSdtheta)
@@ -558,7 +590,7 @@ def ckerr_rstar2r(rstar, M, astar):
     try:
         result = gr_wrapper.CKerr_rstar2r(<double> rstar, <double> M, <double> astar, Delta)
     finally:
-        output = [Delta[i] for i in range(1024)]
+        output = np.array([Delta[i] for i in range(1024)])
         free(Delta)
 
     return result, output
@@ -573,7 +605,7 @@ def ckerr_rstar2r(rstar, M, astar):
 
 
 #Inputs: a double (rstar), a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm)
-#Outputs: an array of 1 double (ReV), an array of 1 double (ImV)
+#Outputs: a list of 1 double (ReV), a list of 1 double (ImV)
 #void CKerr_Vr(double rstar, double M, double astar, double omega, long mm, double eigenlm, double *ReV, double *ImV)
 def ckerr_vr(rstar, M, astar, omega, mm, eigenlm):
 
@@ -582,8 +614,8 @@ def ckerr_vr(rstar, M, astar, omega, mm, eigenlm):
     try:
         gr_wrapper.CKerr_Vr(<double> rstar, <double> M, <double> astar, <double> omega, <long> mm, <double> eigenlm, ReV, ImV)
     finally:
-        output1 = [ReV[i] for i in range(1)]
-        output2 = [ImV[i] for i in range(1)]
+        output1 = np.array([ReV[i] for i in range(1)])
+        output2 = np.array([ImV[i] for i in range(1)])
         free(ReV)
         free(ImV)
 
@@ -604,7 +636,7 @@ def ckerr_ingoingr1(rf, M, astar, omega, mm, eigenlm):
     try:
         gr_wrapper.CKerr_IngoingR1(<double> rf, <double> M, <double> astar, <double> omega, <long> mm, <double> eigenlm, R1)
     finally:
-        output = [R1[i] for i in range(1)]
+        output = np.array([R1[i] for i in range(1)])
         free(R1)
 
     return output
@@ -615,7 +647,7 @@ def ckerr_ingoingr1(rf, M, astar, omega, mm, eigenlm):
 
 
 
-#Inputs: an array of 2 doubles (arr_r), an array of 4 doubles (arr_RR), a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm)
+#Inputs: a list of 2 doubles (arr_r), a list of 4 doubles (arr_RR), a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm)
 #Outputs: an array of 2 doubls (d2Rdr2)
 #void CKerr_Radial2nd(double *r, double M, double astar, double omega, long mm, double eigenlm, double *RR, double *d2Rdr2)
 def ckerr_radial2nd(arr_r, arr_RR, M, astar, omega, mm, eigenlm):
@@ -634,7 +666,7 @@ def ckerr_radial2nd(arr_r, arr_RR, M, astar, omega, mm, eigenlm):
     try:
         gr_wrapper.CKerr_Radial2nd(arr_r_cpy, <double> M, <double> astar, <double> omega, <long> mm, <double> eigenlm, arr_RR_cpy, d2Rdr2)
     finally:
-        output = [d2Rdr2[i] for i in range(2)]
+        output = np.array([d2Rdr2[i] for i in range(2)])
         free(arr_r_cpy)
         free(arr_RR_cpy)
         free(d2Rdr2)
@@ -646,7 +678,7 @@ def ckerr_radial2nd(arr_r, arr_RR, M, astar, omega, mm, eigenlm):
 
 
 
-#Inputs: an array of 2 doubles (arr_r), an array of 2 doubles (arr_h), a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm), an array of 4 doubles (RR_old)
+#Inputs: a list of 2 doubles (arr_r), a list of 2 doubles (arr_h), a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm), a list of 4 doubles (RR_old)
 #Outputs: an array of 4 doubles (RR_new)
 #void CKerr_RadialRKStep(double *r, double *h, double M, double astar, double omega, long mm, double eigenlm, double *RR_old, double *RR_new)
 def ckerr_radialrkstep(arr_r, arr_h, M, astar, omega, mm, eigenlm, arr_RR_old):
@@ -667,7 +699,7 @@ def ckerr_radialrkstep(arr_r, arr_h, M, astar, omega, mm, eigenlm, arr_RR_old):
     try:
         gr_wrapper.CKerr_RadialRKStep(arr_r_cpy, arr_h_cpy, <double> M, <double> astar, <double> omega, <long> mm, <double> eigenlm, arr_RR_old_cpy, RR_new)
     finally:
-        output = [RR_new[i] for i in range(4)]
+        output = np.array([RR_new[i] for i in range(4)])
         free(arr_r_cpy)
         free(arr_h_cpy)
         free(arr_RR_old_cpy)
@@ -683,7 +715,7 @@ def ckerr_radialrkstep(arr_r, arr_h, M, astar, omega, mm, eigenlm, arr_RR_old):
 
 
 
-#Inputs: an array of 2 doubles (arr_r), an array of 2 doubles (arr_h), a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm), a long w/ >= 2 (N)
+#Inputs: a list of 2 doubles (arr_r), a list of 2 doubles (arr_h), a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm), a long w/ >= 2 (N)
 #Outputs: an array of 4 doubles (RR_new)
 #void CKerr_RadialMidptStep(double *r, double *h, double M, double astar, double omega, long mm, double eigenlm, double *RR_old, double *RR_new, long N) {
 def ckerr_radialmidptstep(arr_r, arr_h, M, astar, omega, mm, eigenlm, arr_RR_old, N):
@@ -704,7 +736,7 @@ def ckerr_radialmidptstep(arr_r, arr_h, M, astar, omega, mm, eigenlm, arr_RR_old
     try:
         gr_wrapper.CKerr_RadialMidptStep(arr_r_cpy, arr_h_cpy, <double> M, <double> astar, <double> omega, <long> mm, <double> eigenlm, arr_RR_old_cpy, RR_new, <long> N)
     finally:
-        output = [RR_new[i] for i in range(4)]
+        output = np.array([RR_new[i] for i in range(4)])
         free(arr_r_cpy)
         free(arr_h_cpy)
         free(arr_RR_old_cpy)
@@ -719,7 +751,7 @@ def ckerr_radialmidptstep(arr_r, arr_h, M, astar, omega, mm, eigenlm, arr_RR_old
 
 
 
-#Inputs: an array of 2 doubles (arr_r), an array of 4 doubles (arr_RR), a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm), an array of 4 doubles (arr_RR_old)
+#Inputs: a list of 2 doubles (arr_r), a list of 4 doubles (arr_RR), a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm), a list of 4 doubles (arr_RR_old)
 #Outputs: an array of 4 doubles (RR_new)
 #void CKerr_RadialMidptExtrStep(double *r, double *h, double M, double astar, double omega, long mm, double eigenlm, double *RR_old, double *RR_new)
 def ckerr_radialmidptextrstep(arr_r, arr_h, M, astar, omega, mm, eigenlm, arr_RR_old):
@@ -740,7 +772,7 @@ def ckerr_radialmidptextrstep(arr_r, arr_h, M, astar, omega, mm, eigenlm, arr_RR
     try:
         gr_wrapper.CKerr_RadialMidptExtrStep(arr_r_cpy, arr_h_cpy, <double> M, <double> astar, <double> omega, <long> mm, <double> eigenlm, arr_RR_old_cpy, RR_new)
     finally:
-        output = [RR_new[i] for i in range(4)]
+        output = np.array([RR_new[i] for i in range(4)])
         free(arr_r_cpy)
         free(arr_h_cpy)
         free(arr_RR_old_cpy)
@@ -765,7 +797,7 @@ def ckerr_outgoingr3(rf, M, astar, omega, mm, eigenlm):
     try:
         gr_wrapper.CKerr_OutgoingR3(<double> rf, <double> M, <double> astar, <double> omega, <long> mm, <double> eigenlm, R3)
     finally:
-        output = [R3[i] for i in range(4)]
+        output = np.array([R3[i] for i in range(4)])
         free(R3)
 
     return output
@@ -779,7 +811,7 @@ def ckerr_outgoingr3(rf, M, astar, omega, mm, eigenlm):
 
 
 
-#Inputs: an array of 2 doubles (arr_r), an array of 2 doubles (arr_RR), a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm), an array of 4 doubles (arr_RR_old), a long (N)
+#Inputs: a list of 2 doubles (arr_r), a list of 2 doubles (arr_RR), a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm), a list of 4 doubles (arr_RR_old), a long (N)
 #Outputs: an array of 4 doubles (RR_new)
 #void CKerr_RadialStepMany(double *r_old, double *r_new, double M, double astar, double omega, long mm, double eigenlm, double *RR_old, double *RR_new, long Nstep)
 def ckerr_radialstepmany(arr_r_old, arr_r_new, M, astar, omega, mm, eigenlm, arr_RR_old, Nstep):
@@ -800,7 +832,7 @@ def ckerr_radialstepmany(arr_r_old, arr_r_new, M, astar, omega, mm, eigenlm, arr
     try:
         gr_wrapper.CKerr_RadialStepMany(arr_r_old_cpy, arr_r_new_cpy, <double> M, <double> astar, <double> omega, <long> mm, <double> eigenlm, arr_RR_old_cpy, RR_new, <long> Nstep)
     finally:
-        output = [RR_new[i] for i in range(4)]
+        output = np.array([RR_new[i] for i in range(4)])
         free(arr_r_old_cpy)
         free(arr_r_new_cpy)
         free(arr_RR_old_cpy)
@@ -815,7 +847,7 @@ def ckerr_radialstepmany(arr_r_old, arr_r_new, M, astar, omega, mm, eigenlm, arr
 
 
 #Inputs: a double (M), a double from 0 to 1 (astar), a double (omega), a long (mm), a double (eigenlm)
-#Outputs: an array of 16 doubles (cscat), an array of 4 doubles (aux)
+#Outputs: an array of 16 doubles (cscat), a list of 4 doubles (aux)
 #void CKerr_GWScatMatrix(double M, double astar, double omega, long mm, double eigenlm, double *cscat, double *aux) 
 def ckerr_gwscatmatrix(M, astar, omega, mm, eigenlm):
 
@@ -824,8 +856,8 @@ def ckerr_gwscatmatrix(M, astar, omega, mm, eigenlm):
     try:
         gr_wrapper.CKerr_GWScatMatrix(<double> M, <double> astar, <double> omega, <long> mm, <double> eigenlm, cscat, aux)
     finally:
-        output1 = [cscat[i] for i in range(16)]
-        output2 = [aux[i] for i in range(4)]
+        output1 = np.array([cscat[i] for i in range(16)])
+        output2 = np.array([aux[i] for i in range(4)])
         free(cscat)
         free(aux)
 
@@ -836,76 +868,7 @@ def ckerr_gwscatmatrix(M, astar, omega, mm, eigenlm):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#Inputs: an array of 6 doubles (arr_xu), a double (M), a double from 0 to 1 (astar)
+#Inputs: a list of 6 doubles (arr_xu), a double (M), a double from 0 to 1 (astar)
 #Outputs: an array of 6 doubles (T)
 #void CKerr_xu2intT(double *xu, double *T, double M, double astar)
 def ckerr_xu2intt(arrxu, M, astar):
@@ -920,7 +883,7 @@ def ckerr_xu2intt(arrxu, M, astar):
     try:
         gr_wrapper.CKerr_xu2intT(arrxu_cpy, T, <double> M, <double> astar)
     finally:
-        output = [T[i] for i in range(6)]
+        output = np.array([T[i] for i in range(6)])
         free(T)
         free(arrxu_cpy)
 
@@ -929,7 +892,7 @@ def ckerr_xu2intt(arrxu, M, astar):
 
 
 
-#Inputs: an array of 9 doubles (arrMinv), an array of 6 (arrxuorig), a double (M), a double from 0 to 1 (astar), a long (qr), a long (qt), a long (mm), a long (Nr), a long (Nt), a long (nl)
+#Inputs: a list of 9 doubles (arrMinv), a list of 6 (arrxuorig), a double (M), a double from 0 to 1 (astar), a long (qr), a long (qt), a long (mm), a long (Nr), a long (Nt), a long (nl)
 #Outputs: an array of 4*nl doubles (Coef), an array of 1 double (omega), an array of nl doubles (E), checker int (result)
 #int CKerr_RadialFunc(double *Minv, double *xuorig, double M, double astar, long qr, long qt, long mm, long Nr, long Nt, long nl, double *Coef, double *omega, double *E)
 def ckerr_radialfunc(arrMinv, arrxuorig, M, astar, qr, qt, mm, Nr, Nt, nl):
@@ -951,9 +914,9 @@ def ckerr_radialfunc(arrMinv, arrxuorig, M, astar, qr, qt, mm, Nr, Nt, nl):
     try:
         result = gr_wrapper.CKerr_RadialFunc(arrMinv_cpy, arrxuorig_cpy, <double> M, <double> astar, <long> qr, <long> qt, <long> mm, <long> Nr, <long> Nt, <long> nl, Coef, omega, E)
     finally:
-        output1 = [Coef[i] for i in range(4*nl)]
-        output2 = [omega[i] for i in range(1)]
-        output3 = [E[i] for i in range(nl)]
+        output1 = np.array([Coef[i] for i in range(4*nl)])
+        output2 = np.array([omega[i] for i in range(1)])
+        output3 = np.array([E[i] for i in range(nl)])
         free(Coef)
         free(omega)
         free(E)
@@ -979,7 +942,7 @@ def ckerr_horizonfluxnorm(M, astar, omega, mm, eigenlm):
 
 
 
-#Inputs: a double (M), a double from 0 to 1 (astar), a long (qr), a long (qt), a long (mm), a double (nl), an array of 3 doubles (arrE), an array of 4*nl doubles (arrcoef)
+#Inputs: a double (M), a double from 0 to 1 (astar), a long (qr), a long (qt), a long (mm), a double (nl), a list of 3 doubles (arrE), a list of 4*nl doubles (arrcoef)
 #Outputs: an array of nl doubles (QuantaHor), an array of nl doubles (QuantaInf)
 #void CKerr_QuantaEmitted(double M, double astar, long qr, long qt, long mm, long nl, double *E, double *Coef, double omega, double *QuantaInf, double *QuantaHor);
 def ckerr_quantaemitted(M, astar, qr, qt, mm, nl, arrE, arrcoef, omega):
@@ -997,8 +960,8 @@ def ckerr_quantaemitted(M, astar, qr, qt, mm, nl, arrE, arrcoef, omega):
     try:
         gr_wrapper.CKerr_QuantaEmitted(<double> M, <double> astar, <long> qr, <long> qt, <long> mm, <long> nl, arrE_cpy, arrcoef_cpy, <double> omega, QuantaInf, QuantaHor)
     finally:
-        output1 = [QuantaHor[i] for i in range(nl)]
-        output2 = [QuantaInf[i] for i in range(nl)]
+        output1 = np.array([QuantaHor[i] for i in range(nl)])
+        output2 = np.array([QuantaInf[i] for i in range(nl)])
         free(QuantaHor)
         free(QuantaInf)
         free(arrE_cpy)
@@ -1023,7 +986,7 @@ def ckerr_lindbladresonancestrength(M, astar, r0, mm, nl, jr1):
     try:
         result = gr_wrapper.CKerr_LindbladResonanceStrength(<double> M, <double> astar, <double> r0, <long> mm, <long> nl, <double> jr1, r1)
     finally:
-        output = [r1[i] for i in range(1)]
+        output = np.array([r1[i] for i in range(1)])
         free(r1)
 
     return result, output
@@ -1052,7 +1015,7 @@ def ra_rp_i2eql(ra, rp, I, astar, M):
     try:
         result = gr_wrapper.ra_rp_I2EQL(<double> ra, EQL, <double> rp, <double> I, <double> M, <double> astar)
     finally:
-        output = [EQL[i] for i in range(3)]
+        output = np.array([EQL[i] for i in range(3)])
         free(EQL)
 
     return result, output
@@ -1124,7 +1087,7 @@ def j_dot_selfforce(nl, nmax, kmax, mmax, apo, rp, radius_outer, I, M, astar):
     try:
         self_force = gr_wrapper.J_dot_selfforce(<int> nl, <int> nmax, <int> kmax, <int> mmax, <double> apo, <double> rp, <double> radius_outer, <double> I, <double> M, <double> astar, J_dot_sf)
     finally:
-        output = [J_dot_sf[i] for i in range(3)]
+        output = np.array([J_dot_sf[i] for i in range(3)])
         free(J_dot_sf)
 
     return self_force, output
@@ -1132,7 +1095,7 @@ def j_dot_selfforce(nl, nmax, kmax, mmax, apo, rp, radius_outer, I, M, astar):
 
 
 
-#Inputs: an int (nl), an int (N_res), an int (n_res_inner), an int (n_res_outer), an int (k_res_inner), an int (k_res_outer), an int (m_res_inner), an int (m_res_outer), a double (apo), a double (rp), a double (radius_outer), a double (I), a double (M), a double from 0 to 1 (astar), a double (theta_res_F), an array of 3 doubles (J_dot_td)
+#Inputs: an int (nl), an int (N_res), an int (n_res_inner), an int (n_res_outer), an int (k_res_inner), an int (k_res_outer), an int (m_res_inner), an int (m_res_outer), a double (apo), a double (rp), a double (radius_outer), a double (I), a double (M), a double from 0 to 1 (astar), a double (theta_res_F), a list of 3 doubles (J_dot_td)
 #Outputs: a double (j_dot_t)
 #int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_td)
 def j_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo, rp, radius_outer, I, M, astar, theta_res_F):
@@ -1142,7 +1105,7 @@ def j_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m
     try:
         j_dot_t = gr_wrapper.J_dot_tidal(<int> nl, <int> N_res, <int> n_res_inner, <int> n_res_outer, <int> k_res_inner, <int> k_res_outer, <int> m_res_inner, <int> m_res_outer, <double> apo, <double> rp, <double> radius_outer, <double> I, <double> M, <double> astar, <double> theta_res_F, J_dot_td)
     finally:
-        output = [J_dot_td[i] for i in range(3)]
+        output = np.array([J_dot_td[i] for i in range(3)])
         free(J_dot_td)
 
     return j_dot_t, output
@@ -1175,8 +1138,6 @@ def j_dot_phi_kepler(mu_outer, r_outer, apo, peri, incline, Theta_res):
 #All the function wrappers from Gamma.c
 
 
-
-
 #Inputs: an int (nl), an int (n_res_inner), an int (k_res_inner), an int (m_res_inner), an int (n_res_outer), an int (k_res_outer), a double (ra_inner), a double (rp_inner), a double (I_inner), a double (ra_outer), a double (rp_outer), a double (I_outer), a double (astar), a double (M), a double (radius_outer), a double (delta_t)
 #Outputs: an array of 2 doubles (Gamma)
 #int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_res_outer, int k_res_outer, double ra_inner, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M, double radius_outer, double delta_t, double *Gamma)
@@ -1187,7 +1148,7 @@ def omegadot(nl, n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer
     try:
         result = gr_wrapper.omega_dot(<int> nl, <int> n_res_inner, <int> k_res_inner, <int> m_res_inner, <int> n_res_outer, <int> k_res_outer, <double> ra_inner, <double> rp_inner, <double> I_inner, <double> ra_outer, <double> rp_outer, <double> I_outer, <double> astar, <double> M, <double> radius_outer, <double> delta_t, Gamma)
     finally:
-        output = [Gamma[i] for i in range(2)]
+        output = np.array([Gamma[i] for i in range(2)])
         free(Gamma)
 
     return result, output
@@ -1203,22 +1164,98 @@ def omegadot(nl, n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer
 
 #All the function wrappers from Delta_J.c
 
+#Inputs: an int (nl),  an int (n_res_inner), an int (k_res_inner), an int (m_res_inner), an int (n_res_outer), an int (k_res_outer), a double (ra_inner), a double (rp_inner), a double (I_inner), a double (ra_outer), a double (rp_outer), a double (I_outer), a double (M), a double (astar), a double (theta_res_F)
+#Outputs: a double (djt), a list of 1 double (Delta_J_r_tidal), a list of 1 double (Delta_J_theta_tidal), a list of 1 double (Delta_J_phi_tidal)
+#double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J_r_tidal, double *Delta_J_theta_tidal, double *Delta_J_phi_tidal)
+#def delta_j_tidal(nl, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, M, astar, theta_res_F):
 
-#double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *Delta_J_r_tidal, double *Delta_J_theta_tidal, double *Delta_J_phi_tidal)
-#def delta_j_tidal(nl, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo, rp, radius_outer, I, M, astar, theta_res_F):
-
-#    cdef double *Delta_J_r_tidal = <double *> malloc (2 * sizeof(double))
-#    cdef double *Delta_J_theta_tidal = <double *> malloc (2 * sizeof(double))
-#    cdef double *Delta_J_phi_tidal = <double *> malloc (2 * sizeof(double))
+#    cdef double *Delta_J_r_tidal = <double *> malloc (1 * sizeof(double))
+#    cdef double *Delta_J_theta_tidal = <double *> malloc (1 * sizeof(double))
+#    cdef double *Delta_J_phi_tidal = <double *> malloc (1 * sizeof(double))
 #    cdef double djt = -1
 #    try:
-#        djt = gr_wrapper.Delta_J_tidal(<int> nl, <int> n_res_inner, <int> n_res_outer, <int> k_res_inner, <int> k_res_outer, <int> m_res_inner, <int> m_res_outer, <double> apo, <double> rp, <double> radius_outer, <double> I, <double> M, <double> astar, <double> theta_res_F, Delta_J_r_tidal, Delta_J_theta_tidal, Delta_J_phi_tidal)
+#        djt = gr_wrapper.Delta_J_tidal(<int> nl, <int> n_res_inner, <int> n_res_outer, <int> k_res_inner, <int> k_res_outer, <int> m_res_inner, <int> m_res_outer, <double> ra_inner, <double> rp_inner, <double> radius_outer, <double> I_inner, <double> ra_outer, <double> rp_outer, <double> I_outer, <double> M, <double> astar, <double> theta_res_F, Delta_J_r_tidal, Delta_J_theta_tidal, Delta_J_phi_tidal)
 #    finally:
-#        output1 = [Delta_J_r_tidal[i] for i in range(2)]
-#        output2 = [Delta_J_theta_tidal[i] for i in range(2)]
-#        output3 = [Delta_J_phi_tidal[i] for i in range(2)]
+#        output1 = np.array([Delta_J_r_tidal[i] for i in range(2)])
+#        output2 = np.array([Delta_J_theta_tidal[i] for i in range(2)])
+#        output3 = np.array([Delta_J_phi_tidal[i] for i in range(2)])
 #        free(Delta_J_r_tidal)
 #        free(Delta_J_theta_tidal)
 #        free(Delta_J_phi_tidal)
 
 #    return djt, output1, output2, output3
+
+
+
+
+
+
+#All the function wrappers from J2J_dot.c
+
+#Inputs: an int (nl), an int (nmax), an int (kmax), an int (mmax), a list of 3 doubles (arrJint), a double (M), a double (astar)
+#Outputs: 0 (result), an array of 3 doubles (J_dot_sf)
+#int J2Jdot(int nl, int nmax, int kmax, int mmax, double *J_initial, double *J_dot_sf, double M, double astar)
+def j2jdot(nl, nmax, kmax, mmax, arrJint, M, astar):
+
+    cdef double *arrJint_cpy = <double *> malloc(len(arrJint)*sizeof(double))
+    for i in range(len(arrJint)):
+        arrJint_cpy[i] = <double> arrJint[i]
+
+    cdef double *J_dot_sf = <double *> malloc (3 * sizeof(double))
+    try:
+        result = gr_wrapper.J2Jdot(<int> nl, <int> nmax, <int> kmax, <int> mmax, arrJint_cpy, J_dot_sf, <double> M, <double> astar)
+    finally:
+        output = np.array([J_dot_sf[i] for i in range(3)])
+        free(J_dot_sf)
+        free(arrJint_cpy)
+
+    return result, output
+
+
+
+#Inputs: an int (nl), an int (nmax), an int (kmax), an int (mmax), a double (J_r_ini), a double (J_theta_ini), a double (J_phi_ini), a double (M), a double (astar)
+#Outputs: 0 (result), an array of 1 double (J_dot_r), an array of 1 double (J_dot_theta), an array of 1 double (J_dot_phi)
+#int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_dot_r, double *J_dot_theta, double *J_dot_phi, double M, double astar)
+def j2jdot_component(nl, nmax, kmax, mmax, J_r_ini, J_theta_ini, J_phi_ini, M, astar):
+
+    cdef double *J_dot_r = <double *> malloc (1 * sizeof(double))
+    cdef double *J_dot_theta = <double *> malloc (1 * sizeof(double))
+    cdef double *J_dot_phi = <double *> malloc (1 * sizeof(double))
+    try:
+        result = gr_wrapper.J2Jdot_component(<int> nl, <int> nmax, <int> kmax, <int> mmax, <double> J_r_ini, <double> J_theta_ini, <double> J_phi_ini, J_dot_r, J_dot_theta, J_dot_phi, <double> M, <double> astar)
+    finally:
+        output1 = np.array([J_dot_r[i] for i in range(1)])
+        output2 = np.array([J_dot_theta[i] for i in range(1)])
+        output3 = np.array([J_dot_phi[i] for i in range(1)])
+        free(J_dot_r)
+        free(J_dot_theta)
+        free(J_dot_phi)
+
+    return result, output1, output2, output3
+
+
+
+
+
+
+#Inputs: a double (dt), a double (t0), an int (n), a double (J_r_ini), a double (J_theta_ini), a double (J_phi_ini), a double (M), a double (astar)
+#Outputs: 0 (result), an array of n doubles (J_r_final), an array of n doubles (J_theta_final), an array of n doubles (J_phi_final)
+#void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, double mu_body, double M, double astar)
+def rk4_j2jdot(dt, t0, n, J_r_ini, J_theta_ini, J_phi_ini, mu_body, M, astar):
+
+    cdef double *J_r_final = <double *> malloc (n * sizeof(double))
+    cdef double *J_theta_final = <double *> malloc (n * sizeof(double))
+    cdef double *J_phi_final = <double *> malloc (n * sizeof(double))
+    try:
+        gr_wrapper.rk4_J2Jdot(<double> dt, <double> t0, <int> n, <double> J_r_ini, <double> J_theta_ini, <double> J_phi_ini, J_r_final, J_theta_final, J_phi_final, <double> mu_body, <double> M, <double> astar)
+    finally:
+        output1 = np.array([J_r_final[i] for i in range(n)])
+        output2 = np.array([J_theta_final[i] for i in range(n)])
+        output3 = np.array([J_phi_final[i] for i in range(n)])
+        free(J_r_final)
+        free(J_theta_final)
+        free(J_phi_final)
+
+    return output1, output2, output3
+
+
