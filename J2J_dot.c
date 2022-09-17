@@ -35,9 +35,11 @@ int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, doubl
 }
 
 /* This takes a step size (dt), an inital J_inital components, and return arrays of size n for each J components at each time step */
-void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, double mu_body, double M, double astar){
-    int i;
+void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, double mu_body, double M, double astar){
+    int i, j;
     int nl = 1, nmax = 1, kmax = 1, mmax = 1;
+    double dt, inspiral_scale = 0.01;
+    double a[3];
     //double M = 1, astar = 0.5;
     double k1r, k2r, k3r, k4r;
     double k1theta, k2theta, k3theta, k4theta;
@@ -65,7 +67,6 @@ void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini,
     /* Define time step array, starts at inital time (input) */
     t = (double *)malloc(sizeof(double) * (n));
     t[0] = t0;
-    dt = dt * mu_body;
 
     /*
     J_dot_r = (double *)malloc(sizeof(double) * n);
@@ -90,12 +91,19 @@ void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini,
     k3phi = (double *)malloc(sizeof(double) * n);
     k4phi = (double *)malloc(sizeof(double) * n);
     #endif
-    printf("i \t t \t J_r \t J_theta \t J_phi \n------------\n");
-    //printf("%i \t%lf \t%lf \t%lf \t%lf \t%lf \t %lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], k1r[0], k1theta[0]);
+    printf("i \t t \t J_r \t J_theta \t J_phi \t dt \n------------\n");
+    printf("%i \t%lf \t%lf \t%lf \t%lf \t%lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], 0);
     
     for (i = 1; i < (n); i++){
+        
         /* k1_{r,theta,phi} will come from the same call of J2Jdot_component since no changes start yet */
         J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1], J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
+        a[0] = inspiral_scale * fabs(J_r_final[i-1]/J_dot_r);
+        a[1] = inspiral_scale * fabs(J_theta_final[i-1]/J_dot_theta);
+        a[2] = inspiral_scale * fabs(J_phi_final[i-1]/J_dot_phi);
+        dt = a[0]; //variable time step based on J/\dot{J}
+        for (j = 1; j < 3; j++){dt = dt < a[j] ? dt:a[j];}
+        dt = dt * mu_body; //time step scaled with mass of orbiting body    
         k1r = dt * (J_dot_r);
         k1theta = dt * (J_dot_theta);
         k1phi = dt * (J_dot_phi);
@@ -125,8 +133,9 @@ void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini,
         J_r_final[i] = J_r_final[i-1] + (k1r + 2. * k2r + 2. * k3r + k4r) / 6.;
         J_theta_final[i] = J_theta_final[i-1] + (k1theta + 2. * k2theta + 2. * k3theta + k4theta) / 6.;
         J_phi_final[i] = J_phi_final[i-1] + (k1phi + 2. * k2phi + 2. * k3phi + k4phi) / 6.;
+
         //printf("%i\t %g\t \n", i, x[i]);
-		printf("%i \t%f \t%e \t%e \t%e \t%e \t %e \n", i, t[i], J_r_final[i], J_theta_final[i], J_phi_final[i]);
+		printf("%i \t%f \t%e \t%e \t%e \t%e \n", i, t[i], J_r_final[i], J_theta_final[i], J_phi_final[i], dt);
     }
     free((char*)t);
     #if 0

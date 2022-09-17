@@ -63,7 +63,7 @@ int main(){
 	//printf("Mode vector for outer orbit: ");
 	//scanf("%i %i %i", &n_res_outer, &k_res_outer, &m_res_outer);
 
-	guess1 = peri + 2.;
+	guess1 = peri + 1.5;
 	guess2 = radius_outer - 2.;
 
 	apo_res = find_resonance_apo_OuterCirc(n, k, m, radius_outer, guess1, guess2, peri, incline, spin, mass);
@@ -314,27 +314,30 @@ int main(){
 #if IS_RK4_J_DOT
 int main()
 {
-	double h=0.1, t, t0, t1, J_r_ini, J_theta_ini, J_phi_ini, *J_r_final, *J_theta_final, *J_phi_final;
-	int i, n;
+	double h=100, t, t0 = 100, *J_r_final, *J_theta_final, *J_phi_final;
+	double J_r_ini = 0.55515, J_theta_ini = 2.54411, J_phi_ini = 1.90074;
+	//double J_r_ini = 0.686150 double J_theta_ini = 2.401230 double 5.856900
+	double mu_body = 1., M = 1., astar = 0.9;
+	int i, n = 50;
 	//t0, t1, J_r_ini, J_theta_ini, J_phi_ini
-	printf("Starting and ending time t0 t1, and inital Js: ");
-	scanf("%lf %lf %lf %lf %lf", &t0, &t1, &J_r_ini, &J_theta_ini, &J_phi_ini);
-	n = 1 + (t1 - t0)/h;
-	printf("n=%i \n", n);
+	//printf("Starting and ending time t0 t1, and inital Js: ");
+	//scanf("%lf %lf %lf %lf %lf", &t0, &t1, &J_r_ini, &J_theta_ini, &J_phi_ini);
+	//n = 1 + (t1 - t0)/h;
+	printf("Number of time steps is n = %i \n", n);
 	J_r_final = (double *)malloc(sizeof(double) * n);
 	J_theta_final = (double *)malloc(sizeof(double) * n);
 	J_phi_final = (double *)malloc(sizeof(double) * n);
 	printf("Inital Js are: %lg %lg %lg\n", J_r_ini, J_theta_ini, J_phi_ini);
 
-	rk4_J2Jdot(h, t0, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final);
+	rk4_J2Jdot(t0, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, mu_body, M, astar);
 	/*for (y[0] = 1, i = 1; i < n; i++){y[i] = rk4(h, x0 + h * (i - 1), y[i-1]);}*/
-		
+		 
  
-	printf("t \t J_r \t J_theta \t J_phi \n------------\n");
-	for (i = 0; i < n; i++) {
+	//printf("t \t J_r \t J_theta \t J_phi \n------------\n");
+	/* for (i = 0; i < n; i++) {
 		t = t0 + h * i;
-		printf("%g\t%g\t%g\t%g\n", t, J_r_final, J_theta_final, J_phi_final);
-	}
+		printf("%i \t %g \t %e \t %e \t %e\n", i, t, J_r_final[i], J_theta_final[i], J_phi_final[i]);
+	} */
  
  	free((char*)J_r_final);
  	free((char*)J_theta_final);
@@ -343,3 +346,4 @@ int main()
 
 }
 #endif
+
