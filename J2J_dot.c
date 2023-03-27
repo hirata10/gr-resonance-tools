@@ -35,7 +35,7 @@ int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, doubl
 }
 
 /* This takes a step size (dt), an inital J_inital components, and return arrays of size n for each J components at each time step */
-void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, double mu_body, double M, double astar){
+void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, FILE *fptr, double mu_body, double M, double astar){
     int i, j;
     int nl = 1, nmax = 1, kmax = 1, mmax = 1;
     double dt, inspiral_scale = 0.01;
@@ -45,6 +45,7 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
     double k1theta, k2theta, k3theta, k4theta;
     double k1phi, k2phi, k3phi, k4phi;
     double J_dot_r, J_dot_theta, J_dot_phi;
+    double J_r_final_temp, J_theta_final_temp, J_phi_final_temp;
     // double *k1r, *k2r, *k3r, *k4r;
     // double *k1theta, *k2theta, *k3theta, *k4theta;
     // double *k1phi, *k2phi, *k3phi, *k4phi;
@@ -92,8 +93,11 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
     k4phi = (double *)malloc(sizeof(double) * n);
     #endif
     printf("i \t t \t J_r \t J_theta \t J_phi \t dt \n------------\n");
+    fprintf(fptr, "i \t t \t J_r \t J_theta \t J_phi \t dt \n------------\n");
     printf("%i \t%lf \t%lf \t%lf \t%lf \t%lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], 0);
-    
+    fprintf(fptr, "%i \t%lf \t%lf \t%lf \t%lf \t%lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], 0);
+    fflush(fptr);
+
     for (i = 1; i < (n); i++){
         
         /* k1_{r,theta,phi} will come from the same call of J2Jdot_component since no changes start yet */
@@ -130,12 +134,29 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
         k4phi = dt * (J_dot_phi);
 
         t[i] = t[i-1] + dt;
-        J_r_final[i] = J_r_final[i-1] + (k1r + 2. * k2r + 2. * k3r + k4r) / 6.;
-        J_theta_final[i] = J_theta_final[i-1] + (k1theta + 2. * k2theta + 2. * k3theta + k4theta) / 6.;
-        J_phi_final[i] = J_phi_final[i-1] + (k1phi + 2. * k2phi + 2. * k3phi + k4phi) / 6.;
+        // J_r_final[i] = J_r_final[i-1] + (k1r + 2. * k2r + 2. * k3r + k4r) / 6.;
+        // J_theta_final[i] = J_theta_final[i-1] + (k1theta + 2. * k2theta + 2. * k3theta + k4theta) / 6.;
+        // J_phi_final[i] = J_phi_final[i-1] + (k1phi + 2. * k2phi + 2. * k3phi + k4phi) / 6.;
+
+        J_r_final_temp = J_r_final[i-1] + (k1r + 2. * k2r + 2. * k3r + k4r) / 6.;
+        J_theta_final_temp = J_theta_final[i-1] + (k1theta + 2. * k2theta + 2. * k3theta + k4theta) / 6.;
+        J_phi_final_temp = J_phi_final[i-1] + (k1phi + 2. * k2phi + 2. * k3phi + k4phi) / 6.;
+
+        /* Condition for plunge i.e. gives NaN --- Update J_i pointers */
+        if(isnan(J_r_final_temp) || isnan(J_theta_final_temp) || isnan(J_phi_final_temp)){
+            printf("It plunged.\n");
+            break;
+        }
+        else{
+            J_r_final[i] = J_r_final_temp;
+            J_theta_final[i] = J_theta_final_temp;
+            J_phi_final[i] = J_phi_final_temp;
+        }
 
         //printf("%i\t %g\t \n", i, x[i]);
 		printf("%i \t%f \t%e \t%e \t%e \t%e \n", i, t[i], J_r_final[i], J_theta_final[i], J_phi_final[i], dt);
+        fprintf(fptr, "%i \t%f \t%e \t%e \t%e \t%e \n", i, t[i], J_r_final[i], J_theta_final[i], J_phi_final[i], dt);
+        fflush(fptr);
     }
     free((char*)t);
     #if 0

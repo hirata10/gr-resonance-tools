@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
 #include "CKerr.h"
 
 #ifdef IS_GAMMA
@@ -69,17 +70,14 @@ int main(){
 	apo_res = find_resonance_apo_OuterCirc(n, k, m, radius_outer, guess1, guess2, peri, incline, spin, mass);
 	printf("Apocenter for this resonance is = %lg \n", apo_res);
 	#if 0
-	for (j = 0; j <= 500; j++){
-		step = (guess2 - guess1)/500;
+	for (j = 0; j < 1000; j++){
+		step = (guess2 - guess1)/1000;
 		next_step = guess1 + step * j;
-		Omega_condition = ra_rp_I2Omega(n, k, m, radius_outer, next_step, peri, incline, spin, mass);
+		Omega_condition = ra_rp_I2Omega_OuterCirc(n, k, m, radius_outer, next_step, peri, incline, spin, mass);
 		printf("%i %lg %lg \n", j, next_step, Omega_condition);
 	}
-	
-	printf("Delta_J_r_tidal Re & Im = %lg %lg \n", Delta_J_r_tidal[0], Delta_J_r_tidal[1]);
-	printf("Delta_J_theta_tidal = %lg %lg \n", Delta_J_theta_tidal[0], Delta_J_theta_tidal[1]);
-	printf("Delta_J_phi_tidal = %lg %lg \n", Delta_J_phi_tidal[0], Delta_J_phi_tidal[1]);
 	#endif
+	
 	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
 	return(0);
 }
@@ -161,26 +159,39 @@ int main(){
 #ifdef IS_DELTA_J
 int main(){
 	int j;
-	double J_dot_r, J_dot_theta, J_dot_phi;
-	double J_dot_r_tidal, J_dot_theta_tidal, J_dot_phi_tidal;
-	double Delta_J_r_tidal[2], Delta_J_theta_tidal[2], Delta_J_phi_tidal[2];
+	double Delta_J_r_tidal, Delta_J_theta_tidal, Delta_J_phi_tidal;
+	double Delta_J_tidal_value[3];
 	int nl, nmax, kmax, mmax;
 	int n_res_inner, k_res_inner, m_res_inner;
 	int n_res_outer, k_res_outer, m_res_outer;
 	double apo_res, peri, incline, mass, spin, radius_outer, guess1, guess2;
+	double apo_inner, I_inner, peri_inner, theta_res_F;
+	double apo_outer, I_outer, peri_outer;
 
-	printf("Enter pericenter: ");
-	scanf("%lf", &peri);
-	printf("Enter inlincation angle (radians): ");
-	scanf("%lf", &incline);
-	printf("Enter central mass: ");
+	printf("Enter central BH mass: ");
 	scanf("%lf", &mass);
 	printf("Enter spin parameter of BH: ");
 	scanf("%lf", &spin);
-	printf("Enter radius of outer orbit: ");
-	scanf("%lf", &radius_outer);
+
+	printf("Data for inner body: \n");
+	printf("Enter pericenter: ");
+	scanf("%lf", &peri_inner);
+	printf("Enter inlincation angle (radians): ");
+	scanf("%lf", &I_inner);
 	printf("Enter corresponding apocenter at resonance: ");
-	scanf("%lf", &apo_res);
+	scanf("%lf", &apo_inner);
+
+	printf("Data for outer body: \n");
+	printf("Enter pericenter: ");
+	scanf("%lf", &peri_outer);
+	printf("Enter inlincation angle (radians): ");
+	scanf("%lf", &I_outer);
+	printf("Enter corresponding apocenter at resonance: ");
+	scanf("%lf", &apo_outer);
+	printf("Enter outer radius: ");
+	scanf("%lf", &radius_outer);
+	printf("Enter corresponding resonance angle: ");
+	scanf("%lf", &theta_res_F);
 
 	//printf("Number of modes and max n,k,m: ");
 	//scanf("%i %i %i %i", &nl, &nmax, &kmax, &mmax);
@@ -197,10 +208,10 @@ int main(){
 	//J_dot_phi = (double*)malloc((size_t)(nl*nmax*kmax*mmax*sizeof(double)));
 	
 	//J_dot(nl, nmax, kmax, mmax, apo_res, peri, radius_outer, incline, mass, spin, &J_dot_r, &J_dot_theta, &J_dot_phi);
-	Delta_J_tidal(nl, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_res, peri, radius_outer, incline, mass, spin, 0, Delta_J_r_tidal, Delta_J_theta_tidal, Delta_J_phi_tidal);
-	printf("Delta_J_r_tidal Re and Im = %lg %lg \n", Delta_J_r_tidal[0], Delta_J_r_tidal[1]);
-	printf("Delta_J_theta_tidal Re and Im = %lg %lg \n", Delta_J_theta_tidal[0], Delta_J_theta_tidal[1]);
-	printf("Delta_J_phi_tidal Re and Im = %lg %lg \n", Delta_J_phi_tidal[0], Delta_J_phi_tidal[1]);
+	Delta_J_tidal(nl, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_inner, peri_inner, radius_outer, I_inner, apo_outer, peri_outer, I_outer, mass, spin, theta_res_F, Delta_J_tidal_value);
+	printf("Delta_J_r_tidal = %lg \n", Delta_J_tidal_value[0]);
+	printf("Delta_J_theta_tidal = %lg \n", Delta_J_tidal_value[1]);
+	printf("Delta_J_phi_tidal = %lg \n", Delta_J_tidal_value[2]);
 	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
 	return(0);
 }
@@ -295,18 +306,6 @@ int main(){
 	J2Jdot(nl, nmax, kmax, mmax, J_inital, J_dot_sf, mass, spin);
 	printf("J_dot components: %lg %lg %lg \n", J_dot_sf[0], J_dot_sf[1], J_dot_sf[2]);
 
-	#if 0
-	printf("About to start L_dot \n");
-	for (j = 0; j < 50; j++){
-		angle_space = 2 * M_PI / 50;
-		angle_step = j * angle_space;
-		J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_res, peri, radius_outer, incline, mass, spin, angle_step, J_dot_td);
-		L_dot[j] = J_dot_td[2];
-		Kepler_torque[j] = J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline, angle_step);
-		printf("%lg %lg %lg \n", angle_step, L_dot[j], Kepler_torque[j]);
-	}
-	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
-	#endif
 	return(0);
 }
 #endif
@@ -314,11 +313,13 @@ int main(){
 #if IS_RK4_J_DOT
 int main()
 {
-	double h=100, t, t0 = 100, *J_r_final, *J_theta_final, *J_phi_final;
+	double h=100, t, t0 = 1.; //Steps and initial start time
+	double *J_r_final, *J_theta_final, *J_phi_final;
+	// (THESE ARE BAD VALUES) double J_r_ini = 3.38616, J_theta_ini = 1.56968, J_phi_ini = 0.04416; //Initial orbit conditions (in terms of action variables)
 	double J_r_ini = 0.55515, J_theta_ini = 2.54411, J_phi_ini = 1.90074;
 	//double J_r_ini = 0.686150 double J_theta_ini = 2.401230 double 5.856900
-	double mu_body = 1., M = 1., astar = 0.9;
-	int i, n = 50;
+	double mu_body = 1., M = 1., astar = 0.1; //BH parameters
+	int i, n = 50; //Number of time steps
 	//t0, t1, J_r_ini, J_theta_ini, J_phi_ini
 	//printf("Starting and ending time t0 t1, and inital Js: ");
 	//scanf("%lf %lf %lf %lf %lf", &t0, &t1, &J_r_ini, &J_theta_ini, &J_phi_ini);
@@ -329,8 +330,21 @@ int main()
 	J_phi_final = (double *)malloc(sizeof(double) * n);
 	printf("Inital Js are: %lg %lg %lg\n", J_r_ini, J_theta_ini, J_phi_ini);
 
-	rk4_J2Jdot(t0, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, mu_body, M, astar);
-	/*for (y[0] = 1, i = 1; i < n; i++){y[i] = rk4(h, x0 + h * (i - 1), y[i-1]);}*/
+	/* Make a .txt file with the date in the name */
+	char *filename[200];
+	struct tm *timenow;
+
+	time_t now = time(NULL);
+	timenow = gmtime(&now);
+
+	strftime(filename, sizeof(filename), "outputs_data/J_evolv_testrun_%Y-%m-%d_%H:%M:%S.txt", timenow);
+
+	FILE *fptr = fopen(filename,"w");
+
+
+	rk4_J2Jdot(t0, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, fptr, mu_body, M, astar);
+	
+	fclose(fptr);
 		 
  
 	//printf("t \t J_r \t J_theta \t J_phi \n------------\n");
