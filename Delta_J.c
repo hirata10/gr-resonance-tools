@@ -7,7 +7,7 @@
 /* Computing the Delta J_tidal,i */
 /* Input: resonance mode vector for inner and outer body, number of modes to sum over (nl), orbital data (apo, peri, incline), mass and spin of BH, and resonance angle */
 /* Output: Delta_J_tidal_{r, \theta, \phi} */
-double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J_r_tidal, double *Delta_J_theta_tidal, double *Delta_J_phi_tidal){
+void Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
 	int i_n_outer, i_k_outer, i_m_outer;
 	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer[3], info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
@@ -19,7 +19,7 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 	double epsilon, lambda, numer, C2, P, alphankm;
 	double *C0_inner, *E0_inner, *E1_inner, *C0_outer, *E0_outer, *E1_outer;
 
-
+	
 	/* Converting apocenter, pericenter, and inclination angle into frequencies for: */
 	/* Inner body */
 	ra_rp_I2EQL(ra_inner, EQL_inner, rp_inner, I_inner, astar, M);
@@ -31,11 +31,55 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 	//printf(" %lg %lg %lg \n", Minv_inner[6], Minv_inner[7], Minv_inner[8]);
 
 	/* Converting apocenter, pericenter, and inclination angle into frequencies for: */
+	/* Outer body, both cases*/
+	/* For CIRCULAR orbits */
+	if(ra_outer == 0 && rp_outer == 0 && I_outer == 0){
+		/* Orbital frequencies for circular equitorial orbits */
+		CKerr_FindEQL_IRCirc(0, radius_outer, EQL_outer, M, astar);
+		CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+		CKerr_Minverse(J_outer, Minv_outer, M, astar);
+		//CKerr_Minv2Omega(Minv_outer, Omega_outer);
+		//printf("Minv for circular equitorial case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
+		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
+		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
+		//printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
+		//printf("Omega for circular equatorial is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+
+		/* Torus Origin for circular equatorial orbits */
+		//CKerr_TorusOrigin(J, xuorig, M, astar);
+	}
+
+	/* For GENERIC orbits */
+	else{
+		/* Routine to find location of resonant apocenter */
+		//guess1 = rp + 3.;
+		//guess2 = radius_outer - 3.;
+		//apo = find_resonance_apo(n_res_inner, k_res_inner, m_res_inner, radius_outer, guess1, guess2, rp, I, astar, M);
+		
+		/* Get orbital frequencies for inner generic orbit */
+		ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
+		CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+		CKerr_Minverse(J_outer, Minv_outer, M, astar);
+		//CKerr_Minv2Omega(Minv_outer, Omega_outer);
+		//printf("Minv for generic case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
+		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
+		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
+		//printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
+		//printf("Omega for generic is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+
+		/* Torus origin for inner body orbit */
+		//CKerr_TorusOrigin(J, xuorig, M, astar);
+		//for(i=0;i<6;i++) printf("xuorig[%d] = %lg\n", i, xuorig[i]);
+	}
+	#if 0
+	/* Converting apocenter, pericenter, and inclination angle into frequencies for: */
 	/* Outer body */
+	
 	ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
 	CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
 	CKerr_Minverse(J_outer, Minv_outer, M, astar);
 	CKerr_Minv2Omega(Minv_outer, Omega_outer);
+	#endif
 
 	#if 0
 	/* Outer Body */
@@ -67,16 +111,14 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 	rH = M + sqrt(M*M - astar*astar*M*M);
 	epsilon = sqrt(M*M - astar*astar*M*M) / (4 * M * rH);
 	omega_dot(nl, n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, astar, M, radius_outer, 1.0e-4, Gamma);
-	tot_Gamma = Gamma[0] * mu_inner + Gamma[1] * mu_outer;
-	//sgn_Gamma = tot_Gamma/fabs(tot_Gamma);
-	//printf("Gamma and its sign are: %lg %lg \n", tot_Gamma, sgn_Gamma);
+	//tot_Gamma = Gamma[0] * mu_inner + Gamma[1] * mu_outer;
+	tot_Gamma = Gamma[0] * mu_inner;
+	printf("Agnular acceleration near resonance for inner body: %lg \n", Gamma[0]);
+	printf("Agnular acceleration near resonance for outer body: %lg \n", Gamma[1]);
 
-	*Delta_J_r_tidal = 0;
-	//Delta_J_r_tidal[1] = 0; 
-	*Delta_J_theta_tidal = 0;
-	//Delta_J_theta_tidal[1] = 0;	
-	*Delta_J_phi_tidal = 0;
-	//Delta_J_phi_tidal[1] = 0;
+	Delta_J[0] = 0;
+	Delta_J[1] = 0;
+	Delta_J[2] = 0;
 	
 	//printf("About to start for-loops \n");
 
@@ -123,9 +165,9 @@ double Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, 
 			*J_dot_phi_tidal += -i_m_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm);
 			#endif
 			/* \Delta J_td of inner body due to tidal field of outer body, for the real [0] and imaginary [1] parts */
-			*Delta_J_r_tidal += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm)  * sqrt(2. * M_PI / fabs(i * tot_Gamma));
-			*Delta_J_theta_tidal += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(i * tot_Gamma));
-			*Delta_J_phi_tidal+= -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(i * tot_Gamma));
+			Delta_J[0] += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm)  * sqrt(2. * M_PI / fabs(i * tot_Gamma));
+			Delta_J[1] += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(i * tot_Gamma));
+			Delta_J[2] += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(i * tot_Gamma));
 			//Delta_J_phi_tidal[1] += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(tot_Gamma));
 				}
 			}
