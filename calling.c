@@ -311,24 +311,37 @@ int main(){
 #endif
 
 #if IS_RK4_J_DOT
-int main()
+int main(int argc, char **argv)
 {
-	double h=100, t, t0 = 1.; //Steps and initial start time
+	//double h=100, t, t0 = 1.; //Steps and initial start time
 	double *J_r_final, *J_theta_final, *J_phi_final;
+	double J_r_ini, J_theta_ini, J_phi_ini, t0;
 	// (THESE ARE BAD VALUES) double J_r_ini = 3.38616, J_theta_ini = 1.56968, J_phi_ini = 0.04416; //Initial orbit conditions (in terms of action variables)
-	double J_r_ini = 0.55515, J_theta_ini = 2.54411, J_phi_ini = 1.90074;
+	//double J_r_ini = 0.55515, J_theta_ini = 2.54411, J_phi_ini = 1.90074;
 	//double J_r_ini = 0.686150 double J_theta_ini = 2.401230 double 5.856900
 	double mu_body = 1., M = 1., astar = 0.1; //BH parameters
-	int i, n = 50; //Number of time steps
+	long i, n; //Number of time steps
 	//t0, t1, J_r_ini, J_theta_ini, J_phi_ini
 	//printf("Starting and ending time t0 t1, and inital Js: ");
 	//scanf("%lf %lf %lf %lf %lf", &t0, &t1, &J_r_ini, &J_theta_ini, &J_phi_ini);
-	//n = 1 + (t1 - t0)/h;
-	printf("Number of time steps is n = %i \n", n);
+
+	/* Inputs to be given in command line */
+	sscanf(argv[1], "%lg", &J_r_ini);
+	sscanf(argv[2], "%lg", &J_theta_ini);
+	sscanf(argv[3], "%lg", &J_phi_ini);
+	sscanf(argv[4], "%lg", &t0);
+	sscanf(argv[5], "%ld", &n);
+	//sscanf(argv[5], "%ld", &i);
+
+	printf("Total number of arguments is %ld \n", argc);
+	printf("Number of time steps is n = %ld \n", n);
+	printf("Initial time is t0 = %lg \n", t0);
+	printf("Inital Js are: %lg %lg %lg\n", J_r_ini, J_theta_ini, J_phi_ini);
+	
 	J_r_final = (double *)malloc(sizeof(double) * n);
 	J_theta_final = (double *)malloc(sizeof(double) * n);
 	J_phi_final = (double *)malloc(sizeof(double) * n);
-	printf("Inital Js are: %lg %lg %lg\n", J_r_ini, J_theta_ini, J_phi_ini);
+	
 
 	/* Make a .txt file with the date in the name */
 	char *filename[200];
