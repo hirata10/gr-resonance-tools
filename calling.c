@@ -316,14 +316,9 @@ int main(int argc, char **argv)
 	//double h=100, t, t0 = 1.; //Steps and initial start time
 	double *J_r_final, *J_theta_final, *J_phi_final;
 	double J_r_ini, J_theta_ini, J_phi_ini, t0;
-	// (THESE ARE BAD VALUES) double J_r_ini = 3.38616, J_theta_ini = 1.56968, J_phi_ini = 0.04416; //Initial orbit conditions (in terms of action variables)
-	//double J_r_ini = 0.55515, J_theta_ini = 2.54411, J_phi_ini = 1.90074;
-	//double J_r_ini = 0.686150 double J_theta_ini = 2.401230 double 5.856900
-	double mu_body = 1., M = 1., astar = 0.1; //BH parameters
-	long i, n; //Number of time steps
-	//t0, t1, J_r_ini, J_theta_ini, J_phi_ini
-	//printf("Starting and ending time t0 t1, and inital Js: ");
-	//scanf("%lf %lf %lf %lf %lf", &t0, &t1, &J_r_ini, &J_theta_ini, &J_phi_ini);
+	double mu_body = 1., M = 1., astar = 0.9; //Mass of body and BH parameters
+	long n; //Number of time steps
+	
 
 	/* Inputs to be given in command line */
 	sscanf(argv[1], "%lg", &J_r_ini);
@@ -343,14 +338,16 @@ int main(int argc, char **argv)
 	J_phi_final = (double *)malloc(sizeof(double) * n);
 	
 
-	/* Make a .txt file with the date in the name */
-	char *filename[200];
-	struct tm *timenow;
+	/* Make a .txt file with the date in the name or values of J_i_ini */
+	char *filename[50];
+	//struct tm *timenow;
 
-	time_t now = time(NULL);
-	timenow = gmtime(&now);
+	//time_t now = time(NULL);
+	//timenow = gmtime(&now);
 
-	strftime(filename, sizeof(filename), "outputs_data/J_evolv_testrun_%Y-%m-%d_%H:%M:%S.txt", timenow);
+	//strftime(filename, sizeof(filename), "outputs_data/J_evolv_testrun_%Y-%m-%d_%H:%M:%S.txt", timenow);
+	sprintf(filename, "outputs_data/J_evolv_testrun_%lg_%lg_%lg.txt", J_r_ini, J_theta_ini, J_phi_ini);
+	
 
 	FILE *fptr = fopen(filename,"w");
 
