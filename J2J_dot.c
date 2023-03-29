@@ -41,6 +41,8 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
     double dt, inspiral_scale = 0.01;
     double a[3];
     //double M = 1, astar = 0.5;
+    double J_Minv[3];
+    double Minv[9], Omega[3];
     double k1r, k2r, k3r, k4r;
     double k1theta, k2theta, k3theta, k4theta;
     double k1phi, k2phi, k3phi, k4phi;
@@ -60,14 +62,26 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
     // double *J_dot_r0, *J_dot_theta0, *J_dot_phi0;
     double *t;
 
+    //J_Minv = (double *)malloc(sizeof(double) * (n));
+
+     /* Define time step array, starts at inital time (input) */
+    t = (double *)malloc(sizeof(double) * (n));
+    t[0] = t0;
+
     /* Define the array for the final solution, they should start at the inital conditions given */
     J_r_final[0] = J_r_ini;
     J_theta_final[0] = J_theta_ini;
     J_phi_final[0] = J_phi_ini;
 
-    /* Define time step array, starts at inital time (input) */
-    t = (double *)malloc(sizeof(double) * (n));
-    t[0] = t0;
+    /* Array to convert initial J to initial Omega */
+    J_Minv[0] = J_r_ini;
+    J_Minv[1] = J_theta_ini;
+    J_Minv[2] = J_phi_ini;
+
+
+    CKerr_Minverse(J_Minv, Minv, M, astar);
+    CKerr_Minv2Omega(Minv, Omega);
+
 
     /*
     J_dot_r = (double *)malloc(sizeof(double) * n);
@@ -92,10 +106,10 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
     k3phi = (double *)malloc(sizeof(double) * n);
     k4phi = (double *)malloc(sizeof(double) * n);
     #endif
-    printf("i \t t \t J_r \t J_theta \t J_phi \t dt \n------------\n");
-    fprintf(fptr, "i \t t \t J_r \t J_theta \t J_phi \t dt \n------------\n");
-    printf("%i \t%lf \t%lf \t%lf \t%lf \t%lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], 0);
-    fprintf(fptr, "%i \t%lf \t%lf \t%lf \t%lf \t%lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], 0);
+    printf("i \t t \t J_r \t J_theta \t J_phi \t Omega_r \t Omega_theta \t Omega_phi \t dt \n------------\n");
+    fprintf(fptr, "i \t t \t J_r \t J_theta \t J_phi \t Omega_r \t Omega_theta \t Omega_phi \t dt \n------------\n");
+    printf("%i \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], Omega[0], Omega[1], Omega[2], 0);
+    fprintf(fptr, "%i \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], Omega[0], Omega[1], Omega[2], 0);
     fflush(fptr);
 
     for (i = 1; i < (n); i++){
@@ -151,11 +165,20 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
             J_r_final[i] = J_r_final_temp;
             J_theta_final[i] = J_theta_final_temp;
             J_phi_final[i] = J_phi_final_temp;
+
+            /* Array to compute Omegas */
+            J_Minv[0] = J_r_final_temp;
+            J_Minv[1] = J_theta_final_temp;
+            J_Minv[2] = J_phi_final_temp;
         }
 
+        /* Convert J_i_final[i] to the Omega_i */
+        CKerr_Minverse(J_Minv, Minv, M, astar);
+        CKerr_Minv2Omega(Minv, Omega);
+
         //printf("%i\t %g\t \n", i, x[i]);
-		printf("%i \t%f \t%e \t%e \t%e \t%e \n", i, t[i], J_r_final[i], J_theta_final[i], J_phi_final[i], dt);
-        fprintf(fptr, "%i \t%f \t%e \t%e \t%e \t%e \n", i, t[i], J_r_final[i], J_theta_final[i], J_phi_final[i], dt);
+		printf("%i \t%f \t%e \t%e \t%e \t%e \t%e \t%e \t%e \n", i, t[i], J_r_final[i], J_theta_final[i], J_phi_final[i], Omega[0], Omega[1], Omega[2], dt);
+        fprintf(fptr, "%i \t%f \t%e \t%e \t%e \t%e \t%e \t%e \t%e \n", i, t[i], J_r_final[i], J_theta_final[i], J_phi_final[i], Omega[0], Omega[1], Omega[2], dt);
         fflush(fptr);
     }
     free((char*)t);
