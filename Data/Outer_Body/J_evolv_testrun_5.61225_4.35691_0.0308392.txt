@@ -1,0 +1,3 @@
+i 	 t 	 J_r 	 J_theta 	 J_phi 	 Omega_r 	 Omega_theta 	 Omega_phi 	 dt 
+------------
+0 	1.000000 	5.612246 	4.356915 	0.030839 	0.001175 	0.001534 	0.001591 	0 
