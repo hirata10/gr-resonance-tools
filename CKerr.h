@@ -86,6 +86,8 @@ int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_r
 
 void Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J_tidal);
 
+void Delta_J_tidal2(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double ang_accel, double mu_outer, double *Delta_J);
+
 /* J2J_dot.c computes the evolution of the J_{i}'s for a specific orbiting body over a some time interval */
 
 int J2Jdot(int nl, int nmax, int kmax, int mmax, double *J_initial, double *J_dot_sf, double M, double astar);
@@ -93,4 +95,6 @@ int J2Jdot(int nl, int nmax, int kmax, int mmax, double *J_initial, double *J_do
 int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_dot_r, double *J_dot_theta, double *J_dot_phi, double M, double astar);
 
 void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, FILE *fptr, double mu_body, double M, double astar);
+
+//int readtxt(char FILENAME, struct data_vals *data);
 
