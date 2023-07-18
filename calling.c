@@ -240,7 +240,7 @@ typedef struct
 
 } data_vals;
 
-//Filename wants 24 columns delimted by spaces
+//Filename wants 25 columns delimted by spaces
 int readtxt(char FILENAME[], data_vals *data, long *number_row){
 	// file pointer variable for accessing the file
   FILE *file;
