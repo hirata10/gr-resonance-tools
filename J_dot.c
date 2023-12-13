@@ -6,10 +6,10 @@
 
 /* Computing the J_dot due to self-force from arXiv:1905.00030v2 Eq. (12) */
 
-int J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_sf){
+void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_sf){
 	int i, i_n, i_k, i_m, il;
 	double EQL[3], J[3], Minv[9], Omega[3], info[6], info_outer[6], xuorig[6], xuorig_outer[6];
-	int n_res_inner = 1, k_res_inner = 2, m_res_inner = -2;
+	//int n_res_inner = 1, k_res_inner = 2, m_res_inner = -2;
 	double Z_out_square, Z_down_square;
 	double omega_nkm, omegagw;
 	double rH;
@@ -17,7 +17,7 @@ int J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp,
 	double epsilon, lambda, numer, C2, P, alphankm;
 	double *C0, *E0, *E1;
 
-	/* For CIRCULAR OUTER orbits */
+	/* For CIRCULAR orbits */
 	if(apo == 0 && rp == 0 && I == 0){
 		/* Orbital frequencies for circular equitorial orbits */
 		CKerr_FindEQL_IRCirc(0, radius_outer, EQL, M, astar);
@@ -34,7 +34,7 @@ int J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp,
 		CKerr_TorusOrigin(J, xuorig, M, astar);
 	}
 
-	/* For INNER GENERIC orbits */
+	/* For GENERIC orbits */
 	else{
 		/* Routine to find location of resonant apocenter */
 		//guess1 = rp + 3.;
@@ -113,7 +113,7 @@ int J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp,
 }
 
 /* Computing the J_dot_tidal,i */
-int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_td){
+void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_td){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
 	int i_n_outer, i_k_outer, i_m_outer;
 	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];

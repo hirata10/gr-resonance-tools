@@ -19,7 +19,7 @@
 * EQL[0] = E, EQL[1] = Q, EQL[2] = L
 */
 
-double ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, double M) {
+void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, double M) {
 	int i;
 	double z;
 	double a;
@@ -173,7 +173,7 @@ double ra_rp_I2Omega_generic(int n_inner, int k_inner, int m_inner, int n_outer,
 	if(rp_inner == 0 && I_inner == 0){
 		Omega_inner[0] = 0;
 		Omega_inner[1] = 0;
-		Omega_inner[3] = Omega_outer_direct(ra_inner, M, astar);
+		Omega_inner[2] = Omega_outer_direct(ra_inner, M, astar);
 	}
 	else{
 		ra_rp_I2EQL(ra_inner, EQL_inner, rp_inner, I_inner, astar, M);
@@ -186,7 +186,7 @@ double ra_rp_I2Omega_generic(int n_inner, int k_inner, int m_inner, int n_outer,
 	if(rp_outer == 0 && I_outer == 0){
 		Omega_outer[0] = 0;
 		Omega_outer[1] = 0;
-		Omega_outer[3] = Omega_outer_direct(ra_outer, M, astar);
+		Omega_outer[2] = Omega_outer_direct(ra_outer, M, astar);
 	}
 	else{
 		ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
@@ -212,7 +212,7 @@ double find_resonance_apo_OuterCirc(int n, int k, int m, double radius, double g
 	int i=0;
 	double mold=0;
 
-
+	printf("f at bounds %lg %lg\n",ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M),ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess2, rp, I, astar, M));
 	if(ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M)*ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess2, rp, I, astar, M)>0){
         	printf("Value at first and second guess: %lf, %lf \n", ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M), ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess2, rp, I, astar, M));
         	printf("Invalid Interval Exit! \n");       //to test whether search interval
