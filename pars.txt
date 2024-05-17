@@ -1,0 +1,51 @@
+##input parameter files##
+
+#Mass of BH
+M 1.0 
+
+#Spin of BH in BH mass units
+astar 0.9
+
+#Mass ratio of inner body with BH mass
+mu_inner 0.00001
+
+#Mass ratio of outer body with BH mass
+mu_outer 0.00001
+
+#Number of time steps in evolution
+n_time 50
+
+#Semi-major axis of inner body wrt BH
+sm_axis_inner 50
+
+#Semi-major axis of outer body wrt BH
+sm_axis_outer 300
+
+#Number of systems
+N_sys 50
+
+#Number of resonance modes
+N_res 1
+
+#Number of \ell modes for resonance calculation
+nl_res 4
+
+#Minimum Fourier mode (n,k,m)
+N_min_Fourier -5
+
+#Maximum Fourier mode (n,k,m)
+N_max_Fourier 5
+
+#For the case of the self-force calculation
+#Initial time for J_selfforce evolution
+t0 1.0
+
+#Max integer range for n k m and \ell
+nl_self 1
+nmax 1
+kmax 1
+mmax 1
+
+#Number of parallel runs per job
+chunk_size 4
+

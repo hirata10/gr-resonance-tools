@@ -84,9 +84,9 @@ int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_r
 
 /* Delta_J.c computes the change in J due to external field (Eq. (12) in arXiv:1905.00030v2) */
 
-void Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J_tidal);
+void Delta_J_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J_tidal);
 
-void Delta_J_tidal2(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double ang_accel, double mu_outer, double *Delta_J);
+void Delta_J_tidal2(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double ang_accel, double mu_outer, double *Delta_J);
 
 /* J2J_dot.c computes the evolution of the J_{i}'s for a specific orbiting body over a some time interval */
 

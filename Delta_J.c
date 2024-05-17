@@ -7,7 +7,7 @@
 /* Computing the Delta J_tidal,i */
 /* Input: resonance mode vector for inner and outer body, number of modes to sum over (nl), orbital data (apo, peri, incline), mass and spin of BH, and resonance angle */
 /* Output: Delta_J_tidal_{r, \theta, \phi}/(mass_inner * mass_outer) */
-void Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J){
+void Delta_J_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
 	int i_n_outer, i_k_outer, i_m_outer;
 	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer[3], info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
@@ -111,7 +111,7 @@ void Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, in
 	rH = M + sqrt(M*M - astar*astar*M*M);
 	epsilon = sqrt(M*M - astar*astar*M*M) / (4 * M * rH);
 	omega_dot(nl, n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, astar, M, radius_outer, 1.0e-4, Gamma);
-	tot_Gamma = Gamma[0] * mu_inner + Gamma[1] * mu_outer;
+	tot_Gamma = -Gamma[0] * mu_inner + Gamma[1] * mu_outer;
 	//tot_Gamma = Gamma[0] * mu_inner;
 	printf("Angular acceleration near resonance for inner body: %lg \n", Gamma[0]);
 	printf("Angular acceleration near resonance for outer body: %lg \n", Gamma[1]);
@@ -123,7 +123,7 @@ void Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, in
 	//printf("About to start for-loops \n");
 
 	/* Resonant sum, so it is over integer mulitples of the initial resonance modes for the inner body */
-	for (i = -1; i <= 1; i++){
+	for (i = -N_res; i <= N_res; i++){
 		i_n_inner = i*n_res_inner;
 		i_k_inner = i*k_res_inner;
 		i_m_inner = i*m_res_inner;
@@ -176,7 +176,7 @@ void Delta_J_tidal(int nl, int n_res_inner, int n_res_outer, int k_res_inner, in
 }
 
 /* Computes Delta_J/mu_inner (resonant correction to action per unit inner body mass) but with the angular acceleration (Gamma including inner and outer body masses) as an input to the function */
-void Delta_J_tidal2(int nl, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double ang_accel, double mu_outer, double *Delta_J){
+void Delta_J_tidal2(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double ang_accel, double mu_outer, double *Delta_J){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
 	int i_n_outer, i_k_outer, i_m_outer;
 	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer[3], info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
@@ -288,7 +288,7 @@ void Delta_J_tidal2(int nl, int n_res_inner, int n_res_outer, int k_res_inner, i
 	//printf("About to start for-loops \n");
 
 	/* Resonant sum, so it is over integer mulitples of the initial resonance modes for the inner body */
-	for (i = -1; i <= 1; i++){
+	for (i = -N_res; i <= N_res; i++){
 		i_n_inner = i*n_res_inner;
 		i_k_inner = i*k_res_inner;
 		i_m_inner = i*m_res_inner;
@@ -329,7 +329,7 @@ void Delta_J_tidal2(int nl, int n_res_inner, int n_res_outer, int k_res_inner, i
 			*J_dot_theta_tidal += -i_k_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm);
 			*J_dot_phi_tidal += -i_m_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm);
 			#endif
-			/* \Delta J_td of inner body due to tidal field of outer body, for the real [0] and imaginary [1] parts */
+			/* \Delta J_td of inner body due to tidal field of outer body */
 			Delta_J[0] += -i_n_inner * mu_outer * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm)  * sqrt(2. * M_PI / fabs(i * ang_accel));
 			Delta_J[1] += -i_k_inner * mu_outer * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(i * ang_accel));
 			Delta_J[2] += -i_m_inner * mu_outer * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(i * ang_accel));

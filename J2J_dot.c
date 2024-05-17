@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "CKerr.h"
+#include "globalpars_c.h"
 
 /* This will take a set of Js (pointer) for an orbit and return the time derivative, J_dot (pointer) */
 /* J_initial[0] = J_r_inital, J_initial[1] = J_theta_inital, J_initial[2] = J_phi_initial */
@@ -37,7 +38,7 @@ int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, doubl
 /* This takes a step size (dt), an inital J_inital components, and return arrays of size n for each J components at each time step */
 void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, FILE *fptr, double mu_body, double M, double astar){
     int i, j;
-    int nl = 1, nmax = 1, kmax = 1, mmax = 1;
+    int nl = GLOBALPAR_nl_self, nmax = GLOBALPAR_nmax, kmax = GLOBALPAR_kmax, mmax = GLOBALPAR_mmax;
     double dt, inspiral_scale = 0.01;
     double a[3];
     //double M = 1, astar = 0.5;
@@ -48,6 +49,7 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
     double k1phi, k2phi, k3phi, k4phi;
     double J_dot_r, J_dot_theta, J_dot_phi;
     double J_r_final_temp, J_theta_final_temp, J_phi_final_temp;
+    //double time_factor;
     // double *k1r, *k2r, *k3r, *k4r;
     // double *k1theta, *k2theta, *k3theta, *k4theta;
     // double *k1phi, *k2phi, *k3phi, *k4phi;
@@ -67,6 +69,7 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
      /* Define time step array, starts at inital time (input) */
     t = (double *)malloc(sizeof(double) * (n));
     t[0] = t0;
+    
 
     /* Define the array for the final solution, they should start at the inital conditions given */
     J_r_final[0] = J_r_ini;
@@ -108,8 +111,8 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
     #endif
     printf("i \t t \t J_r \t J_theta \t J_phi \t Omega_r \t Omega_theta \t Omega_phi \t dt \n------------\n");
     fprintf(fptr, "i \t t \t J_r \t J_theta \t J_phi \t Omega_r \t Omega_theta \t Omega_phi \t dt \n------------\n");
-    printf("%i \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], Omega[0], Omega[1], Omega[2], 0);
-    fprintf(fptr, "%i \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], Omega[0], Omega[1], Omega[2], 0);
+    printf("%i \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], Omega[0], Omega[1], Omega[2], 0.0);
+    fprintf(fptr, "%i \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \t%lf \n", 0, t[0], J_r_final[0], J_theta_final[0], J_phi_final[0], Omega[0], Omega[1], Omega[2], 00.0);
     fflush(fptr);
 
     for (i = 1; i < (n); i++){
@@ -121,7 +124,7 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
         a[2] = inspiral_scale * fabs(J_phi_final[i-1]/J_dot_phi);
         dt = a[0]; //variable time step based on J/\dot{J}
         for (j = 1; j < 3; j++){dt = dt < a[j] ? dt:a[j];}
-        dt = dt * mu_body; //time step scaled with mass of orbiting body    
+        //dt = dt * mu_body; //time step scaled with mass of orbiting body    
         k1r = dt * (J_dot_r);
         k1theta = dt * (J_dot_theta);
         k1phi = dt * (J_dot_phi);
