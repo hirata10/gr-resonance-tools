@@ -3,6 +3,8 @@
 #include <math.h>
 #include <time.h>
 #include "CKerr.h"
+#include "globalpars_c.h"
+
 #define N_LINES_MAX 30000
 
 #ifdef IS_GAMMA
@@ -168,64 +170,6 @@ int main(){
 }
 #endif
 
-#ifdef IS_DELTA_J_SINGLE
-int main(int argc, char **argv){
-	int j;
-	long i;
-	double Delta_J_r_tidal, Delta_J_theta_tidal, Delta_J_phi_tidal;
-	double Delta_J_tidal_value[3];
-	int nl = 4; /* Number of modes */
-	int n_res_inner, k_res_inner, m_res_inner;
-	int n_res_outer, k_res_outer, m_res_outer;
-	int system_label;
-	double ra_inner, I_inner, rp_inner;
-	double ra_outer, I_outer, rp_outer;
-	double radius_outer = 0;
-	double M = 1.0, theta_res_F = 0.0, astar = 0.9;
-	double ang_accel, mu_outer; //Value of angular acceleration (including body mass)
-
-	/* Inputs to be given in command line */
-	//sscanf(argv[1], "%ld", &nl);
-	sscanf(argv[1], "%d", &n_res_inner);
-	sscanf(argv[2], "%d", &n_res_outer);
-	sscanf(argv[3], "%d", &k_res_inner);
-	sscanf(argv[4], "%d", &k_res_outer);
-	sscanf(argv[5], "%d", &m_res_inner);
-	sscanf(argv[6], "%d", &m_res_outer);
-	sscanf(argv[7], "%lg", &ra_inner);
-	sscanf(argv[8], "%lg", &rp_inner);
-	//sscanf(argv[10], "%lg", &radius_outer);
-	sscanf(argv[9], "%lg", &I_inner);
-	sscanf(argv[10], "%lg", &ra_outer);
-	sscanf(argv[11], "%lg", &rp_outer);
-	sscanf(argv[12], "%lg", &I_outer);
-	//sscanf(argv[15], "%lg", &M);
-	//sscanf(argv[16], "%lg", &astar);
-	//sscanf(argv[17], "%lg", &theta_res_F);
-	sscanf(argv[13], "%lg", &ang_accel);
-	sscanf(argv[14], "%lg", &mu_outer);
-	sscanf(argv[15], "%d", &system_label);
-
-	//printf("system label \t n_inner \t k_inner \t n_outer \t k_outer \t m \t Gamma \t Delta_J_r \t Delta_J_theta \t Delta_J_phi \n------------\n");
-	Delta_J_tidal2(nl, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, M, astar, theta_res_F, ang_accel, mu_outer, Delta_J_tidal_value);
-	printf("%i \t %i \t %i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \n", system_label, n_res_inner, k_res_inner, n_res_outer, k_res_outer, m_res_outer, ang_accel, Delta_J_tidal_value[0], Delta_J_tidal_value[1], Delta_J_tidal_value[2]);
-	/* for(i = 0; i < MAX_ROW; i++){
-
-		//ang_accel = data[i].data_col5 * data[i].data_col7; 
-
-		Delta_J_tidal2(nl, data[i].data_col9, data[i].data_col11, data[i].data_col10, data[i].data_col12, data[i].data_col8, data[i].data_col8, data[i].data_col21, data[i].data_col20, 0, data[i].data_col19, data[i].data_col24, data[i].data_col23, data[i].data_col22, mass, spin, theta_res_F, data[i].data_col7, data[i].data_col6, Delta_J_tidal_value);
-		printf("%i \t %i \t %i \t %i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \n", i, data[i].data_col1, data[i].data_col9, data[i].data_col10, data[i].data_col11, data[i].data_col12, data[i].data_col8, data[i].data_col7, Delta_J_tidal_value[0], Delta_J_tidal_value[1], Delta_J_tidal_value[2]);
-
-	} */
-	// Delta_J_tidal2(nl, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_inner, peri_inner, radius_outer, I_inner, apo_outer, peri_outer, I_outer, mass, spin, theta_res_F, ang_accel, Delta_J_tidal_value);
-	// printf("Delta_J_r_tidal = %lg \n", Delta_J_tidal_value[0]);
-	// printf("Delta_J_theta_tidal = %lg \n", Delta_J_tidal_value[1]);
-	// printf("Delta_J_phi_tidal = %lg \n", Delta_J_tidal_value[2]);
-	//free((char*)data);
-	return(0);
-}
-#endif
-
 #ifdef IS_DELTA_J
 int main(){
 	int j;
@@ -287,6 +231,70 @@ int main(){
 }
 #endif
 
+#ifdef IS_DELTA_J_SINGLE
+int main(int argc, char **argv){
+	int j;
+	long i;
+	double Delta_J_r_tidal, Delta_J_theta_tidal, Delta_J_phi_tidal;
+	double Delta_J_tidal_value[3];
+	int nl = GLOBALPAR_nl_res; /* Number of modes */
+	int n_res_inner, k_res_inner, m_res_inner;
+	int n_res_outer, k_res_outer, m_res_outer;
+	int system_label, res_label;
+	int N_res = GLOBALPAR_N_res;
+	double ra_inner, I_inner, rp_inner;
+	double ra_outer, I_outer, rp_outer;
+	double theta_res_F;
+	double radius_outer = 0;
+	double M = GLOBALPAR_M, astar = GLOBALPAR_astar; //Black hole mass set to 1 for units, BH spin wrt to BH mass = 1
+	double ang_accel, mu_outer; //Value of angular acceleration (including body mass)
+
+	/* Inputs to be given in command line */
+	//sscanf(argv[1], "%ld", &nl);
+	sscanf(argv[1], "%d", &n_res_inner);
+	sscanf(argv[2], "%d", &n_res_outer);
+	sscanf(argv[3], "%d", &k_res_inner);
+	sscanf(argv[4], "%d", &k_res_outer);
+	sscanf(argv[5], "%d", &m_res_inner);
+	sscanf(argv[6], "%d", &m_res_outer);
+	sscanf(argv[7], "%lg", &ra_inner);
+	sscanf(argv[8], "%lg", &rp_inner);
+	//sscanf(argv[10], "%lg", &radius_outer);
+	sscanf(argv[9], "%lg", &I_inner);
+	sscanf(argv[10], "%lg", &ra_outer);
+	sscanf(argv[11], "%lg", &rp_outer);
+	sscanf(argv[12], "%lg", &I_outer);
+	//sscanf(argv[15], "%lg", &M);
+	//sscanf(argv[16], "%lg", &astar);
+	//sscanf(argv[17], "%lg", &theta_res_F);
+	sscanf(argv[13], "%lg", &ang_accel);
+	sscanf(argv[14], "%lg", &theta_res_F);
+	sscanf(argv[15], "%lg", &mu_outer);
+	sscanf(argv[16], "%d", &system_label);
+	sscanf(argv[17], "%d", &res_label);
+
+	//theta_res_F = (double)rand()/(double)RAND_MAX * 2*M_PI; //Random number generator from 0 to 2*pi for resonant angle value
+
+	//printf("system label \t n_inner \t k_inner \t n_outer \t k_outer \t m \t Gamma \t Delta_J_r \t Delta_J_theta \t Delta_J_phi \n------------\n");
+	Delta_J_tidal2(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, M, astar, theta_res_F, ang_accel, mu_outer, Delta_J_tidal_value);
+	printf("%i \t %i \t %i \t %i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \n", res_label, system_label, n_res_inner, k_res_inner, n_res_outer, k_res_outer, m_res_outer, theta_res_F, ang_accel, Delta_J_tidal_value[0], Delta_J_tidal_value[1], Delta_J_tidal_value[2]);
+	/* for(i = 0; i < MAX_ROW; i++){
+
+		//ang_accel = data[i].data_col5 * data[i].data_col7; 
+
+		Delta_J_tidal2(nl, data[i].data_col9, data[i].data_col11, data[i].data_col10, data[i].data_col12, data[i].data_col8, data[i].data_col8, data[i].data_col21, data[i].data_col20, 0, data[i].data_col19, data[i].data_col24, data[i].data_col23, data[i].data_col22, mass, spin, theta_res_F, data[i].data_col7, data[i].data_col6, Delta_J_tidal_value);
+		printf("%i \t %i \t %i \t %i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \n", i, data[i].data_col1, data[i].data_col9, data[i].data_col10, data[i].data_col11, data[i].data_col12, data[i].data_col8, data[i].data_col7, Delta_J_tidal_value[0], Delta_J_tidal_value[1], Delta_J_tidal_value[2]);
+
+	} */
+	// Delta_J_tidal2(nl, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_inner, peri_inner, radius_outer, I_inner, apo_outer, peri_outer, I_outer, mass, spin, theta_res_F, ang_accel, Delta_J_tidal_value);
+	// printf("Delta_J_r_tidal = %lg \n", Delta_J_tidal_value[0]);
+	// printf("Delta_J_theta_tidal = %lg \n", Delta_J_tidal_value[1]);
+	// printf("Delta_J_phi_tidal = %lg \n", Delta_J_tidal_value[2]);
+	//free((char*)data);
+	return(0);
+}
+#endif
+
 #ifdef IS_DELTA_J2
 
 typedef struct 
@@ -298,7 +306,7 @@ typedef struct
 
 } data_vals;
 
-//Filename wants 25 columns delimted by spaces
+//Filename wants 24 columns delimted by spaces
 int readtxt(char FILENAME[], data_vals *data, long *number_row){
 	// file pointer variable for accessing the file
   FILE *file;
@@ -364,10 +372,9 @@ int readtxt(char FILENAME[], data_vals *data, long *number_row){
 				  &data_cols[records].data_col23,
 				  &data_cols[records].data_col24); 
     
-    // if fscanf read 24 values from the file then we've successfully read 
+    // if fscanf read 25 values from the file then we've successfully read 
     // in another record
-	// TODO: Will add another column, then change to 25
-	//printf("%d %d %d\n", read, feof(file), records);
+	// Number of columns stored in "read"
     if (read == 25) records++;
     
     // The only time that fscanf should NOT read 4 values from the file is 
@@ -394,7 +401,7 @@ int readtxt(char FILENAME[], data_vals *data, long *number_row){
   // close the file as we are done working with it
   fclose(file);
   
-  // print out the number of records read
+  // print out the number of records (number of rows in file ) read
   printf("\n%d records read.\n\n", records);
   *number_row = records;
 
@@ -696,22 +703,31 @@ int main(int argc, char **argv)
 	//double h=100, t, t0 = 1.; //Steps and initial start time
 	double *J_r_final, *J_theta_final, *J_phi_final;
 	double J_r_ini, J_theta_ini, J_phi_ini, t0;
-	double mu_body = 1., M = 1., astar = 0.9; //Mass of body and BH parameters
+	double mu_body, M = GLOBALPAR_M, astar = GLOBALPAR_astar; //Mass of body and BH parameters
 	long n; //Number of time steps
+	long label; //System label from data file
+	char sys_type[100]; //Inner or outer body label
 	
 
 	/* Inputs to be given in command line */
+	/* Initial action variables (J_i), initial starting time (t0), number of steps (n), mass ratio of orbiting body, system label, and system type */
 	sscanf(argv[1], "%lg", &J_r_ini);
 	sscanf(argv[2], "%lg", &J_theta_ini);
 	sscanf(argv[3], "%lg", &J_phi_ini);
 	sscanf(argv[4], "%lg", &t0);
 	sscanf(argv[5], "%ld", &n);
-	//sscanf(argv[5], "%ld", &i);
+	sscanf(argv[6], "%lg", &mu_body);
+	sscanf(argv[7], "%ld", &label);
+	sscanf(argv[8], "%s", &sys_type);
 
 	printf("Total number of arguments is %ld \n", argc);
 	printf("Number of time steps is n = %ld \n", n);
 	printf("Initial time is t0 = %lg \n", t0);
+	printf("Mass ratio of the inspiral body = %lg \n", mu_body);
+	printf("Mass and spin of central BH are = %lg %lg \n", M, astar);
 	printf("Inital Js are: %lg %lg %lg\n", J_r_ini, J_theta_ini, J_phi_ini);
+	printf("System label and type are: %ld %s \n", label, sys_type);
+
 	
 	J_r_final = (double *)malloc(sizeof(double) * n);
 	J_theta_final = (double *)malloc(sizeof(double) * n);
@@ -726,7 +742,8 @@ int main(int argc, char **argv)
 	//timenow = gmtime(&now);
 
 	//strftime(filename, sizeof(filename), "outputs_data/J_evolv_testrun_%Y-%m-%d_%H:%M:%S.txt", timenow);
-	sprintf(filename, "outputs_data/J_evolv_testrun_%lg_%lg_%lg.txt", J_r_ini, J_theta_ini, J_phi_ini);
+	//sprintf(filename, "outputs_data/J_evolve_%ld.txt", label);
+	sprintf(filename, "outputs_data/J_evolve_%s_%ld.txt", sys_type, label);
 	
 
 	FILE *fptr = fopen(filename,"w");
@@ -746,7 +763,7 @@ int main(int argc, char **argv)
  	free((char*)J_r_final);
  	free((char*)J_theta_final);
 	free((char*)J_phi_final);
-	return 0;
+	return(0);
 
 }
 #endif

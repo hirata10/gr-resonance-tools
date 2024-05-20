@@ -1,0 +1,19 @@
+# Global parameter file
+GLOBALPAR_M = 1.0
+GLOBALPAR_astar = 0.9
+GLOBALPAR_mu_inner = 0.00001
+GLOBALPAR_mu_outer = 0.00001
+GLOBALPAR_n_time = 50
+GLOBALPAR_sm_axis_inner = 50
+GLOBALPAR_sm_axis_outer = 300
+GLOBALPAR_N_sys = 50
+GLOBALPAR_N_res = 1
+GLOBALPAR_nl_res = 4
+GLOBALPAR_N_min_Fourier = -5
+GLOBALPAR_N_max_Fourier = 5
+GLOBALPAR_t0 = 1.0
+GLOBALPAR_nl_self = 1
+GLOBALPAR_nmax = 1
+GLOBALPAR_kmax = 1
+GLOBALPAR_mmax = 1
+GLOBALPAR_chunk_size = 4
