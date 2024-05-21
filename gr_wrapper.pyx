@@ -1006,19 +1006,20 @@ def ckerr_lindbladresonancestrength(M, astar, r0, mm, nl, jr1):
 
 
 #Inputs: a double (ra), a double (rp), a double (I), a double from 0 to 1 (astar), a double (M)
-#Outputs: an array of 3 doubles (EQL), checker double (result)
-#double ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, double M)
+#Outputs: an array of 3 doubles (EQL)
+#void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, double M)
 def ra_rp_i2eql(ra, rp, I, astar, M):
 
     cdef double *EQL = <double *> malloc (3 * sizeof(double))
     cdef double result = -1
     try:
-        result = gr_wrapper.ra_rp_I2EQL(<double> ra, EQL, <double> rp, <double> I, <double> M, <double> astar)
+        gr_wrapper.ra_rp_I2EQL(<double> ra, EQL, <double> rp, <double> I, <double> M, <double> astar)
     finally:
         output = np.array([EQL[i] for i in range(3)])
         free(EQL)
 
-    return result, output
+    return output
+
 
 
 
@@ -1078,37 +1079,38 @@ def find_resonance_apo_outercirc(n, k, m, radius, guess1, guess2, rp, I, astar, 
 
 
 #Inputs: an int (nl), an int (nmax), an int (kmax), an int (m), a double (apo), a double (rp), a double (radius_outer), a double (I), a double (M), a double from 0 to 1 (astar)
-#Outputs: a double (self_force), an array of 3 doubles (J_dot_sf)
-#int J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_sf)
+#Outputs: an array of 3 doubles (J_dot_sf)
+#void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_sf)
 def j_dot_selfforce(nl, nmax, kmax, mmax, apo, rp, radius_outer, I, M, astar):
 
     cdef double *J_dot_sf = <double *> malloc (3 * sizeof(double))
     cdef int self_force = -1
     try:
-        self_force = gr_wrapper.J_dot_selfforce(<int> nl, <int> nmax, <int> kmax, <int> mmax, <double> apo, <double> rp, <double> radius_outer, <double> I, <double> M, <double> astar, J_dot_sf)
+        gr_wrapper.J_dot_selfforce(<int> nl, <int> nmax, <int> kmax, <int> mmax, <double> apo, <double> rp, <double> radius_outer, <double> I, <double> M, <double> astar, J_dot_sf)
     finally:
         output = np.array([J_dot_sf[i] for i in range(3)])
         free(J_dot_sf)
 
-    return self_force, output
+    return output
+
 
 
 
 
 #Inputs: an int (nl), an int (N_res), an int (n_res_inner), an int (n_res_outer), an int (k_res_inner), an int (k_res_outer), an int (m_res_inner), an int (m_res_outer), a double (apo), a double (rp), a double (radius_outer), a double (I), a double (M), a double from 0 to 1 (astar), a double (theta_res_F), a list of 3 doubles (J_dot_td)
-#Outputs: a double (j_dot_t)
-#int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_td)
+#Outputs: an array of 3 doubles (J_dot_td)
+#void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_td)
 def j_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo, rp, radius_outer, I, M, astar, theta_res_F):
 
     cdef double *J_dot_td = <double *> malloc (3 * sizeof(double))
     cdef int j_dot_t = -1
     try:
-        j_dot_t = gr_wrapper.J_dot_tidal(<int> nl, <int> N_res, <int> n_res_inner, <int> n_res_outer, <int> k_res_inner, <int> k_res_outer, <int> m_res_inner, <int> m_res_outer, <double> apo, <double> rp, <double> radius_outer, <double> I, <double> M, <double> astar, <double> theta_res_F, J_dot_td)
+       gr_wrapper.J_dot_tidal(<int> nl, <int> N_res, <int> n_res_inner, <int> n_res_outer, <int> k_res_inner, <int> k_res_outer, <int> m_res_inner, <int> m_res_outer, <double> apo, <double> rp, <double> radius_outer, <double> I, <double> M, <double> astar, <double> theta_res_F, J_dot_td)
     finally:
         output = np.array([J_dot_td[i] for i in range(3)])
         free(J_dot_td)
 
-    return j_dot_t, output
+    return output
 
 
 
@@ -1241,21 +1243,28 @@ def j2jdot_component(nl, nmax, kmax, mmax, J_r_ini, J_theta_ini, J_phi_ini, M, a
 #Inputs: a double (dt), a double (t0), an int (n), a double (J_r_ini), a double (J_theta_ini), a double (J_phi_ini), a double (M), a double (astar)
 #Outputs: 0 (result), an array of n doubles (J_r_final), an array of n doubles (J_theta_final), an array of n doubles (J_phi_final)
 #void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, double mu_body, double M, double astar)
-def rk4_j2jdot(dt, t0, n, J_r_ini, J_theta_ini, J_phi_ini, mu_body, M, astar):
 
-    cdef double *J_r_final = <double *> malloc (n * sizeof(double))
-    cdef double *J_theta_final = <double *> malloc (n * sizeof(double))
-    cdef double *J_phi_final = <double *> malloc (n * sizeof(double))
-    try:
-        gr_wrapper.rk4_J2Jdot(<double> dt, <double> t0, <int> n, <double> J_r_ini, <double> J_theta_ini, <double> J_phi_ini, J_r_final, J_theta_final, J_phi_final, <double> mu_body, <double> M, <double> astar)
-    finally:
-        output1 = np.array([J_r_final[i] for i in range(n)])
-        output2 = np.array([J_theta_final[i] for i in range(n)])
-        output3 = np.array([J_phi_final[i] for i in range(n)])
-        free(J_r_final)
-        free(J_theta_final)
-        free(J_phi_final)
+#def rk4_j2jdot(dt, t0, n, J_r_ini, J_theta_ini, J_phi_ini, mu_body, M, astar):
 
-    return output1, output2, output3
+    #cdef double *J_r_final = <double *> malloc (n * sizeof(double))
+    #cdef double *J_theta_final = <double *> malloc (n * sizeof(double))
+    #cdef double *J_phi_final = <double *> malloc (n * sizeof(double))
+    #try:
+    #    gr_wrapper.rk4_J2Jdot(<double> dt, <double> t0, <int> n, <double> J_r_ini, <double> J_theta_ini, <double> J_phi_ini, J_r_final, J_theta_final, J_phi_final, <double> mu_body, <double> M, <double> astar)
+    #finally:
+    #    output1 = np.array([J_r_final[i] for i in range(n)])
+    #    output2 = np.array([J_theta_final[i] for i in range(n)])
+    #    output3 = np.array([J_phi_final[i] for i in range(n)])
+    #    free(J_r_final)
+    #    free(J_theta_final)
+    #    free(J_phi_final)
+
+    #return output1, output2, output3
 
 
+
+
+
+#Ideas:
+#Pass file name and C function opens as an append
+#
