@@ -31,7 +31,7 @@ sqrt_sm_axis_inner = math.sqrt(sm_axis_inner)
 r_inner_solution = M*(1+math.sqrt(1-astar**2))
 
 # Open a text file for writing
-with open('test1.txt', 'w') as f:
+with open('action_angle_pairs.txt', 'w') as f:
 
     # Loop to generate random actions and perform checks
     i = 0

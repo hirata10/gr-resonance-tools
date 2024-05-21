@@ -38,9 +38,11 @@ astar = globalpars.GLOBALPAR_astar
 mu_outer = globalpars.GLOBALPAR_mu_outer
 mu_inner = globalpars.GLOBALPAR_mu_inner
 file_amount = globalpars.GLOBALPAR_N_sys
+int_min = globalpars.GLOBALPAR_N_min_Fourier
+int_max = globalpars.GLOBALPAR_N_max_Fourier
 
 # Open a text file for writing
-with open('test2.txt', 'w') as f:
+with open('potential_resonances.txt', 'w') as f:
 
     #Starting the runs
     number = 0
@@ -48,8 +50,8 @@ with open('test2.txt', 'w') as f:
 
         #Importing all the info from the files. Feel free to change this depending on the files you made
         #Also note how we use label, because there will (very likely) always be less data points in outer than inner.
-        _, time_value_1, J_r_inner_list, J_theta_inner_list, J_phi_inner_list, om_inner_r_list, om_inner_theta_list, om_inner_phi_list, delta_t_list_inner = np.loadtxt("Data/Inner_Body/J_evolve_inner_" + str(file_number+1) + ".txt", unpack=True, skiprows=2)
-        label, time_value_2, J_r_outer_list, J_theta_outer_list, J_phi_outer_list, om_outer_r_list, om_outer_theta_list, om_outer_phi_list, delta_t_list_outer = np.loadtxt("Data/Outer_Body/J_evolv_outer_" + str(file_number+1) + ".txt", unpack=True, skiprows=2) 
+        _, time_value_1, J_r_inner_list, J_theta_inner_list, J_phi_inner_list, om_inner_r_list, om_inner_theta_list, om_inner_phi_list, delta_t_list_inner = np.loadtxt("outputs_data/J_evolve_inner_" + str(file_number+1) + ".txt", unpack=True, skiprows=2)
+        label, time_value_2, J_r_outer_list, J_theta_outer_list, J_phi_outer_list, om_outer_r_list, om_outer_theta_list, om_outer_phi_list, delta_t_list_outer = np.loadtxt("outputs_data/J_evolve_outer_" + str(file_number+1) + ".txt", unpack=True, skiprows=2) 
         
         #Interpolation of J values
         J_inner_r_function = interpolate.interp1d(time_value_1, J_r_inner_list, kind='linear')
@@ -91,11 +93,10 @@ with open('test2.txt', 'w') as f:
         #Now we start the big check
         label.tolist()
         [int(num) for num in label]
-        #Note (for the paper and in general) we chose to range between -5 and 5 bc anything greater, we found, was insignificant 
-        for n_inner in range(-5,5): 
-            for n_outer in range(-5,5):
-                for k_inner in range(-5,5):
-                    for k_outer in range(-5,5):
+        for n_inner in range(int_min,int_max): 
+            for n_outer in range(int_min,int_max):
+                for k_inner in range(int_min,int_max):
+                    for k_outer in range(int_min,int_max):
 
                         #Selection rule
                         if abs(k_inner - k_outer) % 2 == 0:
