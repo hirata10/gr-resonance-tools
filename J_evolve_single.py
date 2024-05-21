@@ -27,7 +27,7 @@ n = number of time steps
 #Defining data for RK4 evolver
 t0 = globalpars.GLOBALPAR_t0
 n = globalpars.GLOBALPAR_n_time
-J_data = numpy.loadtxt("final_J_values_mod.txt", delimiter = " ")
+J_data = numpy.loadtxt("action_angle_pairs.txt", delimiter = " ")
 print(len(J_data))
 
 #Make sure the Delta_J_log.txt file is removed before each NEW run of this Python script

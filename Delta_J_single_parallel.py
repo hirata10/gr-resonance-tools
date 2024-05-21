@@ -33,7 +33,7 @@ row[0] - resonance_label
 
 """
 
-res_data = numpy.loadtxt("resfinder_run_2.txt", skiprows = 3, delimiter = " ")
+res_data = numpy.loadtxt("potential_resonances.txt", skiprows = 3, delimiter = " ")
 print(len(res_data))
 
 #Make sure the Delta_J_log.txt file is removed before each NEW run of this Python script
