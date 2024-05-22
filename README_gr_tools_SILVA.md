@@ -1,5 +1,5 @@
 
-## gr-resonance-tools ##
+# gr-resonance-tools
 
 Hello all! If you are reading this, you are here to use the gr-resonance-tools toolkit to help you along your own research projects. The README file below should give a good outline as to how you can use this code to replicate the results in our paper (arXiv number here) as well as how to modify it for your own needs. If you have any questions, you can reach the developers here:
 
