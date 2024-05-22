@@ -6,7 +6,7 @@ import scipy.optimize as opt
 from sympy import Point, Line
 from scipy import interpolate
 import sys
-from gr_wrapper import ckerr_eql2j, ckerr_j2eql
+from gr_wrapper import ckerr_eql2j, ckerr_j2eql, ckerr_minverse, ckerr_minv2omega
 import os             
 import math
 import globalpars
@@ -147,9 +147,14 @@ with open('potential_resonances.txt', 'w') as f:
                                                             _, _, anc_outer = ckerr_eql2j(list(EQL_outer), M, astar)
                                                             _, _, anc_inner = ckerr_eql2j(list(EQL_inner), M, astar)
 
+                                                            _, M_outer = ckerr_minverse(J_outer, M, astar)
+                                                            omega_outer = ckerr_minv2omega(M_outer)
+                                                            _, M_inner = ckerr_minverse(J_inner, M, astar)
+                                                            omega_inner = ckerr_minv2omega(M_inner)
+
                                                             number = number + 1
                                                             new_file_num = file_number + 1
-                                                            f.write(f"{number} {new_file_num} {t[i]} {omega_inner_dot} {omega_outer_dot} {mu_inner} {mu_outer} {gamma} {m_i} {n_inner} {k_inner} {n_outer} {k_outer} {J_inner[0]} {J_inner[1]} {J_inner[2]} {J_outer[0]} {J_outer[1]} {J_outer[2]} {anc_inner[0]} {anc_inner[1]} {anc_inner[2]} {anc_outer[0]} {anc_outer[1]} {anc_outer[2]}\n")
+                                                            f.write(f"{number} {new_file_num} {t[i]} {omega_inner_dot} {omega_outer_dot} {mu_inner} {mu_outer} {gamma} {m_i} {n_inner} {k_inner} {n_outer} {k_outer} {J_inner[0]} {J_inner[1]} {J_inner[2]} {J_outer[0]} {J_outer[1]} {J_outer[2]} {omega_inner[0]} {omega_inner[1]} {omega_inner[2]} {omega_outer[0]} {omega_outer[1]} {omega_outer[2]} {anc_inner[0]} {anc_inner[1]} {anc_inner[2]} {anc_outer[0]} {anc_outer[1]} {anc_outer[2]}\n")
             
                                             else:
                                                 continue
