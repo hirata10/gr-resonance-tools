@@ -126,6 +126,7 @@ with open('potential_resonances.txt', 'w') as f:
                                                     for index in range(len(label)-1):
                                                         if time_value_1[index] < time_value_resonance and time_value_1[index+1] > time_value_resonance:
                                                             
+                                                            #Calculates th
                                                             omega_inner_after = om_inner_r_list[index+1]*n_inner + om_inner_theta_list[index+1]*k_inner + om_inner_phi_list[index+1]*(math.floor(m[i+1]))
                                                             omega_inner_before = om_inner_r_list[index]*n_inner + om_inner_theta_list[index]*k_inner + om_inner_phi_list[index]*(math.floor(m[i+1]))
                                                             delta_t_inner = delta_t_list_inner[index+1]
@@ -147,11 +148,13 @@ with open('potential_resonances.txt', 'w') as f:
                                                             _, _, anc_outer = ckerr_eql2j(list(EQL_outer), M, astar)
                                                             _, _, anc_inner = ckerr_eql2j(list(EQL_inner), M, astar)
 
+                                                            #Calculates the values of the omegas at the exact instant of resonance
                                                             _, M_outer = ckerr_minverse(J_outer, M, astar)
                                                             omega_outer = ckerr_minv2omega(M_outer)
                                                             _, M_inner = ckerr_minverse(J_inner, M, astar)
                                                             omega_inner = ckerr_minv2omega(M_inner)
 
+                                                            #Outputting to text file
                                                             number = number + 1
                                                             new_file_num = file_number + 1
                                                             f.write(f"{number} {new_file_num} {t[i]} {omega_inner_dot} {omega_outer_dot} {mu_inner} {mu_outer} {gamma} {m_i} {n_inner} {k_inner} {n_outer} {k_outer} {J_inner[0]} {J_inner[1]} {J_inner[2]} {J_outer[0]} {J_outer[1]} {J_outer[2]} {omega_inner[0]} {omega_inner[1]} {omega_inner[2]} {omega_outer[0]} {omega_outer[1]} {omega_outer[2]} {anc_inner[0]} {anc_inner[1]} {anc_inner[2]} {anc_outer[0]} {anc_outer[1]} {anc_outer[2]}\n")
