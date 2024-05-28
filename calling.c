@@ -244,6 +244,11 @@ int main(int argc, char **argv){
 	int N_res = GLOBALPAR_N_res;
 	double ra_inner, I_inner, rp_inner;
 	double ra_outer, I_outer, rp_outer;
+	double Omega_res_inner_r, Omega_res_inner_theta, Omega_res_inner_phi;
+	double Omega_res_outer_r, Omega_res_outer_theta, Omega_res_outer_phi;
+	double J_res_inner_r, J_res_inner_theta, J_res_inner_phi;
+	double J_res_outer_r, J_res_outer_theta, J_res_outer_phi;
+	double ratio_Delta_J_J_r, ratio_Delta_J_J_theta, ratio_Delta_J_J_phi;
 	double theta_res_F;
 	double radius_outer = 0;
 	double M = GLOBALPAR_M, astar = GLOBALPAR_astar; //Black hole mass set to 1 for units, BH spin wrt to BH mass = 1
@@ -272,12 +277,27 @@ int main(int argc, char **argv){
 	sscanf(argv[15], "%lg", &mu_outer);
 	sscanf(argv[16], "%d", &system_label);
 	sscanf(argv[17], "%d", &res_label);
+	sscanf(argv[18], "%lg", &Omega_res_inner_r);
+	sscanf(argv[19], "%lg", &Omega_res_inner_theta);
+	sscanf(argv[20], "%lg", &Omega_res_inner_phi);
+	sscanf(argv[21], "%lg", &Omega_res_outer_r);
+	sscanf(argv[22], "%lg", &Omega_res_outer_theta);
+	sscanf(argv[23], "%lg", &Omega_res_outer_phi);
+	sscanf(argv[24], "%lg", &J_res_inner_r);
+	sscanf(argv[25], "%lg", &J_res_inner_theta);
+	sscanf(argv[26], "%lg", &J_res_inner_phi);
+	sscanf(argv[27], "%lg", &J_res_outer_r);
+	sscanf(argv[28], "%lg", &J_res_outer_theta);
+	sscanf(argv[29], "%lg", &J_res_outer_phi);
 
 	//theta_res_F = (double)rand()/(double)RAND_MAX * 2*M_PI; //Random number generator from 0 to 2*pi for resonant angle value
 
 	//printf("system label \t n_inner \t k_inner \t n_outer \t k_outer \t m \t Gamma \t Delta_J_r \t Delta_J_theta \t Delta_J_phi \n------------\n");
 	Delta_J_tidal2(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, M, astar, theta_res_F, ang_accel, mu_outer, Delta_J_tidal_value);
-	printf("%i \t %i \t %i \t %i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \n", res_label, system_label, n_res_inner, k_res_inner, n_res_outer, k_res_outer, m_res_outer, theta_res_F, ang_accel, Delta_J_tidal_value[0], Delta_J_tidal_value[1], Delta_J_tidal_value[2]);
+	ratio_Delta_J_J_r = Delta_J_tidal_value[0]/J_res_inner_r;
+	ratio_Delta_J_J_theta = Delta_J_tidal_value[1]/J_res_inner_theta;
+	ratio_Delta_J_J_phi = Delta_J_tidal_value[2]/J_res_inner_phi;
+	printf("%i \t %i \t %i \t %i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \n", res_label, system_label, n_res_inner, k_res_inner, n_res_outer, k_res_outer, m_res_outer, theta_res_F, ang_accel, Omega_res_inner_r, Omega_res_inner_theta, Omega_res_inner_phi, Omega_res_outer_r, Omega_res_outer_theta, Omega_res_outer_phi, J_res_inner_r, J_res_inner_theta, J_res_inner_phi, J_res_outer_r, J_res_outer_theta, J_res_outer_phi, Delta_J_tidal_value[0], Delta_J_tidal_value[1], Delta_J_tidal_value[2], ratio_Delta_J_J_r, ratio_Delta_J_J_theta, ratio_Delta_J_J_phi);
 	/* for(i = 0; i < MAX_ROW; i++){
 
 		//ang_accel = data[i].data_col5 * data[i].data_col7; 
