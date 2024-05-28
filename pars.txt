@@ -22,10 +22,10 @@ sm_axis_inner 50
 sm_axis_outer 300
 
 #Number of systems
-N_sys 50
+N_sys 16
 
 #Number of resonance modes
-N_res 1
+N_res 5
 
 #Number of \ell modes for resonance calculation
 nl_res 4
