@@ -137,7 +137,7 @@ with open('potential_resonances.txt', 'w') as f:
                                                             delta_t_outer = delta_t_list_outer[index+1]
                                                             omega_outer_dot = (omega_outer_after-omega_outer_before)/delta_t_outer
 
-                                                            gamma = mu_inner*omega_inner_dot-mu_outer*omega_outer_dot
+                                                            gamma = - mu_inner*omega_inner_dot + mu_outer*omega_outer_dot
 
                                                             J_inner = [J_inner_r_function(t[i]), J_inner_theta_function(t[i]), J_inner_phi_function(t[i])]
                                                             J_outer = [J_outer_r_function(t[i]), J_outer_theta_function(t[i]), J_outer_phi_function(t[i])]
