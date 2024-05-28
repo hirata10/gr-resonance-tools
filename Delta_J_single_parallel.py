@@ -20,20 +20,32 @@ row[10] = k_res_inner
 row[12] = k_res_outer
 row[8] = m_res_inner
 row[8] = m_res_outer
-row[21] = ra_inner
-row[20] = rp_inner
-row[19] = inc_inner
-row[24] = ra_outer
-row[23] = rp_outer
-row[22] = inc_outer
+row[27] = ra_inner
+row[26] = rp_inner
+row[25] = inc_inner
+row[30] = ra_outer
+row[29] = rp_outer
+row[28] = inc_outer
 row[7] = angular_accel
 row[6] = mass_outer
 row[1] = system_label
-row[0] - resonance_label
+row[0] = resonance_label
+row[19] = Omega_inner_res_r
+row[20] = Omega_inner_res_theta
+row[21] = Omega_inner_res_phi
+row[22] = Omega_outer_res_r
+row[23] = Omega_outer_res_theta
+row[24] = Omega_outer_res_phi
+row[13] = J_inner_res_r
+row[14] = J_inner_res_theta
+row[15] = J_inner_res_phi
+row[16] = J_outer_res_r
+row[17] = J_outer_res_theta
+row[18] = J_outer_res_phi
 
 """
 
-res_data = numpy.loadtxt("potential_resonances.txt", skiprows = 3, delimiter = " ")
+res_data = numpy.loadtxt("potential_resonances.txt", delimiter = " ")
 print(len(res_data))
 
 #Make sure the Delta_J_log.txt file is removed before each NEW run of this Python script
@@ -61,9 +73,11 @@ for chunk in range(0,len(res_data),chunk_size):
     for row in res_data[chunk : chunk + chunk_size]:
         #print(row)
         theta_res_F = random.uniform(0,2* math.pi)
-        cmd = f"./Delta_J_single {int(row[9])} {int(row[11])} {int(row[10])} {int(row[12])} {int(row[8])} {int(row[8])} {float(row[21])} {float(row[20])} {float(row[19])} {float(row[24])} {float(row[23])} {float(row[22])} {float(row[7])} {theta_res_F} {float(row[6])} {int(row[1])} {int(row[0])}"
+        cmd = f"./Delta_J_single {int(row[9])} {int(row[11])} {int(row[10])} {int(row[12])} {int(row[8])} {int(row[8])} {float(row[27])} {float(row[26])} {float(row[25])} {float(row[30])} {float(row[29])} {float(row[28])} {float(row[7])} {theta_res_F} {float(row[6])} {int(row[1])} {int(row[0])} {float(row[19])} {float(row[20])} {float(row[21])} {float(row[22])} {float(row[23])} {float(row[24])} {float(row[13])} {float(row[14])} {float(row[15])} {float(row[16])} {float(row[17])} {float(row[18])}"
         fout = open(f"Output_Delta_J/Delta_J_log_{tot_chunk}_{chunk + 1}.txt", "a")
         processes.append(Popen(cmd, stdout = fout, shell = True))
+
+        #{J_inner[0]} {J_inner[1]} {J_inner[2]} {J_outer[0]} {J_outer[1]} {J_outer[2]} {omega_inner[0]} {omega_inner[1]} {omega_inner[2]} {omega_outer[0]} {omega_outer[1]} {omega_outer[2]}
     
     for process in processes:
         process.wait()
