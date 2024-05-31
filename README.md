@@ -27,7 +27,7 @@ SYSTEM REQUIREMENTS/INSTALLATION
 ***************************************************
 Requirements:
 
-This code requires that you have the lates versions of Python, Perl, Cython, and C installed. For those of you unfamiliar with it Cython, it can be described a wrapping language that allows you to use C functions in Python in one line. This menas that any of the C functions listed in the header file (CKerr.h) are fair game for Python users. To install Python and Cython, you can use pip:
+This code requires that you have the lates versions of Python, Perl, Cython, and C installed. For those of you unfamiliar with it Cython, it can be described a wrapping language that allows you to use C functions in Python in one line. This means that any of the C functions listed in the header file (CKerr.h) are fair game for Python users. To install Python and Cython, you can use pip:
 
 pip install python
 pip install cython
