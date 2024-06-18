@@ -44,7 +44,7 @@ int_max = globalpars.GLOBALPAR_N_max_Fourier
 system_label = sys.argv[1]
 
 # Open a text file for writing
-with open('potential_resonances.txt', 'w') as f:
+with open("potential_resonances_" + str(system_label) + ".txt", 'w') as f:
 
     #Starting the runs
     number = 0

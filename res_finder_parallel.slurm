@@ -29,7 +29,11 @@ echo "number of ranks total = $total_ranks"
 
 #### cmd="srun -N $SLURM_NNODES --tasks-per-node $SLURM_NTASKS_PER_NODE python3 action_angle_generator.py"
 
-cmd="python3 resfinder_parallel.py 1"
+#For parallel job submmissions with job arrays, replace "cmd" with cmd="python3 resfinder_parallel.py $SLURM_ARRAY_TASK_ID"
+#Then run the following command when you submit this slurm script to sbatch: "sbatch --array=N_min-N_max res_finder_parallel.slurm"
+#N_min/max are the integers that will be counted over for submission. In this case, we want N_min = 1 and N_max = 50
+
+cmd="python3 resfinder_parallel.py $SLURM_ARRAY_TASK_ID"
 
 echo $cmd
 $cmd
