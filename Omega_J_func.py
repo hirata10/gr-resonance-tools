@@ -1,7 +1,5 @@
 import numpy as np
-import scipy.optimize as opt
 #from sympy import Point, Line
-from scipy import interpolate
 import sys
 from gr_wrapper import ckerr_eql2j, ckerr_j2eql, ckerr_minverse, ckerr_minv2omega
 import os             
@@ -16,12 +14,16 @@ mu_inner = globalpars.GLOBALPAR_mu_inner
 file_amount = globalpars.GLOBALPAR_N_sys
 int_min = globalpars.GLOBALPAR_N_min_Fourier
 int_max = globalpars.GLOBALPAR_N_max_Fourier
+
+#Number of steps in J space
 N_step = 50
+
+#Specify which component of J you want to vary: 0 - J_r, 1 - J_theta, 2 - J_phi
 vary_label = int(sys.argv[1])
 
 print(vary_label)
 
-#Input array for action variables. Single value example
+#Input array for action variables. Single value example. This is the starting point in J-space for the following for loops
 #J = [0.039287, 1.559630, 5.472151]
 
 #Class that defines the output of a function to the txt file and 
@@ -77,12 +79,12 @@ def pyJ2Omega(input_J, mass, spin):
 
 ### Vary J_phi
 if (vary_label == 2):
-    print("please?")
+    #print("please?")
 
     dual_output = DualOutput('J2Omega_vary_phi.txt')
     # Redirect sys.stdout to the DualOutput instance
     sys.stdout = dual_output
-    print("J_phi vs Omega_i")
+    #You can change the starting point in J space here
     print("J_r \t J_theta \t J_phi \t Omega_r \t Omega_theta \t Omega_phi \t E \t Q \t L \n")
     for i in range(N_step):
         J = [0.04, 1.55, 5.47 + i/N_step]
@@ -103,7 +105,7 @@ elif (vary_label == 1):
     
     # Redirect sys.stdout to the DualOutput instance
     sys.stdout = dual_output
-    print("J_theta vs Omega_i")
+    #You can change the starting point in J space here
     print("J_r \t J_theta \t J_phi \t Omega_r \t Omega_theta \t Omega_phi \t E \t Q \t L \n")
     for i in range(N_step):
         J = [0.04, 1.55 + i/N_step, 5.47]
@@ -123,7 +125,7 @@ elif (vary_label == 0):
     
     # Redirect sys.stdout to the DualOutput instance
     sys.stdout = dual_output
-    print("J_r vs Omega_i")
+    #You can change the starting point in J space here
     print("J_r \t J_theta \t J_phi \t Omega_r \t Omega_theta \t Omega_phi \t E \t Q \t L \n")
     for i in range(N_step):
         J = [0.04 + i/N_step, 1.55, 5.47]
