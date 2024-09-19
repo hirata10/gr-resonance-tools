@@ -3,7 +3,29 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 
-output = sys.argv[1]
+output = sys.argv[1] #Specify if you want a plot of the frequency or adiabatic constant derivatives with: Omega or EQL, respectively 
+
+# file_path = 'J2Omega_vary_theta.txt'  # Change this to your data file with the appropriate changing J
+
+# data = pd.read_csv(file_path, delim_whitespace=True)  # Adjust file path as needed
+
+# Function to compute the numerical derivative
+def numerical_derivative(x, f_x):
+    x = pd.Series(x)
+    f_x = pd.Series(f_x)
+    derivative = pd.Series(index=f_x.index)  # Create an empty Series with same index
+    
+    # Symmetric finite difference for the interior points
+    for i in range(1, len(x) - 1):
+        h1 = x[i] - x[i-1]  # Distance to the previous point
+        h2 = x[i+1] - x[i]  # Distance to the next point
+        derivative[i] = (f_x[i+1] - f_x[i-1]) / (x[i+1] - x[i-1])
+
+    # Forward and backward difference for the boundaries
+    derivative.iloc[0] = (f_x.iloc[1] - f_x.iloc[0]) / (x.iloc[1] - x.iloc[0])
+    derivative.iloc[-1] = (f_x.iloc[-1] - f_x.iloc[-2]) / (x.iloc[-1] - x.iloc[-2])
+    
+    return derivative
 
 def compute_derivative(file_path, J_column, Omega_r_column, Omega_theta_column, Omega_phi_column, E_column, Q_column, L_column):
     # Read the data from the text file
@@ -24,13 +46,21 @@ def compute_derivative(file_path, J_column, Omega_r_column, Omega_theta_column, 
     Q = data[Q_column].values
     L = data[L_column].values
 
-    # Compute the numerical derivative
-    dOmega_r_dJ = np.gradient(J, Omega_r)
-    dOmega_theta_dJ = np.gradient(J, Omega_theta)
-    dOmega_phi_dJ = np.gradient(J, Omega_phi)
-    dE_dJ = np.gradient(J, E)
-    dQ_dJ = np.gradient(J, Q)
-    dL_dJ = np.gradient(J, L)
+     # Compute the numerical derivative
+    dOmega_r_dJ = numerical_derivative(J, Omega_r)
+    dOmega_theta_dJ = numerical_derivative(J, Omega_theta)
+    dOmega_phi_dJ = numerical_derivative(J, Omega_phi)
+    dE_dJ = numerical_derivative(J, E)
+    dQ_dJ = numerical_derivative(J, Q)
+    dL_dJ = numerical_derivative(J, L)
+
+    # # Compute the numerical derivative # These had numerical issues DO NOT USE FOR THIS!!
+    # dOmega_r_dJ = np.gradient(J, Omega_r)
+    # dOmega_theta_dJ = np.gradient(J, Omega_theta)
+    # dOmega_phi_dJ = np.gradient(J, Omega_phi)
+    # dE_dJ = np.gradient(J, E)
+    # dQ_dJ = np.gradient(J, Q)
+    # dL_dJ = np.gradient(J, L)
 
     return J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, dE_dJ, dQ_dJ, dL_dJ
 
@@ -65,8 +95,8 @@ def plot_derivative(J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, dE_dJ, dQ_dJ
 
 
 # Specify the file path and columns for differentiation
-file_path = 'J2Omega_vary_r.txt'  # Change this to your data file with the appropriate changing J
-J_column = 'J_r'    # Change this to whichever J component is changing (the others should be fixed and it should match the data file used above)
+file_path = 'J2Omega_vary_phi.txt'  # Change this to your data file with the appropriate changing J
+J_column = 'J_phi'    # Change this to whichever J component is changing (the others should be fixed and it should match the data file used above)
 Omega_r_column = 'Omega_r' 
 Omega_theta_column = 'Omega_theta'
 Omega_phi_column = 'Omega_phi'
@@ -75,5 +105,6 @@ Q_column = 'Q'
 L_column = 'L'
 
 J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, dE_dJ, dQ_dJ, dL_dJ = compute_derivative(file_path, J_column, Omega_r_column, Omega_theta_column, Omega_phi_column, E_column, Q_column, L_column)
-#print(J, dL_dJ)
 plot_derivative(J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, dE_dJ, dQ_dJ, dL_dJ, output)
+print(J, dE_dJ, dQ_dJ, dL_dJ)
+#plot_derivative(J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, dE_dJ, dQ_dJ, dL_dJ, output)
