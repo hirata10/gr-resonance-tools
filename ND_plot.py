@@ -35,7 +35,7 @@ def compute_derivative(file_path, J_column, Omega_r_column, Omega_theta_column, 
     return J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, dE_dJ, dQ_dJ, dL_dJ
 
 #Have to adjust axes and title of plot manually to the appropriate J that is varying
-def plot_derivative(J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, output):
+def plot_derivative(J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, dE_dJ, dQ_dJ, dL_dJ, output):
     if output == "Omega":
         plt.figure(figsize=(10, 6))
         plt.plot(J, dOmega_r_dJ, label=r'd$\Omega^r$/d$J_{\theta}$', color='blue')
@@ -65,8 +65,8 @@ def plot_derivative(J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, output):
 
 
 # Specify the file path and columns for differentiation
-file_path = 'J2Omega_vary_phi.txt'  # Change this to your data file with the appropriate changing J
-J_column = 'J_phi'    # Change this to whichever J component is changing (the others should be fixed and it should match the data file used above)
+file_path = 'J2Omega_vary_r.txt'  # Change this to your data file with the appropriate changing J
+J_column = 'J_r'    # Change this to whichever J component is changing (the others should be fixed and it should match the data file used above)
 Omega_r_column = 'Omega_r' 
 Omega_theta_column = 'Omega_theta'
 Omega_phi_column = 'Omega_phi'
@@ -76,4 +76,4 @@ L_column = 'L'
 
 J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, dE_dJ, dQ_dJ, dL_dJ = compute_derivative(file_path, J_column, Omega_r_column, Omega_theta_column, Omega_phi_column, E_column, Q_column, L_column)
 #print(J, dL_dJ)
-plot_derivative(J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, output)
+plot_derivative(J, dOmega_r_dJ, dOmega_theta_dJ, dOmega_phi_dJ, dE_dJ, dQ_dJ, dL_dJ, output)
