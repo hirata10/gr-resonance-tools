@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <complex.h>
+#include "CKerr.h"
+#include "globalpars_c.h"
 
 // REMEMBER WRAPPER!!!
 
@@ -88,11 +90,22 @@ complex double contour_integral(complex double (*f)(complex double, complex doub
 }
 
 // Contour integral calculation main function //
-int contour_integral_main() {
-    double a = 0.5;  // spin
-    double E = 0.9;  // energy
-    double L = 4.0;  // angular momentum
-    double Q = 2.0;  // Carter constant
+int main(int argc, char **argv) {
+    // double a = 0.5;  // spin
+    // double E = 0.9;  // energy
+    // double L = 4.0;  // angular momentum
+    // double Q = 2.0;  // Carter constant
+
+    double a;  // spin
+    double E;  // energy
+    double L;  // angular momentum
+    double Q;  // Carter constant
+
+    sscanf(argv[1], "%lg", &a);
+    sscanf(argv[2], "%lg", &E);
+    sscanf(argv[3], "%lg", &L);
+    sscanf(argv[4], "%lg", &Q);
+
 
     double chi = calculate_chi(a, E, L, Q);
     double r = calculate_r(L, Q);
