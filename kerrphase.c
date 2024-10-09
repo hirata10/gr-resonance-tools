@@ -311,7 +311,7 @@ complex double d2J_rdLQ(complex double z, complex double r_root1, complex double
 // Function to perform the contour integration //
 complex double contour_integral_r(complex double (*f)(complex double, complex double, complex double, complex double, complex double, double, double, double, double, double),
                                             complex double r_start, double radius, int num_points, double center,
-                                            double a, double M, double E, double L, double Q,
+                                            double a, double M, double E, double Q, double L,
                                             complex double r_root1, complex double r_root2, complex double r_root3, complex double r_root4) {
     complex double integral = 0.0 + 0.0 * I;
     double theta;
@@ -354,7 +354,7 @@ int main(int argc, char **argv) {
     EQL[1] = Q;
     EQL[2] = L;
 
-    #if 0
+  
     /* For polar integral */
     double chi = calculate_chi(a, E, L, Q);
     double r = calculate_r(L, Q);
@@ -382,36 +382,41 @@ int main(int argc, char **argv) {
     printf("d2JdQ2 contour integral: %.10f + %.10f I\n", creal(integral_d2JdQ2), cimag(integral_d2JdQ2));
     printf("d2JdEQ contour integral: %.10f + %.10f I\n", creal(integral_d2JdEQ), cimag(integral_d2JdEQ));
     printf("d2JdLQ contour integral: %.10f + %.10f I\n", creal(integral_d2JdLQ), cimag(integral_d2JdLQ));
-    #endif
+    
 
     /* For radial integral */
     radial_roots(EQL, J, M, a, ancillary, r_roots); //compute radial roots
 
-    double chi = calculate_chi(a, E, L, Q);
-    double r = calculate_r(L, Q);
-    
-    complex double z_minus, z_plus;
-    calculate_z_roots(chi, r, &z_minus, &z_plus);
-    
-    double radius = 2 * ((1 / z_minus) + (1 / z_plus));  // (harmonic mean) radius of the contour
-    complex double z_start = radius + 0.0 * I;  // starting point on the contour
-
-    int num_points = 1000;  // number of points on the contour
-    double radius_r = (r_roots[2] - r_roots[1]); //radius of radial contour
+    double radius_r = (r_roots[3] - r_roots[1])/2.0; //radius of circular contour
     double center = (r_roots[2] + r_roots[3])/2.0; //center of circular contour
     complex double r_start = radius_r + 0.0 * I; //starting point on contour
 
     double r_H_outer = M + sqrt(M*M - a*a);
     double r_H_inner = M - sqrt(M*M - a*a);
 
-    printf("sqrtP(r) real and imaginary %0.1f + %0.1f I \n", creal(sqrt_P_r(r_start, r_roots[0], r_roots[1], r_roots[2], r_roots[3], a, E)), cimag(sqrt_P_r(r_start, r_roots[0], r_roots[1], r_roots[2], r_roots[3], a, E)));
+    // printf("radial roots: %.10f %.10f %.10f %.10f inner and outer horizon: %.10f %.10f \n", r_roots[0], r_roots[1], r_roots[2], r_roots[3], r_H_inner, r_H_outer);
 
-    printf("sqrtP(z) real and imaginary %0.1f + %0.1f I \n", creal(sqrt_P(z_start, z_minus, z_plus, a, E, L, Q)), cimag(sqrt_P_r(z_start, z_minus, z_plus, a, E, L, Q)));
+    // printf("sqrtP(r) real and imaginary %.10f + %.10f I \n", creal(sqrt_P_r(r_start, r_roots[0], r_roots[1], r_roots[2], r_roots[3], a, E)), cimag(sqrt_P_r(r_start, r_roots[0], r_roots[1], r_roots[2], r_roots[3], a, E)));
 
-    printf("inner and outer horizon: %.10f and %.10f \n", r_H_inner, r_H_outer);
+    // printf("sqrtP(z) real and imaginary %.10f + %.10f I \n", creal(sqrt_P(z_start, z_minus, z_plus, a, E, L, Q)), cimag(sqrt_P_r(z_start, z_minus, z_plus, a, E, L, Q)));
+
+    //printf("inner and outer horizon: %.10f and %.10f \n", r_H_inner, r_H_outer);
+   
+   /* Compute the radial contour integrals */
     complex double integral_d2J_r_dE2 = contour_integral_r(d2J_rdE2, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
-
+    complex double integral_d2J_r_dL2 = contour_integral_r(d2J_rdL2, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
+    complex double integral_d2J_r_dQ2 = contour_integral_r(d2J_rdQ2, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
+    complex double integral_d2J_r_dEL = contour_integral_r(d2J_rdEL, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
+    complex double integral_d2J_r_dEQ = contour_integral_r(d2J_rdEQ, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
+    complex double integral_d2J_r_dLQ = contour_integral_r(d2J_rdLQ, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
+   
     printf("d2J_rdE2 contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dE2), cimag(integral_d2J_r_dE2));
+    printf("d2J_rdL2 contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dL2), cimag(integral_d2J_r_dL2));
+    printf("d2J_rdQ2 contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dQ2), cimag(integral_d2J_r_dQ2));
+    printf("d2J_rdEL contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dEL), cimag(integral_d2J_r_dEL));
+    printf("d2J_rdEQ contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dEQ), cimag(integral_d2J_r_dEQ));
+    printf("d2J_rdLQ contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dLQ), cimag(integral_d2J_r_dLQ));
+    
     return 0;
 }
 
