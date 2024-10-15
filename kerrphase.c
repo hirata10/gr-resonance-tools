@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <complex.h>
-//#include "CKerr.h"
-#include "globalpars_c.h"
 
 #define CKERR_NBISECT_ITER 56
 #define CKERR_NBISECT_ITER2 32
@@ -12,6 +10,15 @@
 #define CKERR_ACTION_MAX 1e49
 #define CKERR_NPOINT_DERIV 3
 #define CKERR_DACTION_DERIV 5e-4
+#undef I // Undeclare I since we use it for inclination in CKerr.h
+#define complex_I _Complex_I //define complex number I and complex_I
+
+#define SIZE 3  // Size of the matrix (3x3)
+#define TOTAL_ELEMENTS (SIZE * SIZE)  // Total elements in the matrix
+
+
+#include "CKerr.h"
+#include "globalpars_c.h"
 
 // REMEMBER WRAPPER!!!
 
@@ -45,7 +52,7 @@ complex double P(complex double z, double a, double E, double L, double Q) {
 
 // Square root of polynomial function above //
 complex double sqrt_P(complex double z, complex double z_minus, complex double z_plus, double a, double E, double L, double Q) {
-    return I * a * sqrt(1 - E * E) * z * csqrt(1 - ((z_minus * z_minus)/(z * z))) * csqrt((z_plus * z_plus) - (z * z));
+    return complex_I * a * sqrt(1 - E * E) * z * csqrt(1 - ((z_minus * z_minus)/(z * z))) * csqrt((z_plus * z_plus) - (z * z));
 }
 
 // uz value present in integrals //
@@ -106,16 +113,16 @@ complex double contour_integral_z(complex double (*f)(complex double, complex do
                                             complex double z_start, double radius, int num_points,
                                             double a, double E, double L, double Q,
                                             complex double z_minus, complex double z_plus) {
-    complex double integral = 0.0 + 0.0 * I;
+    complex double integral = 0.0 + 0.0 * complex_I;
     double theta;
     complex double z;
     double dtheta = 2 * M_PI / num_points;  // angle step
 
     for (int i = 0; i < num_points; i++) {
         theta = i * dtheta;
-        z = radius * (cos(theta) + I * sin(theta));  // point on the contour
+        z = radius * (cos(theta) + complex_I * sin(theta));  // point on the contour
         // Now passing a, E, L, Q into f
-        integral += f(z, z_minus, z_plus, a, E, L, Q) * radius * dtheta * (-sin(theta) + I * cos(theta));  // trapezoidal rule
+        integral += f(z, z_minus, z_plus, a, E, L, Q) * radius * dtheta * (-sin(theta) + complex_I * cos(theta));  // trapezoidal rule
     }
     return integral;
 }
@@ -257,7 +264,8 @@ complex double P_r(complex double z, double a, double M, double E, double Q, dou
 
 // Square root of polynomial function above //
 complex double sqrt_P_r(complex double z, complex double r_root1, complex double r_root2, complex double r_root3, complex double r_root4, double a, double E) {
-    return I * sqrt(1 - E * E) * z * csqrt(1 - r_root1/z) * csqrt(1 - r_root2/z) * csqrt(z - r_root3) * csqrt(z - r_root4);
+    return complex_I * sqrt(1 - E * E) * z * csqrt(1 - r_root1/z) * csqrt(1 - r_root2/z) * csqrt(z - r_root3) * csqrt(z - r_root4);
+    //return complex_I * sqrt(1 - E * E) * csqrt(z - r_root1) * csqrt(z - r_root2) * csqrt(z - r_root3) * csqrt(z - r_root4);
 }
 
 // Function to evaluate equation A14 in the paper //
@@ -313,19 +321,139 @@ complex double contour_integral_r(complex double (*f)(complex double, complex do
                                             complex double r_start, double radius, int num_points, double center,
                                             double a, double M, double E, double Q, double L,
                                             complex double r_root1, complex double r_root2, complex double r_root3, complex double r_root4) {
-    complex double integral = 0.0 + 0.0 * I;
+    complex double integral = 0.0 + 0.0 * complex_I;
     double theta;
     complex double z;
     double dtheta = 2 * M_PI / num_points;  // angle step
 
     for (int i = 0; i < num_points; i++) {
         theta = i * dtheta;
-        z =  center + radius * (cos(theta) + I * sin(theta));  // point on the contour
+        z =  center + radius * (cos(theta) + complex_I * sin(theta));  // point on the contour
         // Now passing a, E, L, Q into f
-        integral += f(z, r_root1, r_root2, r_root3, r_root4, a, M, E, Q, L) * radius * dtheta * (-sin(theta) + I * cos(theta));  // trapezoidal rule
+        integral += f(z, r_root1, r_root2, r_root3, r_root4, a, M, E, Q, L) * radius * dtheta * (-sin(theta) + complex_I * cos(theta));  // trapezoidal rule
     }
     return integral;
 }
+
+
+
+/* SECTION 2: dM/dJ CALCULATION*/
+// dM/dJ calculation (explain that the double derivative is just Minverse w/o having to explicitly calculate)
+
+// inverse of Minverse
+
+int invertMatrix(double *Minverse, double *M_matrix) {
+    double determinant = Minverse[0] * (Minverse[4] * Minverse[8] - Minverse[5] * Minverse[7]) -
+                         Minverse[1] * (Minverse[3] * Minverse[8] - Minverse[5] * Minverse[6]) +
+                         Minverse[2] * (Minverse[3] * Minverse[7] - Minverse[4] * Minverse[6]);
+
+    if (determinant == 0) {
+        printf("Matrix is singular and cannot be inverted.\n");
+        return 0; // Indicate failure
+    }
+
+    double invDet = 1.0 / determinant;
+
+    M_matrix[0] =  (Minverse[4] * Minverse[8] - Minverse[5] * Minverse[7]) * invDet;
+    M_matrix[1] = -(Minverse[1] * Minverse[8] - Minverse[2] * Minverse[7]) * invDet;
+    M_matrix[2] =  (Minverse[1] * Minverse[5] - Minverse[2] * Minverse[4]) * invDet;
+
+    M_matrix[3] = -(Minverse[3] * Minverse[8] - Minverse[5] * Minverse[6]) * invDet;
+    M_matrix[4] =  (Minverse[0] * Minverse[8] - Minverse[2] * Minverse[6]) * invDet;
+    M_matrix[5] = -(Minverse[0] * Minverse[5] - Minverse[2] * Minverse[3]) * invDet;
+
+    M_matrix[6] =  (Minverse[3] * Minverse[7] - Minverse[4] * Minverse[6]) * invDet;
+    M_matrix[7] = -(Minverse[0] * Minverse[7] - Minverse[1] * Minverse[6]) * invDet;
+    M_matrix[8] =  (Minverse[0] * Minverse[4] - Minverse[1] * Minverse[3]) * invDet;
+
+    return 1; // Indicate success
+}
+
+/* Input array is the array on contour integrals and then reorganized into the appropriate array for phase change calculations */
+int partial_J_derivatives(double *input_array, double *partial_derivatives){
+  /* input_array structure:  */
+  /* 
+  integral_d2J_r_dE2 - 0
+  integral_d2J_r_dL2 - 1
+  integral_d2J_r_dQ2 - 2
+  integral_d2J_r_dEL - 3
+  integral_d2J_r_dEQ - 4
+  integral_d2J_r_dLQ - 5
+  integral_d2JdE2 - 6
+  integral_d2JdL2 - 7
+  integral_d2JdQ2 - 8
+  integral_d2JdEdL - 9
+  integral_d2JdEQ - 10
+  integral_d2JdLQ - 11
+  */
+  partial_derivatives[0] = input_array[0]; // jr_ee
+  partial_derivatives[1] = input_array[4]; // jr_eq
+  partial_derivatives[2] = input_array[3]; // jr_el
+  partial_derivatives[3] = input_array[4]; // jr_qe
+  partial_derivatives[4] = input_array[2]; // jr_qq
+  partial_derivatives[5] = input_array[5]; // jr_ql
+  partial_derivatives[6] = input_array[3]; //jr_le
+  partial_derivatives[7] = input_array[5]; // jr_lq
+  partial_derivatives[8] = input_array[1]; //jr_ll
+  partial_derivatives[9] = input_array[6]; //jtheta_ee
+  partial_derivatives[10] = input_array[10]; // jtheta_eq
+  partial_derivatives[11] = input_array[9]; // jtheta_el
+  partial_derivatives[12] = input_array[10]; // jtheta_qe
+  partial_derivatives[13] = input_array[8]; // jtheta_qq
+  partial_derivatives[14] = input_array[11]; // jtheta_ql
+  partial_derivatives[15] = input_array[9]; // jtheta_le
+  partial_derivatives[16] = input_array[11]; // jtheta_lq
+  partial_derivatives[17] = input_array[7]; // jtheta_ll
+  partial_derivatives[18] = 0; // jphi_{anything}, since u_phi is a constant, then all derivatives of J_phi is zero
+  partial_derivatives[19] = 0;
+  partial_derivatives[20] = 0;
+  partial_derivatives[21] = 0;
+  partial_derivatives[22] = 0;
+  partial_derivatives[23] = 0;
+  partial_derivatives[24] = 0;
+  partial_derivatives[25] = 0;
+  partial_derivatives[26] = 0;
+  
+  
+  return 0;
+}
+
+/* SECTION 3: dM/dJ -> dOmega/dJ CALCULATION */
+
+int dM_dJ(double M[TOTAL_ELEMENTS], double partial_derivatives[3 * TOTAL_ELEMENTS], double result[3 * TOTAL_ELEMENTS]) {
+
+    for (int A = 0; A < 3; A++) {
+        for (int i = 0; i < 3; i++) {
+            for (int k = 0; k < 3; k++) {
+                // Initialize the result for this (A, i, k) to zero
+                result[A * 3 * 3 + i * 3 + k] = 0;
+
+                for (int j = 0; j < 3; j++) { // Loop over j
+                    for (int B = 0; B < 3; B++) {
+                        for (int D = 0; D < 3; D++) {
+                            // Access M elements based on flattened index
+                            double M_Aj = M[A * 3 + j]; // M_Aj for specific A and j
+                            double M_Di = M[D * 3 + i]; // M_Di for specific D and i
+                            double M_Bk = M[B * 3 + k]; // M_Bk for specific B and k
+
+                            // Update result tensor
+                            result[A * 3 * 3 + i * 3 + k] += M_Aj * M_Di * M_Bk * partial_derivatives[j * 3 * 3 + B * 3 + D];
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+    return 0;
+}
+
+
+
+
+
+/* SECTION 4: PHASE CHANGE CALCULATION */
 
 
 
@@ -335,14 +463,15 @@ int main(int argc, char **argv) {
     // double E = 0.9;  // energy
     // double L = 4.0;  // angular momentum
     // double Q = 2.0;  // Carter constant
-
+    int i, j;
     double a;  // spin
     double E;  // energy
     double L;  // angular momentum
     double Q;  // Carter constant
     double M; // mass of black hole
     double EQL[3], ancillary[3], r_roots[4]; // array for EQL and ancillary data
-    double J[3]; // array for action variables
+    double J[3], Minv[9], M_matrix[9]; // array for action variables and Minv matrix
+    double input_array[12], partial_derivatives[27], dM_dJ_result[27]; //Arrays for storing partial derivatives of J
 
     sscanf(argv[1], "%lg", &a);
     sscanf(argv[2], "%lg", &E);
@@ -354,7 +483,21 @@ int main(int argc, char **argv) {
     EQL[1] = Q;
     EQL[2] = L;
 
-  
+    CKerr_EQL2J(EQL, J, M, a, ancillary);
+    CKerr_Minverse(J, Minv, M, a);
+    invertMatrix(Minv, M_matrix);
+    
+    printf("Minv components: \n");
+    for (i = 0; i < 9; i++){
+      printf("%lg", Minv[i]);
+      printf("\n");
+    }
+
+    printf("M_matrix components: \n");
+    for (i = 0; i < 9; i++){
+      printf("%lg", M_matrix[i]);
+      printf("\n");
+    }
     /* For polar integral */
     double chi = calculate_chi(a, E, L, Q);
     double r = calculate_r(L, Q);
@@ -363,7 +506,7 @@ int main(int argc, char **argv) {
     calculate_z_roots(chi, r, &z_minus, &z_plus);
     
     double radius = 2 * ((1 / z_minus) + (1 / z_plus));  // (harmonic mean) radius of the contour
-    complex double z_start = radius + 0.0 * I;  // starting point on the contour
+    complex double z_start = radius + 0.0 * complex_I;  // starting point on the contour
     int num_points = 1000;  // number of points on the contour
 
     // Perform the contour integration
@@ -389,7 +532,7 @@ int main(int argc, char **argv) {
 
     double radius_r = (r_roots[3] - r_roots[1])/2.0; //radius of circular contour
     double center = (r_roots[2] + r_roots[3])/2.0; //center of circular contour
-    complex double r_start = radius_r + 0.0 * I; //starting point on contour
+    complex double r_start = radius_r + 0.0 * complex_I; //starting point on contour
 
     double r_H_outer = M + sqrt(M*M - a*a);
     double r_H_inner = M - sqrt(M*M - a*a);
@@ -416,29 +559,46 @@ int main(int argc, char **argv) {
     printf("d2J_rdEL contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dEL), cimag(integral_d2J_r_dEL));
     printf("d2J_rdEQ contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dEQ), cimag(integral_d2J_r_dEQ));
     printf("d2J_rdLQ contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dLQ), cimag(integral_d2J_r_dLQ));
-    
+
+    /* Define input array for partial derivatives of J array */
+    input_array[0] = integral_d2J_r_dE2;
+    input_array[1] = integral_d2J_r_dL2;
+    input_array[2] = integral_d2J_r_dQ2;
+    input_array[3] = integral_d2J_r_dEL;
+    input_array[4] = integral_d2J_r_dEQ;
+    input_array[5] = integral_d2J_r_dLQ;
+    input_array[6] = integral_d2JdE2;
+    input_array[7] = integral_d2JdL2;
+    input_array[8] = integral_d2JdQ2;
+    input_array[9] = integral_d2JdEdL;
+    input_array[10] = integral_d2JdEQ;
+    input_array[11] = integral_d2JdLQ;
+
+    partial_J_derivatives(input_array, partial_derivatives); // Compute the array of partial derivatives of J
+
+    printf("dJ_dBD components: \n");
+    for (i = 0; i < 27; i++){
+      printf("%lg", partial_derivatives[i]);
+      printf("\n");
+    }
+
+    dM_dJ(M_matrix, partial_derivatives, dM_dJ_result); // Compute dM_dJ
+
+    printf("dM_dJ components: \n");
+    for (i = 0; i < 27; i++){
+      printf("%lg", dM_dJ_result[i]);
+      printf("\n");
+    }
+
+    printf("dOmega_dJ components: \n"); // Computes dOmega_dJ = dM_dJ[i + 0 * A + 9 * k]
+    for (i = 0; i < 3; i++){
+      for (j = 0; j < 3; j++){
+        printf("%lg", dM_dJ_result[i + 9 * j]);
+        printf("\n");
+      }
+    }
+
+
     return 0;
 }
-
-
-
-/* SECTION 2: dM/dJ CALCULATION*/
-// dM/dJ calculation (explain that the double derivative is just Minverse w/o having to explicitly calculate)
-// inverse of Minverse
-
-
-
-
-
-/* SECTION 3: dM/dJ -> dOmega/dJ CALCULATION */
-
-
-
-
-
-
-/* SECTION 4: PHASE CHANGE CALCULATION */
-
-
-
 
