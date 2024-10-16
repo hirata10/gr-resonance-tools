@@ -426,7 +426,7 @@ int dM_dJ(double M[TOTAL_ELEMENTS], double partial_derivatives[3 * TOTAL_ELEMENT
         for (int i = 0; i < 3; i++) {
             for (int k = 0; k < 3; k++) {
                 // Initialize the result for this (A, i, k) to zero
-                result[A * 3 * 3 + i * 3 + k] = 0;
+                result[A * 3 + i + 3 * 3 * k] = 0;
 
                 for (int j = 0; j < 3; j++) { // Loop over j
                     for (int B = 0; B < 3; B++) {
@@ -437,7 +437,7 @@ int dM_dJ(double M[TOTAL_ELEMENTS], double partial_derivatives[3 * TOTAL_ELEMENT
                             double M_Bk = M[B * 3 + k]; // M_Bk for specific B and k
 
                             // Update result tensor
-                            result[A * 3 * 3 + i * 3 + k] += M_Aj * M_Di * M_Bk * partial_derivatives[j * 3 * 3 + B * 3 + D];
+                            result[A * 3 + i + 3 * 3 * k] += M_Aj * M_Di * M_Bk * partial_derivatives[j * 3 * 3 + B * 3 + D];
                     }
                 }
             }
