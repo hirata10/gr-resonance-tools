@@ -486,7 +486,7 @@ int Delta_Phi(double E, double Q, double L, double Delta_J_td_r, double Delta_J_
 
   for (int i = 0; i < 3; i++){
     for (int k = 0; k < 3; k++){
-      Delta_Phi_components[i] = t_scale * dOmega_dJ[i + 9 * k] * Delta_J_td[k]; // Computing the change in Phi for each component
+      Delta_Phi_components[i] += t_scale * dOmega_dJ[i + 9 * k] * Delta_J_td[k]; // Computing the change in Phi for each component
     }
   }
 
