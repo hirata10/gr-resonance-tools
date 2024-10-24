@@ -437,7 +437,7 @@ int dM_dJ(double M[TOTAL_ELEMENTS], double partial_derivatives[3 * TOTAL_ELEMENT
                             double M_Bk = M[B * 3 + k]; // M_Bk for specific B and k
 
                             // Update result tensor
-                            result[A * 3 + i + 3 * 3 * k] += M_Aj * M_Di * M_Bk * partial_derivatives[j * 3 * 3 + B * 3 + D];
+                            result[A * 3 + i + 3 * 3 * k] += - M_Aj * M_Di * M_Bk * partial_derivatives[j * 3 * 3 + B * 3 + D];
                     }
                 }
             }
@@ -455,6 +455,45 @@ int dM_dJ(double M[TOTAL_ELEMENTS], double partial_derivatives[3 * TOTAL_ELEMENT
 
 /* SECTION 4: PHASE CHANGE CALCULATION */
 
+// Compute \Delta Phi^i = sum_i J_i/\dot{J}_i,sf * dOmega^i\dJ_k \Delta J_k,td
+
+// Input: EQL, Delta_J_td_i, dOmega_dJ
+// Output: array with Delta_Phi for each spatial direction
+
+int Delta_Phi(double E, double Q, double L, double Delta_J_td_r, double Delta_J_td_theta, double Delta_J_td_phi , double *dOmega_dJ, double *Delta_Phi_components, double astar, double M){
+  double J[3], ancillary[3], J_dot_sf[3], EQL[3], Delta_J_td[3];
+  double t_scale;
+
+  EQL[0] = E;
+  EQL[1] = Q;
+  EQL[2] = L;
+
+  Delta_J_td[0] = Delta_J_td_r;
+  Delta_J_td[1] = Delta_J_td_theta;
+  Delta_J_td[2] = Delta_J_td_phi;
+
+
+
+  CKerr_EQL2J(EQL, J, M, astar, ancillary);
+
+  J_dot_selfforce(GLOBALPAR_nl_self, GLOBALPAR_nmax, GLOBALPAR_kmax, GLOBALPAR_mmax, ancillary[2], ancillary[1], 0, ancillary[0], M, astar, J_dot_sf);
+
+  for (int i = 0; i < 3; i++){
+    printf("%d: %lg \n", i, J[i] / J_dot_sf[i]);
+    t_scale += J[i] * J[i] / (J_dot_sf[i] * J_dot_sf[i]);
+    t_scale = sqrt(t_scale);
+  }
+
+  for (int i = 0; i < 3; i++){
+    for (int k = 0; k < 3; k++){
+      Delta_Phi_components[i] = t_scale * dOmega_dJ[i + 9 * k] * Delta_J_td[k];
+    }
+  }
+
+
+return (0);
+}
+
 
 
 // Contour integral calculation main function //
@@ -470,22 +509,37 @@ int main(int argc, char **argv) {
     double Q;  // Carter constant
     double M; // mass of black hole
     double EQL[3], ancillary[3], r_roots[4]; // array for EQL and ancillary data
-    double J[3], Minv[9], M_matrix[9]; // array for action variables and Minv matrix
+    double J[3], Minv[9], M_matrix[9], J_r, J_theta, J_phi; // array for action variables and Minv matrix
     double input_array[12], partial_derivatives[27], dM_dJ_result[27]; //Arrays for storing partial derivatives of J
+    double Delta_J_td_r, Delta_J_td_theta, Delta_J_td_phi;
+    double Delta_Phi_components[3];
 
     sscanf(argv[1], "%lg", &a);
-    sscanf(argv[2], "%lg", &E);
-    sscanf(argv[3], "%lg", &L);
-    sscanf(argv[4], "%lg", &Q);
+    // sscanf(argv[2], "%lg", &E);
+    // sscanf(argv[3], "%lg", &Q);
+    // sscanf(argv[4], "%lg", &L);
+    sscanf(argv[2], "%lg", &J_r);
+    sscanf(argv[3], "%lg", &J_theta);
+    sscanf(argv[4], "%lg", &J_phi);
     sscanf(argv[5], "%lg", &M);
+    sscanf(argv[6], "%lg", &Delta_J_td_r);
+    sscanf(argv[7], "%lg", &Delta_J_td_theta);
+    sscanf(argv[8], "%lg", &Delta_J_td_phi);
+    
+    J[0] = J_r;
+    J[1] = J_theta;
+    J[2] = J_phi;
 
-    EQL[0] = E;
-    EQL[1] = Q;
-    EQL[2] = L;
-
-    CKerr_EQL2J(EQL, J, M, a, ancillary);
+    //CKerr_EQL2J(EQL, J, M, a, ancillary);
+    CKerr_J2EQL(J, EQL, M, a);
     CKerr_Minverse(J, Minv, M, a);
     invertMatrix(Minv, M_matrix);
+
+    E = EQL[0];
+    Q = EQL[1];
+    L = EQL[2];
+
+    //printf("%lg %lg %lg \n", E, Q, L);
     
     printf("Minv components: \n");
     for (i = 0; i < 9; i++){
@@ -598,6 +652,12 @@ int main(int argc, char **argv) {
       }
     }
 
+    Delta_Phi(E, Q, L, Delta_J_td_r, Delta_J_td_theta, Delta_J_td_phi, dM_dJ_result, Delta_Phi_components, a, M);
+
+    printf("Change in phase components: \n");
+    for (i = 0; i < 3; i++){
+      printf("%lg \n", Delta_Phi_components[i]);
+    }
 
     return 0;
 }
