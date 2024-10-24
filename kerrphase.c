@@ -474,19 +474,19 @@ int Delta_Phi(double E, double Q, double L, double Delta_J_td_r, double Delta_J_
 
 
 
-  CKerr_EQL2J(EQL, J, M, astar, ancillary);
+  CKerr_EQL2J(EQL, J, M, astar, ancillary); // Convert EQL to J
 
-  J_dot_selfforce(GLOBALPAR_nl_self, GLOBALPAR_nmax, GLOBALPAR_kmax, GLOBALPAR_mmax, ancillary[2], ancillary[1], 0, ancillary[0], M, astar, J_dot_sf);
+  J_dot_selfforce(GLOBALPAR_nl_self, GLOBALPAR_nmax, GLOBALPAR_kmax, GLOBALPAR_mmax, ancillary[2], ancillary[1], 0, ancillary[0], M, astar, J_dot_sf); // Compute J_dot_selfforce for time scale
 
   for (int i = 0; i < 3; i++){
     printf("%d: %lg \n", i, J[i] / J_dot_sf[i]);
-    t_scale += J[i] * J[i] / (J_dot_sf[i] * J_dot_sf[i]);
-    t_scale = sqrt(t_scale);
+    t_scale += J[i] * J[i] / (J_dot_sf[i] * J_dot_sf[i]); // J_i/J_dot_i added in quadrature
+    t_scale = sqrt(t_scale); // Time scale for resonance crossing
   }
 
   for (int i = 0; i < 3; i++){
     for (int k = 0; k < 3; k++){
-      Delta_Phi_components[i] = t_scale * dOmega_dJ[i + 9 * k] * Delta_J_td[k];
+      Delta_Phi_components[i] = t_scale * dOmega_dJ[i + 9 * k] * Delta_J_td[k]; // Computing the change in Phi for each component
     }
   }
 
@@ -503,6 +503,7 @@ int main(int argc, char **argv) {
     // double L = 4.0;  // angular momentum
     // double Q = 2.0;  // Carter constant
     int i, j;
+    int n_inner, k_inner, m_inner;
     double a;  // spin
     double E;  // energy
     double L;  // angular momentum
@@ -512,7 +513,7 @@ int main(int argc, char **argv) {
     double J[3], Minv[9], M_matrix[9], J_r, J_theta, J_phi; // array for action variables and Minv matrix
     double input_array[12], partial_derivatives[27], dM_dJ_result[27]; //Arrays for storing partial derivatives of J
     double Delta_J_td_r, Delta_J_td_theta, Delta_J_td_phi;
-    double Delta_Phi_components[3];
+    double Delta_Phi_components[3], tot_Delta_Phi;
 
     sscanf(argv[1], "%lg", &a);
     // sscanf(argv[2], "%lg", &E);
@@ -525,6 +526,10 @@ int main(int argc, char **argv) {
     sscanf(argv[6], "%lg", &Delta_J_td_r);
     sscanf(argv[7], "%lg", &Delta_J_td_theta);
     sscanf(argv[8], "%lg", &Delta_J_td_phi);
+    sscanf(argv[9], "%i", &n_inner);
+    sscanf(argv[10], "%i", &k_inner);
+    sscanf(argv[11], "%i", &m_inner);
+
     
     J[0] = J_r;
     J[1] = J_theta;
@@ -652,13 +657,15 @@ int main(int argc, char **argv) {
       }
     }
 
-    Delta_Phi(E, Q, L, Delta_J_td_r, Delta_J_td_theta, Delta_J_td_phi, dM_dJ_result, Delta_Phi_components, a, M);
+    Delta_Phi(E, Q, L, Delta_J_td_r, Delta_J_td_theta, Delta_J_td_phi, dM_dJ_result, Delta_Phi_components, a, M); // Compute Delta Phi for each direction
 
     printf("Change in phase components: \n");
     for (i = 0; i < 3; i++){
       printf("%lg \n", Delta_Phi_components[i]);
     }
-
+    
+    tot_Delta_Phi = n_inner * Delta_Phi_components[0] + k_inner * Delta_Phi_components[1] + m_inner * Delta_Phi_components[2]; // Total change in Phi over a resonance crossing with mode (n,k,m)_inner
+    printf("Total change in phase over resonance mode (%i, %i, %i): %lg \n", n_inner, k_inner, m_inner, tot_Delta_Phi);
     return 0;
 }
 
