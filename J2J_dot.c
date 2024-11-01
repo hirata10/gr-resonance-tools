@@ -22,11 +22,17 @@ int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, doubl
     double EQL[3], J[3], ancillary[3];
     double J_inital[3], J_dot_sf[3];
     double radius_outer = 1.;
+    int flag;
 
     J_inital[0] = J_r_ini;
     J_inital[1] = J_theta_ini;
     J_inital[2] = J_phi_ini;
-    CKerr_J2EQL(J_inital, EQL, M, astar);
+    flag = CKerr_J2EQL(J_inital, EQL, M, astar);
+    if (flag == 0)
+    {
+        return(1);
+    }
+    
     CKerr_EQL2J(EQL, J, M, astar, ancillary);
     J_dot_selfforce(nl, nmax, kmax, mmax, ancillary[2], ancillary[1], radius_outer, ancillary[0], M, astar, J_dot_sf);
     *J_dot_r = J_dot_sf[0];
@@ -49,6 +55,7 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
     double k1phi, k2phi, k3phi, k4phi;
     double J_dot_r, J_dot_theta, J_dot_phi;
     double J_r_final_temp, J_theta_final_temp, J_phi_final_temp;
+    int Totflag = 0;
     //double time_factor;
     // double *k1r, *k2r, *k3r, *k4r;
     // double *k1theta, *k2theta, *k3theta, *k4theta;
@@ -118,7 +125,7 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
     for (i = 1; i < (n); i++){
         
         /* k1_{r,theta,phi} will come from the same call of J2Jdot_component since no changes start yet */
-        J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1], J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
+        Totflag += J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1], J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         a[0] = inspiral_scale * fabs(J_r_final[i-1]/J_dot_r);
         a[1] = inspiral_scale * fabs(J_theta_final[i-1]/J_dot_theta);
         a[2] = inspiral_scale * fabs(J_phi_final[i-1]/J_dot_phi);
@@ -129,21 +136,21 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
         k1theta = dt * (J_dot_theta);
         k1phi = dt * (J_dot_phi);
 
-        J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1] + k1r/2., J_theta_final[i-1] + k1theta/2., J_phi_final[i-1] + k1phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
+        Totflag += J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1] + k1r/2., J_theta_final[i-1] + k1theta/2., J_phi_final[i-1] + k1phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k2r= dt * (J_dot_r);
        //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1] + k1theta/2., J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k2theta = dt * (J_dot_theta);
         //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1], J_phi_final[i-1] + k1phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k2phi = dt * (J_dot_phi);
            
-        J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1] + k2r/2., J_theta_final[i-1] + k2theta/2., J_phi_final[i-1] + k2phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
+        Totflag += J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1] + k2r/2., J_theta_final[i-1] + k2theta/2., J_phi_final[i-1] + k2phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k3r = dt * (J_dot_r);
         //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1] + k2theta/2., J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k3theta = dt * (J_dot_theta);
         //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1], J_phi_final[i-1] + k2phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k3phi = dt * (J_dot_phi);
 
-        J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1] + k3r, J_theta_final[i-1] + k3theta, J_phi_final[i-1] + k4phi, &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
+        Totflag += J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1] + k3r, J_theta_final[i-1] + k3theta, J_phi_final[i-1] + k4phi, &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k4r = dt * (J_dot_r);
         //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1] + k3theta, J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k4theta = dt * (J_dot_theta);
@@ -160,7 +167,7 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
         J_phi_final_temp = J_phi_final[i-1] + (k1phi + 2. * k2phi + 2. * k3phi + k4phi) / 6.;
 
         /* Condition for plunge i.e. gives NaN --- Update J_i pointers */
-        if(isnan(J_r_final_temp) || isnan(J_theta_final_temp) || isnan(J_phi_final_temp)){
+        if(isnan(J_r_final_temp) || isnan(J_theta_final_temp) || isnan(J_phi_final_temp) || Totflag > 0){
             printf("It plunged.\n");
             break;
         }
