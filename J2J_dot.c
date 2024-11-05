@@ -55,7 +55,7 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
     double k1phi, k2phi, k3phi, k4phi;
     double J_dot_r, J_dot_theta, J_dot_phi;
     double J_r_final_temp, J_theta_final_temp, J_phi_final_temp;
-    int Totflag = 0;
+    int Totflag;
     //double time_factor;
     // double *k1r, *k2r, *k3r, *k4r;
     // double *k1theta, *k2theta, *k3theta, *k4theta;

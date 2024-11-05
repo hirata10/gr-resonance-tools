@@ -33,7 +33,7 @@ system_label = sys.argv[1]
 spin = sys.argv[2]
 mass = globalpars.GLOBALPAR_M
 
-res_data = numpy.loadtxt("tot_Delta_J/tot_Delta_J_" + str(system_label) + ".txt", delimiter = " ")
+res_data = numpy.loadtxt("tot_Delta_J_" + str(system_label) + ".txt", delimiter = " ")
 print(len(res_data))
 
 #Make sure the Delta_J_log.txt file is removed before each NEW run of this Python script

@@ -546,7 +546,7 @@ int main(int argc, char **argv) {
     Q = EQL[1];
     L = EQL[2];
 
-    //printf("%lg %lg %lg \n", E, Q, L);
+    //printf("EQL: %lg %lg %lg \n", E, Q, L);
     
     // printf("Minv components: \n");
     // for (i = 0; i < 9; i++){
@@ -668,7 +668,7 @@ int main(int argc, char **argv) {
     
     tot_Delta_Phi = n_inner * Delta_Phi_components[0] + k_inner * Delta_Phi_components[1] + m_inner * Delta_Phi_components[2]; // Total change in Phi over a resonance crossing with mode (n,k,m)_inner
     // printf("Total change in phase over resonance mode (%i, %i, %i): %lg \n", n_inner, k_inner, m_inner, tot_Delta_Phi);
-    printf("%i \t %i \t %lg \t %lg \t %lg \t %lg \n", res_label, system_label, Delta_Phi_components[0], Delta_Phi_components[1], Delta_Phi_components[2], tot_Delta_Phi);
+    printf("%i \t %i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg", res_label, system_label, n_inner, k_inner, m_inner, J[0], J[1], J[2], E, Q, L, Delta_Phi_components[0], Delta_Phi_components[1], Delta_Phi_components[2], tot_Delta_Phi);
     return 0;
 }
 
