@@ -103,49 +103,84 @@ int main(){
 	double J_dot_r, J_dot_theta, J_dot_phi;
 	double J_dot_r_tidal, J_dot_theta_tidal, J_dot_phi_tidal;
 	double J_dot_sf[3], J_dot_td[3];
-	double Delta_J_r_tidal[2], Delta_J_theta_tidal[2], Delta_J_phi_tidal[2];
+	double J_inner[3], J_outer[3], EQL_inner[3], EQL_outer[3], anc_inner[3], anc_outer[3];
 	double angle_space, angle_step, L_dot[50], Kepler_torque[50];
-	int nl, nmax, kmax, mmax, N_res;
+	int nl = GLOBALPAR_nl_res, nmax, kmax, mmax, N_res = GLOBALPAR_N_res;
 	int n_res_inner, k_res_inner, m_res_inner;
 	int n_res_outer, k_res_outer, m_res_outer;
-	double apo_res, peri, incline, mass, spin, radius_outer, guess1, guess2;
+	double ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, radius_outer, guess1, guess2, angle_torus;
+	double mass = GLOBALPAR_M, spin = GLOBALPAR_astar, mu_outer = GLOBALPAR_mu_outer;
 
-	printf("Enter pericenter: ");
-	scanf("%lf", &peri);
-	printf("Enter inlincation angle (radians): ");
-	scanf("%lf", &incline);
-	printf("Enter central mass: ");
-	scanf("%lf", &mass);
-	printf("Enter spin parameter of BH: ");
-	scanf("%lf", &spin);
-	printf("Enter radius of outer orbit: ");
+	// printf("Enter inner pericenter: ");
+	// scanf("%lf", &rp_inner);
+	// printf("Enter inner inlincation angle (radians): ");
+	// scanf("%lf", &I_inner);
+	// printf("Enter central mass: ");
+	// scanf("%lf", &mass);
+	// printf("Enter spin parameter of BH: ");
+	// scanf("%lf", &spin);
+	printf("Enter radius of outer orbit (if applicable): ");
 	scanf("%lf", &radius_outer);
-	printf("Enter corresponding apocenter at resonance: ");
-	scanf("%lf", &apo_res);
+	// printf("Enter inner apocenter: ");
+	// scanf("%lf", &ra_inner);
+
+	// printf("Enter outer pericenter: ");
+	// scanf("%lf", &rp_outer);
+	// printf("Enter outer inlincation angle (radians): ");
+	// scanf("%lf", &I_outer);
+	// printf("Enter outer apocenter: ");
+	// scanf("%lf", &ra_outer);
+
+	printf("Enter J_inner components: ");
+	scanf("%lg %lg %lg", &J_inner[0], &J_inner[1], &J_inner[2]);
+	printf("Enter J_outer components: ");
+	scanf("%lg %lg %lg", &J_outer[0], &J_outer[1], &J_outer[2]);
+
+	CKerr_J2EQL(J_inner, EQL_inner, mass, spin);
+	CKerr_EQL2J(EQL_inner, J_inner, mass, spin, anc_inner);
+
+	CKerr_J2EQL(J_outer, EQL_outer, mass, spin);
+	CKerr_EQL2J(EQL_outer, J_outer, mass, spin, anc_outer);
+
+	I_inner = anc_inner[0];
+	rp_inner = anc_inner[1];
+	ra_inner = anc_inner[2];
+
+	I_outer = anc_outer[0];
+	rp_outer = anc_outer[1];
+	ra_outer = anc_outer[2];
+
+
+	printf("Location on torus (in radians): ");
+	scanf("%lf", &angle_torus);
+
+
 
 	#if 0
 	printf("Number of modes and max n,k,m: ");
 	scanf("%i %i %i %i", &nl, &nmax, &kmax, &mmax);
 	#endif
 
-	printf("Number of modes and mode vector for inner orbit: ");
-	scanf("%i %i %i %i", &nl, &n_res_inner, &k_res_inner, &m_res_inner);
+	printf("Mode vector for inner orbit: ");
+	scanf("%i %i %i", &n_res_inner, &k_res_inner, &m_res_inner);
 
-	printf("Number of resonance terms: ");
-	scanf("%i", &N_res);
+	// printf("Number of resonance terms: ");
+	// scanf("%i", &N_res);
 
 	printf("Mode vector for outer orbit: ");
 	scanf("%i %i %i", &n_res_outer, &k_res_outer, &m_res_outer);
+
+	printf("I_inner, rp_inner, ra_inner: %lg %lg %lg \n", I_inner, rp_inner, ra_inner);
+	printf("I_outer, rp_outer, ra_outer: %lg %lg %lg \n", I_outer, rp_outer, ra_outer);
+	printf("Inner and Outer EQL: %lg %lg %lg, %lg %lg %lg \n", EQL_inner[0], EQL_inner[1], EQL_inner[2], EQL_outer[0], EQL_outer[1], EQL_outer[2]);
 	
-	
-	#if 0
 	printf("About to compute tidal J_dots \n");
-	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_res, peri, radius_outer, incline, mass, spin, -M_PI/2., &J_dot_r_tidal, &J_dot_theta_tidal, &J_dot_phi_tidal);
-	printf("J_dot_r_tidal = %lg \n", J_dot_r_tidal);
-	printf("J_dot_theta_tidal = %lg \n", J_dot_theta_tidal);
-	printf("J_dot_phi_tidal = %lg \n", J_dot_phi_tidal);
-	printf("Keplerian J_dot_phi at resonance = %lg \n", J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline));
-	#endif
+	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_outer, J_dot_td);
+	printf("J_dot_r_tidal = %lg \n", J_dot_td[0]);
+	printf("J_dot_theta_tidal = %lg \n", J_dot_td[1]);
+	printf("J_dot_phi_tidal = %lg \n", J_dot_td[2]);
+	// printf("Keplerian J_dot_phi at resonance = %lg \n", J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline));
+	
 
 	
 	#if 0
@@ -156,15 +191,15 @@ int main(){
 	#endif
 
 	
-	printf("About to start L_dot \n");
-	for (j = 0; j < 50; j++){
-		angle_space = 2 * M_PI / 50;
-		angle_step = j * angle_space;
-		J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_res, peri, radius_outer, incline, mass, spin, angle_step, J_dot_td);
-		L_dot[j] = J_dot_td[2];
-		Kepler_torque[j] = J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline, angle_step);
-		printf("%lg %lg %lg \n", angle_step, L_dot[j], Kepler_torque[j]);
-	}
+	// printf("About to start L_dot \n");
+	// for (j = 0; j < 50; j++){
+	// 	angle_space = 2 * M_PI / 50;
+	// 	angle_step = j * angle_space;
+	// 	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_res, peri, radius_outer, incline, mass, spin, angle_step, J_dot_td);
+	// 	L_dot[j] = J_dot_td[2];
+	// 	Kepler_torque[j] = J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline, angle_step);
+	// 	printf("%lg %lg %lg \n", angle_step, L_dot[j], Kepler_torque[j]);
+	// }
 	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
 	return(0);
 }

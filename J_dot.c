@@ -113,7 +113,7 @@ void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp
 }
 
 /* Computing the J_dot_tidal,i */
-void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_td){
+void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double mu_outer ,double *J_dot_td){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
 	int i_n_outer, i_k_outer, i_m_outer;
 	double EQL_inner[3], J_inner[3], EQL_outer[3], J_outer[3], Minv_inner[9], Minv_outer[9], Omega_inner[3], info[6], info_outer[6], xuorig_inner[6], xuorig_outer[6], cscat[16], aux[4];
@@ -128,7 +128,7 @@ void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_
 
 	/* Converting apocenter, pericenter, and inclination angle into frequencies for: */
 	/* Inner body */
-	ra_rp_I2EQL(apo, EQL_inner, rp, I, astar, M);
+	ra_rp_I2EQL(ra_inner, EQL_inner, rp_inner, I_inner, astar, M);
 	CKerr_EQL2J(EQL_inner, J_inner, M, astar, NULL);
 	CKerr_Minverse(J_inner, Minv_inner, M, astar);
 	CKerr_Minv2Omega(Minv_inner, Omega_inner);
@@ -139,20 +139,89 @@ void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_
 
 	//printf("dtau/dt = %lg \n", EQL_inner[0] - Omega_inner[0]*J_inner[0] - Omega_inner[1]*J_inner[1] - Omega_inner[2]*J_inner[2]);
 	/* Outer Body */
+	// CKerr_FindEQL_IRCirc(0, radius_outer, EQL_outer, M, astar);
+	// CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+	// CKerr_Minverse(J_outer, Minv_outer, M, astar);
+	// //printf("Minv for outer body = \n %lg %lg %lg \n", Minv_outer[0], Minv_outer[1], Minv_outer[2]);
+	// //printf(" %lg %lg %lg \n", Minv_outer[3], Minv_outer[4], Minv_outer[5]);
+	// //printf(" %lg %lg %lg \n", Minv_outer[6], Minv_outer[7], Minv_outer[8]);
+
+	// /* Torus origin for inner body orbit */
+	// CKerr_TorusOrigin(J_inner, xuorig_inner, M, astar);
+
+	// /* Torus origin for outer body orbit */
+	// CKerr_getData_CircEq(M, astar, radius_outer, info_outer);
+	// xuorig_outer[0] = radius_outer; xuorig_outer[1] = M_PI/2.; xuorig_outer[2] = 0.;
+  	// xuorig_outer[3] = 0.; xuorig_outer[4] = 0.;      xuorig_outer[5] = info_outer[0];
+
+	/* Converting apocenter, pericenter, and inclination angle into frequencies for: */
+	/* Outer body, both cases*/
+	/* For CIRCULAR orbits */
+	if(ra_outer == 0 && rp_outer == 0 && I_outer == 0){
+		/* Orbital frequencies for circular equitorial orbits */
+		CKerr_FindEQL_IRCirc(0, radius_outer, EQL_outer, M, astar);
+		CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+		CKerr_Minverse(J_outer, Minv_outer, M, astar);
+		//CKerr_Minv2Omega(Minv_outer, Omega_outer);
+		//printf("Minv for circular equitorial case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
+		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
+		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
+		//printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
+		//printf("Omega for circular equatorial is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+
+		/* Torus Origin for circular equatorial orbits */
+		//CKerr_TorusOrigin(J, xuorig, M, astar);
+	}
+
+	/* For GENERIC orbits */
+	else{
+		/* Routine to find location of resonant apocenter */
+		//guess1 = rp + 3.;
+		//guess2 = radius_outer - 3.;
+		//apo = find_resonance_apo(n_res_inner, k_res_inner, m_res_inner, radius_outer, guess1, guess2, rp, I, astar, M);
+		
+		/* Get orbital frequencies for inner generic orbit */
+		ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
+		CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+		CKerr_Minverse(J_outer, Minv_outer, M, astar);
+		//CKerr_Minv2Omega(Minv_outer, Omega_outer);
+		//printf("Minv for generic case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
+		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
+		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
+		//printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
+		//printf("Omega for generic is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+
+		/* Torus origin for inner body orbit */
+		//CKerr_TorusOrigin(J, xuorig, M, astar);
+		//for(i=0;i<6;i++) printf("xuorig[%d] = %lg\n", i, xuorig[i]);
+	}
+	#if 0
+	/* Converting apocenter, pericenter, and inclination angle into frequencies for: */
+	/* Outer body */
+	
+	ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
+	CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+	CKerr_Minverse(J_outer, Minv_outer, M, astar);
+	CKerr_Minv2Omega(Minv_outer, Omega_outer);
+	#endif
+
+	#if 0
+	/* Outer Body */
 	CKerr_FindEQL_IRCirc(0, radius_outer, EQL_outer, M, astar);
 	CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
 	CKerr_Minverse(J_outer, Minv_outer, M, astar);
 	//printf("Minv for outer body = \n %lg %lg %lg \n", Minv_outer[0], Minv_outer[1], Minv_outer[2]);
 	//printf(" %lg %lg %lg \n", Minv_outer[3], Minv_outer[4], Minv_outer[5]);
 	//printf(" %lg %lg %lg \n", Minv_outer[6], Minv_outer[7], Minv_outer[8]);
-
-	/* Torus origin for inner body orbit */
-	CKerr_TorusOrigin(J_inner, xuorig_inner, M, astar);
-
 	/* Torus origin for outer body orbit */
 	CKerr_getData_CircEq(M, astar, radius_outer, info_outer);
 	xuorig_outer[0] = radius_outer; xuorig_outer[1] = M_PI/2.; xuorig_outer[2] = 0.;
   	xuorig_outer[3] = 0.; xuorig_outer[4] = 0.;      xuorig_outer[5] = info_outer[0];
+	#endif
+
+	/* Torus origin for inner/outer body orbit */
+	CKerr_TorusOrigin(J_inner, xuorig_inner, M, astar);
+	CKerr_TorusOrigin(J_outer, xuorig_outer, M, astar);
 
 
   	E0_inner = (double*)malloc((size_t)(nl*10*sizeof(double)));
@@ -199,6 +268,7 @@ void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_
 		/* Create the amplitude data for outer body*/
 		CKerr_RadialFunc(Minv_outer, xuorig_outer, M, astar, i_n_outer, i_k_outer, i_m_outer, 20, 20, nl, C0_outer, &omegagw_outer, E0_outer);
 		CKerr_RadialFunc(Minv_inner, xuorig_inner, M, astar, i_n_inner, i_k_inner, i_m_inner, 20, 20, nl, C0_inner, &omegagw_inner, E0_inner);
+		printf("Frequencies from resonance and RadialFunc: %lg \t %lg \t %lg\n", omega_nkm, omegagw_inner, omegagw_outer);
 		for (il = 0; (il) < nl; il++){
 			omega_nkm = i_n_inner * Omega_inner[0] + i_k_inner * Omega_inner[1] + i_m_inner * Omega_inner[2];
 			/* Get the scattering coefficients of the outer body radiation */
@@ -209,9 +279,9 @@ void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_
 			numer = 256 * pow(2 * M * rH,5) * P * (P*P + 4 * epsilon*epsilon) * (P*P + 16 * epsilon*epsilon) * omega_nkm * omega_nkm * omega_nkm;
 			C2 = ((lambda + 2)*(lambda + 2) + 4 * i_m_inner * astar * M * omega_nkm - 4 * astar*astar*M*M * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m_inner * astar * M *omega_nkm - 36 * astar*astar*M*M * omega_nkm*omega_nkm) + (2 * lambda +3) * (96 * astar*astar*M*M * omega_nkm*omega_nkm - 48 * i_m_inner * astar * M * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar*M*M);
 			alphankm = numer / C2;
-			//printf("%i \t %lg \t %lg \t %lg\n", il, omega_nkm, lambda, alphankm);
+			printf("%i \t %lg \t %lg \t %lg\n", il, omega_nkm, lambda, alphankm);
 
-			//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n_inner, i_k_inner, i_m_inner, il,  C0_inner[4*il], C0_inner[4*il+1], C0_inner[4*il+2], C0_inner[4*il+3], C0_outer[4*il], C0_outer[4*il+1], C0_outer[4*il+2], C0_outer[4*il+3]);
+			printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n_inner, i_k_inner, i_m_inner, il,  C0_inner[4*il], C0_inner[4*il+1], C0_inner[4*il+2], C0_inner[4*il+3], C0_outer[4*il], C0_outer[4*il+1], C0_outer[4*il+2], C0_outer[4*il+3]);
 			//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, C0[4*il], C0[4*il+1], C0[4*il+2], C0[4*il+3], Z_down_square, Z_out_square);
 			
 			/* For INNER/OUTER Body: */
@@ -225,12 +295,12 @@ void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_
 			term = C0_inner[4*il+2] * cscat[0] * Rtheta * C0_outer[4*il] + C0_outer[4*il+1] * cscat[0] * C0_inner[4*il + 2] * Itheta + C0_outer[4*il] * cscat[1] * C0_inner[4*il+3] * Rtheta + C0_outer[4*il+1] * cscat[1] * C0_inner[4*il+3] * Itheta;
 			another_term = -C0_outer[4*il] * C0_inner[4*il+3] * cscat[0] * Itheta + C0_outer[4*il+1] * C0_inner[4*il+3] * cscat[0] * Rtheta + C0_outer[4*il] * cscat[1] * C0_inner[4*il + 2] * Itheta - C0_outer[4*il+1] * cscat[1] * C0_inner[4*il+2] * Rtheta;
 			last_term = C0_outer[4*il] * C0_inner[4*il] * Rtheta + C0_outer[4*il+1] * C0_inner[4*il] * Itheta - C0_outer[4*il] * C0_inner[4*il+1] * Itheta + C0_outer[4*il+1] * C0_inner[4*il+1] * Rtheta;
-			//printf("%lg \t %lg \t %lg \n", term, another_term, alphankm * last_term);
+			printf("%lg \t %lg \t %lg \n", term, another_term, alphankm * last_term);
 
 			/* J_dot of inner body due to tidal field of outer body */
-			J_dot_td[0] += -i_n_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
-			J_dot_td[1] += -i_k_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
-			J_dot_td[2] += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
+			J_dot_td[0] += -i_n_inner * mu_outer * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
+			J_dot_td[1] += -i_k_inner * mu_outer * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
+			J_dot_td[2] += -i_m_inner * mu_outer * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm);
 			//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \n", il, i_n_inner, i_k_inner, i_m_inner, C0_inner[4*il], C0_inner[4*il+1], C0_inner[4*il+2], C0_inner[4*il+3], C0_outer[4*il], C0_outer[4*il+1], term, another_term, alphankm * last_term);
 			//printf("%lg \t %lg \t %lg \n", *J_dot_r_tidal, *J_dot_theta_tidal, *J_dot_phi_tidal);
 			#if 0
