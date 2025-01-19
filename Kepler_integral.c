@@ -36,7 +36,8 @@ double true_anomaly(double E, double e) {
         printf("Warning: Eccentricity too large for true anomaly calculation.\n");
         return NAN;
     }
-    return 2 * atan(sqrt((1 + e) / (1 - e)) * tan(E / 2));
+    // return 2 * atan(sqrt((1 + e) / (1 - e)) * tan(E / 2));
+    return atan2(sqrt(1 - e*e) * sin(E), cos(E - e)); // A more stable atan except for when e is close to 1
 }
 
 // Complex integrand f(nu, M_kepler) = exp(i M_kepler (n + k + m)) * exp(i (m + k) nu) * (1 + e * cos(nu))^(1 + ell)
@@ -107,11 +108,13 @@ double complex integrand_Z_out(double M_kepler, double e, double semi_major, int
     double complex term1 = cexp(complex_I * M_kepler * (n + k + m)); // exp(i M (n + k + m))
     double complex term2 = cexp(complex_I * (m + k) * nu);   // exp(i (m + k) nu)
     
-    // Real term (1 + e * cos(nu))^(-1 + ell)
+    // Real term (1 + e * cos(nu))^(-ell)
     double real_term = pow(1 + e * cos(nu), (-ell));
+    // printf("integrand_Z_out real term: %lg \n", real_term);
 
-    double complex prefactor_without_angularparts = - mass_body * pow(complex_I,(ell - 2)) * pow(2 * omega_gw, (ell + 2)) * tgamma(ell - 1) / (2 * tgamma(2 * ell + 2) * 2 * M_PI) * sqrt(2 * M_PI * tgamma(ell + 3) / tgamma(ell - 1)) *  pow((semi_major * (1-e*e)), (ell));
-    
+    double complex prefactor_without_angularparts = - mass_body * cpow(complex_I,(ell - 2)) * pow(2 * omega_gw, (ell + 2)) * tgamma(ell - 1) / (2 * tgamma(2 * ell + 2) * 2 * M_PI) * sqrt(2 * M_PI * tgamma(ell + 3) / tgamma(ell - 1)) *  pow((semi_major * (1-e*e)), (ell));
+    // printf("integrand_Z_out prefactor: Re: %lg Im: %lg \n", creal(prefactor_without_angularparts), cimag(prefactor_without_angularparts));
+
     // Return the product of the complex exponentials and the real term
     // printf("%lg %lg \n", creal(prefactor_without_angularparts * term1 * term2 * real_term), cimag(prefactor_without_angularparts * term1 * term2 * real_term));
     return prefactor_without_angularparts * term1 * term2 * real_term;
@@ -191,7 +194,6 @@ int main() {
 
     // Compute the complex integral using the trapezoidal rule
     // double complex result = trapezoidal_rule(integrand, a, b, n, e, semi_major, n_param, k_param, m_param, ell_param);
-    // TODO: Write in steps that take the inner/outer body's J values and have them compute the eccentricities, semi-major axes, and omega_gw
     for (i = -N_res; i <= N_res; i++){
 		int i_n_inner = i*n_res_inner;
 		int i_k_inner = i*k_res_inner;
