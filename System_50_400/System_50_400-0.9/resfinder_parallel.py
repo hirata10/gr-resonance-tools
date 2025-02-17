@@ -48,7 +48,7 @@ def ispos(x):
     return np.lexsort(np.vstack((x, np.zeros_like(x)))[:,::-1].T)[0]==1
 
 # Open a text file for writing
-with open("potential_resonances_cubic_" + str(system_label) + ".txt", 'w') as f:
+with open("potential_resonances_cubicIII_" + str(system_label) + ".txt", 'w') as f:
 
     #Starting the runs
     number = 0
@@ -75,7 +75,7 @@ with open("potential_resonances_cubic_" + str(system_label) + ".txt", 'w') as f:
 
     #Setting up time axis. Note that since the inner body will (usually) run to less than the outer body, so we use its timescale.
     #Also, if any inner files goes to less than 100000, feel free to adjust this accordingly.
-    t = np.linspace(1, time_value_1[-1], 1000)
+    t = np.linspace(1, time_value_1[-1], 100000)
 
     #Composing A values (which are)
     A_inner_r_list = []
@@ -84,6 +84,8 @@ with open("potential_resonances_cubic_" + str(system_label) + ".txt", 'w') as f:
     A_outer_theta_list = []
     J_inner_array = []
     J_outer_array = []
+    Omega_inner = []
+    Omega_outer = []
 
     res_timing = []
 
@@ -91,16 +93,16 @@ with open("potential_resonances_cubic_" + str(system_label) + ".txt", 'w') as f:
     for i in range(len(t)):
         J_inner_array.append([J_inner_r_function(t[i]), J_inner_theta_function(t[i]), J_inner_phi_function(t[i])])
         J_outer_array.append([J_outer_r_function(t[i]), J_outer_theta_function(t[i]), J_outer_phi_function(t[i])])
-        Omega_inner = ckerr_minv2omega(ckerr_minverse(J_inner_array[i], M, astar)[1])
-        Omega_outer = ckerr_minv2omega(ckerr_minverse(J_outer_array[i], M, astar)[1])
+        Omega_inner.append(ckerr_minv2omega(ckerr_minverse(J_inner_array[i], M, astar)[1]))
+        Omega_outer.append(ckerr_minv2omega(ckerr_minverse(J_outer_array[i], M, astar)[1]))
 
-        om_inner_r_function = Omega_inner[0]
-        om_inner_theta_function = Omega_inner[1]
-        om_inner_phi_function = Omega_inner[2]
+        om_inner_r_function = Omega_inner[i][0]
+        om_inner_theta_function = Omega_inner[i][1]
+        om_inner_phi_function = Omega_inner[i][2]
 
-        om_outer_r_function = Omega_outer[0]
-        om_outer_theta_function = Omega_outer[1]
-        om_outer_phi_function = Omega_outer[2]
+        om_outer_r_function = Omega_outer[i][0]
+        om_outer_theta_function = Omega_outer[i][1]
+        om_outer_phi_function = Omega_outer[i][2]
 
         A_inner_r_list.append(om_inner_r_function/(om_inner_phi_function-om_outer_phi_function))
         A_inner_theta_list.append(om_inner_theta_function/(om_inner_phi_function-om_outer_phi_function))
@@ -138,45 +140,43 @@ with open("potential_resonances_cubic_" + str(system_label) + ".txt", 'w') as f:
                                         k_checker = ((k_inner-k_outer)/2) % 2
                                         if gd == 1 or k_checker != 0:
                                             if t[i] != 1.0:
-                                                time_value_resonance = t[i]
+                                                    
+                                                #Calculates th
+                                                omega_inner_after = Omega_inner[i+1][0]*n_inner + Omega_inner[i+1][1]*k_inner + Omega_inner[i+1][2]*(m_i)
+                                                omega_inner_before = Omega_inner[i][0]*n_inner + Omega_inner[i][1]*k_inner + Omega_inner[i][2]*(m_i)
+                                                delta_t_inner = t[i+1] - t[i]
+                                                omega_inner_dot = (omega_inner_after-omega_inner_before)/delta_t_inner
 
-                                                #Final calculation and print out
-                                                for index in range(len(label)-1):
-                                                    if time_value_1[index] < time_value_resonance and time_value_1[index+1] > time_value_resonance:
-                                                        
-                                                        #Calculates th
-                                                        omega_inner_after = om_inner_r_list[index+1]*n_inner + om_inner_theta_list[index+1]*k_inner + om_inner_phi_list[index+1]*(m_i)
-                                                        omega_inner_before = om_inner_r_list[index]*n_inner + om_inner_theta_list[index]*k_inner + om_inner_phi_list[index]*(m_i)
-                                                        delta_t_inner = delta_t_list_inner[index+1]
-                                                        omega_inner_dot = (omega_inner_after-omega_inner_before)/delta_t_inner
+                                                omega_outer_after = Omega_outer[i+1][0]*n_outer + Omega_outer[i+1][1]*k_outer + Omega_outer[i+1][2]*(m_i)
+                                                omega_outer_before = Omega_outer[i][0]*n_outer + Omega_outer[i][1]*k_outer + Omega_outer[i][2]*(m_i)
+                                                delta_t_outer = t[i+1] - t[i]
+                                                omega_outer_dot = (omega_outer_after-omega_outer_before)/delta_t_outer
 
-                                                        omega_outer_after = om_outer_r_list[index+1]*n_outer + om_outer_theta_list[index+1]*k_outer + om_outer_phi_list[index+1]*(m_i)
-                                                        omega_outer_before = om_outer_r_list[index]*n_outer + om_outer_theta_list[index]*k_outer + om_outer_phi_list[index]*(m_i)
-                                                        delta_t_outer = delta_t_list_outer[index+1]
-                                                        omega_outer_dot = (omega_outer_after-omega_outer_before)/delta_t_outer
+                                                gamma = - mu_inner*omega_inner_dot + mu_outer*omega_outer_dot
 
-                                                        gamma = - mu_inner*omega_inner_dot + mu_outer*omega_outer_dot
+                                                t_res_crossing = t[i] - (-omega_inner_before + omega_inner_after)/gamma
 
-                                                        J_inner = [J_inner_r_function(t[i]), J_inner_theta_function(t[i]), J_inner_phi_function(t[i])]
-                                                        J_outer = [J_outer_r_function(t[i]), J_outer_theta_function(t[i]), J_outer_phi_function(t[i])]
+                                                J_inner_res = [J_inner_r_function(t_res_crossing), J_inner_theta_function(t_res_crossing), J_inner_phi_function(t_res_crossing)]
+                                                J_outer_res = [J_outer_r_function(t_res_crossing), J_outer_theta_function(t_res_crossing), J_outer_phi_function(t_res_crossing)]
 
-                                                        _, EQL_outer = ckerr_j2eql(J_outer, M, astar)
-                                                        _, EQL_inner = ckerr_j2eql(J_inner, M, astar)
+                                                _, EQL_outer = ckerr_j2eql(J_outer_res, M, astar)
+                                                _, EQL_inner = ckerr_j2eql(J_inner_res, M, astar)
 
-                                                        _, _, anc_outer = ckerr_eql2j(list(EQL_outer), M, astar)
-                                                        _, _, anc_inner = ckerr_eql2j(list(EQL_inner), M, astar)
+                                                _, _, anc_outer = ckerr_eql2j(list(EQL_outer), M, astar)
+                                                _, _, anc_inner = ckerr_eql2j(list(EQL_inner), M, astar)
 
-                                                        #Calculates the values of the omegas at the exact instant of resonance
-                                                        _, M_outer = ckerr_minverse(J_outer, M, astar)
-                                                        omega_outer = ckerr_minv2omega(M_outer)
-                                                        _, M_inner = ckerr_minverse(J_inner, M, astar)
-                                                        omega_inner = ckerr_minv2omega(M_inner)
+                                                #Calculates the values of the omegas at the exact instant of resonance
+                                                _, M_outer = ckerr_minverse(J_outer_res, M, astar)
+                                                omega_outer = ckerr_minv2omega(M_outer)
+                                                _, M_inner = ckerr_minverse(J_inner_res, M, astar)
+                                                omega_inner = ckerr_minv2omega(M_inner)
 
-                                                        #Outputting to text file
-                                                        number = number + 1
-                                                        #new_file_num = file_number + 1
-                                                        f.write(f"{number} {system_label} {t[i]} {omega_inner_dot} {omega_outer_dot} {mu_inner} {mu_outer} {gamma} {m_i} {n_inner} {k_inner} {n_outer} {k_outer} {J_inner[0]} {J_inner[1]} {J_inner[2]} {J_outer[0]} {J_outer[1]} {J_outer[2]} {omega_inner[0]} {omega_inner[1]} {omega_inner[2]} {omega_outer[0]} {omega_outer[1]} {omega_outer[2]} {anc_inner[0]} {anc_inner[1]} {anc_inner[2]} {anc_outer[0]} {anc_outer[1]} {anc_outer[2]}\n")
-            
+                                                #Outputting to text file
+                                                number = number + 1
+                                                #new_file_num = file_number + 1
+                                                f.write(f"{number} {system_label} {t[i]} {t_res_crossing} {omega_inner_dot} {omega_outer_dot} {mu_inner} {mu_outer} {gamma} {m_i} {n_inner} {k_inner} {n_outer} {k_outer} {J_inner_res[0]} {J_inner_res[1]} {J_inner_res[2]} {J_outer_res[0]} {J_outer_res[1]} {J_outer_res[2]} {omega_inner[0]} {omega_inner[1]} {omega_inner[2]} {omega_outer[0]} {omega_outer[1]} {omega_outer[2]} {anc_inner[0]} {anc_inner[1]} {anc_inner[2]} {anc_outer[0]} {anc_outer[1]} {anc_outer[2]}\n")
+                                                print(f"{number} {system_label} {t[i]} {t_res_crossing} {omega_inner_dot} {omega_outer_dot} {mu_inner} {mu_outer} {gamma} {m_i} {n_inner} {k_inner} {n_outer} {k_outer} {J_inner_res[0]} {J_inner_res[1]} {J_inner_res[2]} {J_outer_res[0]} {J_outer_res[1]} {J_outer_res[2]} {omega_inner[0]} {omega_inner[1]} {omega_inner[2]} {omega_outer[0]} {omega_outer[1]} {omega_outer[2]} {anc_inner[0]} {anc_inner[1]} {anc_inner[2]} {anc_outer[0]} {anc_outer[1]} {anc_outer[2]}\n")
+                                                sys.stdout.flush()
                                         else:
                                             continue
             
