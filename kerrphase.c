@@ -462,7 +462,7 @@ int dM_dJ(double M[TOTAL_ELEMENTS], double partial_derivatives[3 * TOTAL_ELEMENT
 
 int Delta_Phi(double E, double Q, double L, double Delta_J_td_r, double Delta_J_td_theta, double Delta_J_td_phi , double *dOmega_dJ, double *Delta_Phi_components, double astar, double M){
   double J[3], ancillary[3], J_dot_sf[3], EQL[3], Delta_J_td[3];
-  double t_scale;
+  double t_scale, tot_J_res, tot_J_dot_res;
 
   EQL[0] = E;
   EQL[1] = Q;
@@ -478,10 +478,18 @@ int Delta_Phi(double E, double Q, double L, double Delta_J_td_r, double Delta_J_
 
   J_dot_selfforce(GLOBALPAR_nl_self, GLOBALPAR_nmax, GLOBALPAR_kmax, GLOBALPAR_mmax, ancillary[2], ancillary[1], 0, ancillary[0], M, astar, J_dot_sf); // Compute J_dot_selfforce for time scale
 
+  // for (int i = 0; i < 3; i++){
+  //   // printf("%d: %lg \n", i, J[i] / J_dot_sf[i]);
+  //   t_scale += J[i] * J[i] / (J_dot_sf[i] * J_dot_sf[i]); // J_i/J_dot_i added in quadrature
+  //   t_scale = sqrt(t_scale); // Time scale for resonance crossing
+  // }
+
+  /* Sum in linear */
   for (int i = 0; i < 3; i++){
     // printf("%d: %lg \n", i, J[i] / J_dot_sf[i]);
-    t_scale += J[i] * J[i] / (J_dot_sf[i] * J_dot_sf[i]); // J_i/J_dot_i added in quadrature
-    t_scale = sqrt(t_scale); // Time scale for resonance crossing
+    tot_J_res += J[i];
+    tot_J_dot_res += J_dot_sf[i];
+    t_scale = 1.0/8.0 * tot_J_res/tot_J_dot_res; // Time scale for resonance crossing
   }
 
   for (int i = 0; i < 3; i++){
