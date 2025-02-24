@@ -95,6 +95,7 @@ int CKerr_RadialFunc(double *Minv, double *xuorig, double M, double astar, long 
   double r_in, r_out, rhp, rtemp[4];
   double R1_r_in[4], R3_r_out[4], R1_r_out[4], aleph[2];
   double R1loc[6], R3loc[6];
+  double xi_norm, beta_norm[2];
 
   /* Basic setup */
   a = astar*M;
@@ -104,6 +105,10 @@ int CKerr_RadialFunc(double *Minv, double *xuorig, double M, double astar, long 
   CKerr_Minv2Omega(Minv,TOmega);
   *omega = qr*TOmega[0] + qt*TOmega[1] + mm*TOmega[2];
   chi = a*(*omega);
+
+#if 0
+fprintf(stderr, "nkm nl indices: %ld %ld %ld %ld\n", qr, qt, mm, nl);
+#endif
 
 #if 0
   /* Get periapsis & apoapsis --> ancillary[1], ancillary[2].
@@ -253,7 +258,7 @@ fprintf(stderr, "%19.12le %19.12le %19.12le %19.12le %19.12le (%ld)\n", TOmega[0
 
 #if 0
         fprintf(stderr, " ***  %12.5le %12.5le %12.5le %12.5le %12.5le %12.5le\n", xu[0], xu[1], xu[2], xu[3], xu[4], xu[5]);
-//        fprintf(stderr, "      %12.5le %12.5le %12.5le %12.5le %12.5le %12.5le\n", intT[0], intT[1], intT[2], intT[3], intT[4], intT[5]);
+        fprintf(stderr, "      %12.5le %12.5le %12.5le %12.5le %12.5le %12.5le\n", intT[0], intT[1], intT[2], intT[3], intT[4], intT[5]);
         fprintf(stderr, "      %12.5le %12.5le %12.5le %12.5le %12.5le %12.5le\n", A0[0], A0[1], A1[0], A1[1], A2[0], A2[1]);
         fprintf(stderr, "      %12.5le %12.5le %12.5le %12.5le %12.5le %12.5le\n", R1loc[0], R1loc[1], R1loc[2], R1loc[3], R1loc[4], R1loc[5]);
         fprintf(stderr, "      %12.5le %12.5le %12.5le %12.5le %12.5le %12.5le\n", R3loc[0], R3loc[1], R3loc[2], R3loc[3], R3loc[4], R3loc[5]);
@@ -261,14 +266,27 @@ fprintf(stderr, "%19.12le %19.12le %19.12le %19.12le %19.12le (%ld)\n", TOmega[0
       } /* end for(it) */
     } /* end for(ir) */
 
-    /* Phase-rotate coefficients by aleph */
-    temp[0] = Coef[4*il  ]; temp[1] = Coef[4*il+1];
-    Coef[4*il  ] = (temp[0]*aleph[0]+temp[1]*aleph[1])/(aleph[0]*aleph[0]+aleph[1]*aleph[1])/(double)(Nr*Nt);
-    Coef[4*il+1] = (temp[1]*aleph[0]-temp[0]*aleph[1])/(aleph[0]*aleph[0]+aleph[1]*aleph[1])/(double)(Nr*Nt);
-    temp[0] = Coef[4*il+2]; temp[1] = Coef[4*il+3];
-    Coef[4*il+2] = (temp[0]*aleph[0]+temp[1]*aleph[1])/(aleph[0]*aleph[0]+aleph[1]*aleph[1])/(double)(Nr*Nt);
-    Coef[4*il+3] = (temp[1]*aleph[0]-temp[0]*aleph[1])/(aleph[0]*aleph[0]+aleph[1]*aleph[1])/(double)(Nr*Nt);
+    /* Phase-rotate coefficients by aleph */ //TODO: Rewrite to 
+    // temp[0] = Coef[4*il  ]; temp[1] = Coef[4*il+1];
+    // Coef[4*il  ] = (temp[0]*aleph[0]+temp[1]*aleph[1])/(aleph[0]*aleph[0]+aleph[1]*aleph[1])/(double)(Nr*Nt);
+    // Coef[4*il+1] = (temp[1]*aleph[0]-temp[0]*aleph[1])/(aleph[0]*aleph[0]+aleph[1]*aleph[1])/(double)(Nr*Nt);
+    // temp[0] = Coef[4*il+2]; temp[1] = Coef[4*il+3];
+    // Coef[4*il+2] = (temp[0]*aleph[0]+temp[1]*aleph[1])/(aleph[0]*aleph[0]+aleph[1]*aleph[1])/(double)(Nr*Nt);
+    // Coef[4*il+3] = (temp[1]*aleph[0]-temp[0]*aleph[1])/(aleph[0]*aleph[0]+aleph[1]*aleph[1])/(double)(Nr*Nt);
 
+    /* Phase-rotate coefficients by aleph */ // Use this for higher resonance modes
+    temp[0] = Coef[4*il  ]; temp[1] = Coef[4*il+1];
+    xi_norm =  fmax(aleph[0], aleph[1]);
+    beta_norm[0] = aleph[0]/xi_norm;
+    beta_norm[1] = aleph[1]/xi_norm;
+    Coef[4*il  ] = (temp[0]*beta_norm[0]+temp[1]*beta_norm[1])/((beta_norm[0]*beta_norm[0]+beta_norm[1]*beta_norm[1]) * xi_norm)/(double)(Nr*Nt);
+    Coef[4*il+1] = (temp[1]*beta_norm[0]-temp[0]*beta_norm[1])/((beta_norm[0]*beta_norm[0]+beta_norm[1]*beta_norm[1]) * xi_norm)/(double)(Nr*Nt);
+    temp[0] = Coef[4*il+2]; temp[1] = Coef[4*il+3];
+    Coef[4*il+2] = (temp[0]*beta_norm[0]+temp[1]*beta_norm[1])/((beta_norm[0]*beta_norm[0]+beta_norm[1]*beta_norm[1]) * xi_norm)/(double)(Nr*Nt);
+    Coef[4*il+3] = (temp[1]*beta_norm[0]-temp[0]*beta_norm[1])/((beta_norm[0]*beta_norm[0]+beta_norm[1]*beta_norm[1]) * xi_norm)/(double)(Nr*Nt);
+#if 0
+    fprintf(stderr, "xi_norm=%12.5le beta_norm = %12.5le,%12.5le\n", xi_norm,beta_norm[0],beta_norm[1]);
+#endif
   } /* end for(il) */
 
   free((char*)b);
