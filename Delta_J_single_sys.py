@@ -47,6 +47,11 @@ row[18] = J_outer_res_phi
 system_label = sys.argv[1]
 
 res_data = numpy.loadtxt("potential_resonances_" + str(system_label) + ".txt", delimiter = " ")
+
+# Check if data has only one row
+if res_data.ndim == 1:  # If it's a 1D array
+    res_data = res_data.reshape(1, -1)  # Reshape to 2D with one row
+
 print(len(res_data))
 
 #Make sure the Delta_J_log.txt file is removed before each NEW run of this Python script
@@ -97,9 +102,21 @@ with open("Output_Delta_J_" + str(system_label) + "/tot_Delta_J_" + str(system_l
                     output_file.write('\n')  # Add a newline between concatenated files
 
 # This will reorganize the concatenated arrays by the first column
+# This will reorganize the concatenated arrays by the first column
 data = numpy.loadtxt("Output_Delta_J_" + str(system_label) + "/tot_Delta_J_" + str(system_label) + ".txt")
+
+# Check if data is 1D and reshape to 2D (1 row, N columns) if necessary
+if data.ndim == 1:  # If it's a 1D array (single row with multiple columns)
+    data = data.reshape(1, -1)  # Reshape it to 2D with one row
+
+# Verify the shape of data after reshaping
+print("Shape of data after concatenation and reshaping:", data.shape)
+
 sorted_data = data[data[:, 0].argsort()]
 numpy.savetxt("Output_Delta_J_" + str(system_label) + "/tot_Delta_J_" + str(system_label) + ".txt", sorted_data, fmt='%g', delimiter=' ')
+# data = numpy.loadtxt("Output_Delta_J_" + str(system_label) + "/tot_Delta_J_" + str(system_label) + ".txt")
+# sorted_data = data[data[:, 0].argsort()]
+# numpy.savetxt("Output_Delta_J_" + str(system_label) + "/tot_Delta_J_" + str(system_label) + ".txt", sorted_data, fmt='%g', delimiter=' ')
 
 # for row in res_data[0:50]:
 #     #print(row, "First row")
