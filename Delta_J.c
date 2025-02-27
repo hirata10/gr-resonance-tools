@@ -298,12 +298,12 @@ void Delta_J_tidal2(int nl, int N_res, int n_res_inner, int n_res_outer, int k_r
 		sgn_sGamma = (i * ang_accel) / fabs(i * ang_accel);
 		Rtheta = cos(i * theta_res_F + sgn_sGamma * M_PI/4.);
 		Itheta = sin(i * theta_res_F + sgn_sGamma * M_PI/4.);
-		if((i_n_outer == 0 && i_k_outer == 0 && i_m_outer == 0) || (i_n_inner == 0 && i_k_inner == 0 && i_m_inner == 0))
+		if((i_n_outer == 0 && i_k_outer == 0 && i_m_outer == 0) || (i_n_inner == 0 && i_k_inner == 0 && i_m_inner == 0) || abs(i_n_outer)>20 || abs(i_k_outer)>20 || abs(i_n_inner)>20 || abs(i_k_inner)>20)
 			continue;
 		/* Create the amplitude data for inner body*/
 		/* Create the amplitude data for outer body*/
-		CKerr_RadialFunc(Minv_outer, xuorig_outer, M, astar, i_n_outer, i_k_outer, i_m_outer, 14, 14, nl, C0_outer, &omegagw_outer, E0_outer);
-		CKerr_RadialFunc(Minv_inner, xuorig_inner, M, astar, i_n_inner, i_k_inner, i_m_inner, 14, 14, nl, C0_inner, &omegagw_inner, E0_inner);
+		CKerr_RadialFunc(Minv_outer, xuorig_outer, M, astar, i_n_outer, i_k_outer, i_m_outer, 42, 42, nl, C0_outer, &omegagw_outer, E0_outer); // TODO: Re-run with Nr and Nt = 52
+		CKerr_RadialFunc(Minv_inner, xuorig_inner, M, astar, i_n_inner, i_k_inner, i_m_inner, 42, 42, nl, C0_inner, &omegagw_inner, E0_inner); // TODO: Re-run with Nr and Nt = 52
 		for (il = 0; (il) < nl; il++){
 			omega_nkm = i_n_inner * Omega_inner[0] + i_k_inner * Omega_inner[1] + i_m_inner * Omega_inner[2];
 			/* Get the scattering coefficients of the outer body radiation */
@@ -314,15 +314,17 @@ void Delta_J_tidal2(int nl, int N_res, int n_res_inner, int n_res_outer, int k_r
 			numer = 256 * pow(2 * M * rH,5) * P * (P*P + 4 * epsilon*epsilon) * (P*P + 16 * epsilon*epsilon) * omega_nkm * omega_nkm * omega_nkm;
 			C2 = ((lambda + 2)*(lambda + 2) + 4 * i_m_inner * astar * M *omega_nkm - 4 * astar * M * astar * M * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m_inner * astar * M * omega_nkm - 36 * astar * M * astar * M * omega_nkm*omega_nkm) + (2 * lambda +3) * (96 * astar*astar * M * M * omega_nkm*omega_nkm - 48 * i_m_inner * astar * M * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar*M*M);
 			alphankm = numer / C2;
-			//printf("%i \t %i \t %i \t %i \t %lf \t %lf \t %lf\n", i_n, i_k, i_k, il, omega_nkm, lambda, alphankm);
+			// printf("Frequencies from resonance and RadialFunc: %lg \t %lg \t %lg\n", omega_nkm, omegagw_inner, omegagw_outer);
+			// printf("%i \t %lg \t %lg \t %lg\n", il, omega_nkm, lambda, alphankm);
 
-			//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n_inner, i_k_inner, i_m_inner, il,  C0_inner[4*il], C0_inner[4*il+1], C0_inner[4*il+2], C0_inner[4*il+3], C0_outer[4*il], C0_outer[4*il+1], C0_outer[4*il+2], C0_outer[4*il+3]);
+			// printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n_inner, i_k_inner, i_m_inner, il,  C0_inner[4*il], C0_inner[4*il+1], C0_inner[4*il+2], C0_inner[4*il+3], C0_outer[4*il], C0_outer[4*il+1], C0_outer[4*il+2], C0_outer[4*il+3]);
 			//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, C0[4*il], C0[4*il+1], C0[4*il+2], C0[4*il+3], Z_down_square, Z_out_square);
 
 			/* Expanded out the terms in our expression for \dot{J}_{td} and kept only the real parts*/
 			term = C0_inner[4*il+2] * cscat[0] * Rtheta * C0_outer[4*il] + C0_outer[4*il+1] * cscat[0] * C0_inner[4*il + 2] * Itheta + C0_outer[4*il] * cscat[1] * C0_inner[4*il+3] * Rtheta + C0_outer[4*il+1] * cscat[1] * C0_inner[4*il+3] * Itheta;
 			another_term = -C0_outer[4*il] * C0_inner[4*il+3] * cscat[0] * Itheta + C0_outer[4*il+1] * C0_inner[4*il+3] * cscat[0] * Rtheta + C0_outer[4*il] * cscat[1] * C0_inner[4*il + 2] * Itheta - C0_outer[4*il+1] * cscat[1] * C0_inner[4*il+2] * Rtheta;
 			last_term = C0_outer[4*il] * C0_inner[4*il] * Rtheta + C0_outer[4*il+1] * C0_inner[4*il] * Itheta - C0_outer[4*il] * C0_inner[4*il+1] * Itheta + C0_outer[4*il+1] * C0_inner[4*il+1] * Rtheta;
+			// printf("%lg \t %lg \t %lg \n", term, another_term, alphankm * last_term);
 			#if 0
 			/* J_dot of inner body due to tidal field of outer body */
 			*J_dot_r_tidal += -i_n_inner * (term + another_term + alphankm * last_term) / (2 * omega_nkm * omega_nkm * omega_nkm) ;
@@ -333,9 +335,12 @@ void Delta_J_tidal2(int nl, int N_res, int n_res_inner, int n_res_outer, int k_r
 			Delta_J[0] += -i_n_inner * mu_outer * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm)  * sqrt(2. * M_PI / fabs(i * ang_accel));
 			Delta_J[1] += -i_k_inner * mu_outer * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(i * ang_accel));
 			Delta_J[2] += -i_m_inner * mu_outer * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(i * ang_accel));
+			// printf("Delta_J components at step %i %i %i %i: %lg %lg %lg \n", il, i_n_inner, i_k_inner, i_m_inner, Delta_J[0], Delta_J[1], Delta_J[2]);
 			//Delta_J_phi_tidal[1] += -i_m_inner * (term + another_term + alphankm * last_term) / (omega_nkm * omega_nkm * omega_nkm) * sqrt(2. * M_PI / fabs(tot_Gamma));
 				}
 			}
 	free((char*)E0_inner);
 	free((char*)E0_outer);
 }
+
+// TODO: Make restriction on amplitudes for n < Nr/2 AND k < Nt/2
