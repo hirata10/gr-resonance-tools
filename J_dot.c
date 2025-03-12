@@ -80,11 +80,13 @@ void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp
 	for (i_n = -nmax; i_n <= nmax; i_n++){
 		for (i_k = -kmax; i_k <= kmax; i_k++){
 			for (i_m = -mmax; i_m <= mmax; i_m++){
-				if(i_n == 0 && i_k == 0 && i_m == 0)
+				if(i_n == 0 && i_k == 0 && i_m == 0){
+					printf("Skipping: i_n = %d, i_k = %d, i_m = %d\n", i_n, i_k, i_m); 
 					continue;
+				}
 				if(astar == 0 && i_n == 0 && i_k == -i_m) //Schwarzschild case a == 0
 					continue;
-				CKerr_RadialFunc(Minv, xuorig, M, astar, i_n, i_k, i_m, 14, 14, nl, C0, &omegagw, E0);
+				CKerr_RadialFunc(Minv, xuorig, M, astar, i_n, i_k, i_m, 42, 42, nl, C0, &omegagw, E0);
 				for (il = 0; (il) < nl; il++){
 					
 					omega_nkm = i_n * Omega[0] + i_k * Omega[1] + i_m * Omega[2];
@@ -93,12 +95,13 @@ void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp
 					numer = 256 * pow(2 * M * rH,5) * P * (P*P + 4 * epsilon*epsilon) * (P*P + 16 * epsilon*epsilon) * omega_nkm * omega_nkm * omega_nkm;
 					C2 = ((lambda + 2)*(lambda + 2) + 4 * i_m * astar * omega_nkm - 4 * astar * M * astar * M * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m * astar * M *omega_nkm - 36 * astar * M * astar * M * omega_nkm*omega_nkm) + (2 * lambda +3) * (96 * astar * M * astar * M * omega_nkm*omega_nkm - 48 * i_m * astar * M * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar*M*M);
 					alphankm = numer / C2;
-					//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg\n", i_n, i_k, i_k, il, omega_nkm, lambda, alphankm);
-
-
+					
 					Z_down_square = C0[4*il]*C0[4*il] + C0[4*il+1]*C0[4*il+1];
 					Z_out_square = C0[4*il+2]*C0[4*il+2] + C0[4*il+3]*C0[4*il+3];
-					//printf("%i \t %i \t %i \t %i \t %lg \t %lg \n", i_n, i_k, i_m, il, Z_down_square, Z_out_square);
+					#if 1
+					printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_k, il, omega_nkm, lambda, alphankm, Z_down_square, Z_out_square);
+					// printf("%i \t %i \t %i \t %i \t %lg \t %lg \n", i_n, i_k, i_m, il, Z_down_square, Z_out_square);
+					#endif
 					//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, C0[4*il], C0[4*il+1], C0[4*il+2], C0[4*il+3], Z_down_square, Z_out_square);
 					
 					J_dot_sf[0] += -i_n * (Z_out_square + alphankm * Z_down_square) / (2. * omega_nkm*omega_nkm*omega_nkm);
@@ -262,13 +265,12 @@ void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_
 		i_m_outer = i*m_res_outer;
 		Rtheta = cos(i * theta_res_F);
 		Itheta = sin(i * theta_res_F);
-		if((i_n_outer == 0 && i_k_outer == 0 && i_m_outer == 0) || (i_n_inner == 0 && i_k_inner == 0 && i_m_inner == 0))
+		if((i_n_outer == 0 && i_k_outer == 0 && i_m_outer == 0) || (i_n_inner == 0 && i_k_inner == 0 && i_m_inner == 0) || abs(i_n_outer)>20 || abs(i_k_outer)>20 || abs(i_n_inner)>20 || abs(i_k_inner)>20)
 			continue;
 		/* Create the amplitude data for inner body*/
 		/* Create the amplitude data for outer body*/
-		CKerr_RadialFunc(Minv_outer, xuorig_outer, M, astar, i_n_outer, i_k_outer, i_m_outer, 20, 20, nl, C0_outer, &omegagw_outer, E0_outer);
-		CKerr_RadialFunc(Minv_inner, xuorig_inner, M, astar, i_n_inner, i_k_inner, i_m_inner, 20, 20, nl, C0_inner, &omegagw_inner, E0_inner);
-		printf("Frequencies from resonance and RadialFunc: %lg \t %lg \t %lg\n", omega_nkm, omegagw_inner, omegagw_outer);
+		CKerr_RadialFunc(Minv_outer, xuorig_outer, M, astar, i_n_outer, i_k_outer, i_m_outer, 42, 42, nl, C0_outer, &omegagw_outer, E0_outer);
+		CKerr_RadialFunc(Minv_inner, xuorig_inner, M, astar, i_n_inner, i_k_inner, i_m_inner, 42, 42, nl, C0_inner, &omegagw_inner, E0_inner);
 		for (il = 0; (il) < nl; il++){
 			omega_nkm = i_n_inner * Omega_inner[0] + i_k_inner * Omega_inner[1] + i_m_inner * Omega_inner[2];
 			/* Get the scattering coefficients of the outer body radiation */
@@ -279,11 +281,13 @@ void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_
 			numer = 256 * pow(2 * M * rH,5) * P * (P*P + 4 * epsilon*epsilon) * (P*P + 16 * epsilon*epsilon) * omega_nkm * omega_nkm * omega_nkm;
 			C2 = ((lambda + 2)*(lambda + 2) + 4 * i_m_inner * astar * M * omega_nkm - 4 * astar*astar*M*M * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m_inner * astar * M *omega_nkm - 36 * astar*astar*M*M * omega_nkm*omega_nkm) + (2 * lambda +3) * (96 * astar*astar*M*M * omega_nkm*omega_nkm - 48 * i_m_inner * astar * M * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar*M*M);
 			alphankm = numer / C2;
+			#if 0
+			printf("Frequencies from resonance and RadialFunc: %lg \t %lg \t %lg\n", omega_nkm, omegagw_inner, omegagw_outer);
 			printf("%i \t %lg \t %lg \t %lg\n", il, omega_nkm, lambda, alphankm);
 
 			printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n_inner, i_k_inner, i_m_inner, il,  C0_inner[4*il], C0_inner[4*il+1], C0_inner[4*il+2], C0_inner[4*il+3], C0_outer[4*il], C0_outer[4*il+1], C0_outer[4*il+2], C0_outer[4*il+3]);
 			//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, C0[4*il], C0[4*il+1], C0[4*il+2], C0[4*il+3], Z_down_square, Z_out_square);
-			
+			#endif
 			/* For INNER/OUTER Body: */
 			/* C0_{inner/outer}[4*il    ] = Re[Z_down, inner] */
 			/* C0_{inner/outer}[4*il + 1] = Im[Z_down, inner] */
