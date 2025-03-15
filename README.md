@@ -106,6 +106,10 @@ PART 4:
 
 FAQ/TIPS
 
-TESTING
+TESTING/DEBUGGING:
+
+To make a print out of the amplitudes for the up and down gravitational modes, use this compile command "gcc calling.c -DIS_DELTA_J kerrtraj.c kerrmode.c kerrgwem.c resonance_find.c Gamma.c Delta_J.c J_dot.c -o Delta_J_J_input_print -w -lm"
+
+To make J_dot for a given set of action variables (J), resonance modes, and SMBH parameters run "gcc calling.c -DIS_J_DOT resonance_find.c J_dot.c kerrtraj.c kerrmode.c kerrgwem.c -w -o J_dot_res_case -lm"
 
 ***************************************************
