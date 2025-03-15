@@ -82,6 +82,91 @@ for chunk in range(0,len(J_data),chunk_size):
     
     for process in processes:
         process.wait()
+sys.exit()
+
+
+# Define data for RK4 evolver
+t0 = globalpars.GLOBALPAR_t0
+n = globalpars.GLOBALPAR_n_time
+J_data = numpy.loadtxt("action_angle_pairs.txt", delimiter=" ")
+print(f"Total number of entries in J_data: {len(J_data)}")
+
+# Files to track progress
+checkpoint_inner_file = 'checkpoint_inner.txt'
+checkpoint_outer_file = 'checkpoint_outer.txt'
+
+# Read checkpoint files if they exist, otherwise start from the beginning
+if os.path.exists(checkpoint_inner_file):
+    with open(checkpoint_inner_file, 'r') as f:
+        last_processed_row_inner, last_t_inner, last_J_r_inner, last_J_theta_inner, last_J_phi_inner = f.read().strip().split(',')
+        last_processed_row_inner = int(last_processed_row_inner)  # Convert row number to int
+        last_t_inner = float(last_t_inner)
+        last_J_r_inner = float(last_J_r_inner)
+        last_J_theta_inner = float(last_J_theta_inner)
+        last_J_phi_inner = float(last_J_phi_inner)
+        print(f"Resuming inner body from row {last_processed_row_inner + 1} with last t={last_t_inner}, J_r={last_J_r_inner}, J_theta={last_J_theta_inner}, J_phi={last_J_phi_inner}")
+else:
+    # Start from the first row if no checkpoint exists
+    last_processed_row_inner = 0
+    last_t_inner = t0  # Initial time
+    last_J_r_inner = J_data[last_processed_row_inner][1]
+    last_J_theta_inner = J_data[last_processed_row_inner][2]
+    last_J_phi_inner = J_data[last_processed_row_inner][3]
+
+if os.path.exists(checkpoint_outer_file):
+    with open(checkpoint_outer_file, 'r') as f:
+        last_processed_row_outer, last_t_outer, last_J_r_outer, last_J_theta_outer, last_J_phi_outer = f.read().strip().split(',')
+        last_processed_row_outer = int(last_processed_row_outer)
+        last_t_outer = float(last_t_outer)
+        last_J_r_outer = float(last_J_r_outer)
+        last_J_theta_outer = float(last_J_theta_outer)
+        last_J_phi_outer = float(last_J_phi_outer)
+        print(f"Resuming outer body from row {last_processed_row_outer + 1} with last t={last_t_outer}, J_r={last_J_r_outer}, J_theta={last_J_theta_outer}, J_phi={last_J_phi_outer}")
+else:
+    last_processed_row_outer = 0
+    last_t_outer = t0  # Initial time
+    last_J_r_outer = J_data[last_processed_row_outer][4]
+    last_J_theta_outer = J_data[last_processed_row_outer][5]
+    last_J_phi_outer = J_data[last_processed_row_outer][6]
+
+# Define the number of jobs to run in parallel
+chunk_size = globalpars.GLOBALPAR_chunk_size  # number of jobs to do in parallel
+tot_chunk = ceil(len(J_data) / chunk_size)
+
+# For loop that chunks the entire data file into chunk size and run the cmd for the entire chunk size before moving to the next chunk
+for chunk in range(max(last_completed_row_inner, last_completed_row_outer), len(J_data), chunk_size):
+    # Print the range of chunks being processed
+    print(f"Processing chunk {chunk + 1} to {min(chunk + chunk_size, len(J_data))}...")
+
+    processes_inner = []
+    processes_outer = []
+
+    # For each row in the current chunk, prepare the command and execute
+    for row in J_data[chunk:chunk + chunk_size]:
+        cmd_inner = f"./J_evolve_single {float(row[1])} {float(row[2])} {float(row[3])} {t0} {n} {globalpars.GLOBALPAR_mu_inner} {int(row[0])} {'inner'}"
+        cmd_outer = f"./J_evolve_single {float(row[4])} {float(row[5])} {float(row[6])} {t0} {n} {globalpars.GLOBALPAR_mu_outer} {int(row[0])} {'outer'}"
+
+        # Append the processes for both inner and outer body evolution
+        processes_inner.append(Popen(cmd_inner, shell=True))
+        processes_outer.append(Popen(cmd_outer, shell=True))
+
+    # Wait for all processes to finish
+    for process in processes_outer:
+        process.wait()
+    for process in processes_inner:
+        process.wait()
+
+    # After each chunk is completed, update the respective checkpoint files
+    with open(checkpoint_inner_file, 'w') as f_inner:
+        f_inner.write(str(chunk + chunk_size))  # Update to the next row after the current chunk
+        print(f"Inner body checkpoint updated to row {chunk + chunk_size}")
+
+    with open(checkpoint_outer_file, 'w') as f_outer:
+        f_outer.write(str(chunk + chunk_size))  # Update to the next row after the current chunk
+        print(f"Outer body checkpoint updated to row {chunk + chunk_size}")
+
+print("All chunks processed successfully.")
+sys.exit()
 
     #fout.close()
 
