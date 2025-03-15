@@ -42,12 +42,11 @@ int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, doubl
 }
 
 /* This takes a step size (dt), an inital J_inital components, and return arrays of size n for each J components at each time step */
-void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, FILE *fptr, double mu_body, double M, double astar){
+void rk4_J2Jdot(double *t, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, FILE *fptr, double mu_body, double M, double astar){
     int i, j;
     int nl = GLOBALPAR_nl_self, nmax = GLOBALPAR_nmax, kmax = GLOBALPAR_kmax, mmax = GLOBALPAR_mmax;
     double dt, inspiral_scale = 0.01;
     double a[3];
-    //double M = 1, astar = 0.5;
     double J_Minv[3];
     double Minv[9], Omega[3];
     double k1r, k2r, k3r, k4r;
@@ -60,22 +59,17 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
     // double *k1r, *k2r, *k3r, *k4r;
     // double *k1theta, *k2theta, *k3theta, *k4theta;
     // double *k1phi, *k2phi, *k3phi, *k4phi;
-    // double *J_dot_r, *J_dot_theta, *J_dot_phi;
-    // double *J_dot_r, *J_dot_theta, *J_dot_phi;
-    // double *J_dot_r, *J_dot_theta, *J_dot_phi;
-    // double *J_dot_r, *J_dot_theta, *J_dot_phi;
-    // double *J_dot_r, *J_dot_theta, *J_dot_phi;
-    // double *J_dot_r, *J_dot_theta, *J_dot_phi;
-    // double *J_dot_r, *J_dot_theta, *J_dot_phi;
-    // double *J_dot_r, *J_dot_theta, *J_dot_phi;
     // double *J_dot_r0, *J_dot_theta0, *J_dot_phi0;
-    double *t;
+    // double *t;
+    double t0;
 
     //J_Minv = (double *)malloc(sizeof(double) * (n));
 
      /* Define time step array, starts at inital time (input) */
-    t = (double *)malloc(sizeof(double) * (n));
-    t[0] = t0;
+    // t = (double *)malloc(sizeof(double) * (n));
+    // t[0] = t0;
+
+    t0 = t[0];
     
 
     /* Define the array for the final solution, they should start at the inital conditions given */
@@ -136,13 +130,25 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
         k1theta = dt * (J_dot_theta);
         k1phi = dt * (J_dot_phi);
 
+        #if 1
+        printf("k1r, k1theta, k1phi, dt, Totflag: %lg %lg %lg %lg %i \n", k1r, k1theta, k1phi, dt, Totflag);
+        fprintf(fptr, "k1r, k1theta, k1phi, dt, Totflag: %lg %lg %lg %lg %i \n", k1r, k1theta, k1phi, dt, Totflag);
+        fflush(fptr);
+        #endif
+
         Totflag += J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1] + k1r/2., J_theta_final[i-1] + k1theta/2., J_phi_final[i-1] + k1phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k2r= dt * (J_dot_r);
        //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1] + k1theta/2., J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k2theta = dt * (J_dot_theta);
         //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1], J_phi_final[i-1] + k1phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k2phi = dt * (J_dot_phi);
-           
+
+        #if 1
+        printf("k2r, k2theta, k2phi, Totflag: %lg %lg %lg %i \n", k2r, k2theta, k2phi, Totflag);
+        fprintf(fptr, "k2r, k2theta, k2phi, Totflag: %lg %lg %lg %i \n", k2r, k2theta, k2phi, Totflag);
+        fflush(fptr);
+        #endif
+
         Totflag += J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1] + k2r/2., J_theta_final[i-1] + k2theta/2., J_phi_final[i-1] + k2phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k3r = dt * (J_dot_r);
         //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1] + k2theta/2., J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
@@ -150,12 +156,24 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
         //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1], J_phi_final[i-1] + k2phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k3phi = dt * (J_dot_phi);
 
+        #if 1
+        printf("k3r, k3theta, k3phi, Totflag: %lg %lg %lg %i \n", k3r, k3theta, k3phi, Totflag);
+        fprintf(fptr, "k3r, k3theta, k3phi, Totflag: %lg %lg %lg %i \n", k3r, k3theta, k3phi, Totflag);
+        fflush(fptr);
+        #endif
+
         Totflag += J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1] + k3r, J_theta_final[i-1] + k3theta, J_phi_final[i-1] + k4phi, &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k4r = dt * (J_dot_r);
         //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1] + k3theta, J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k4theta = dt * (J_dot_theta);
         //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1], J_phi_final[i-1] + k3phi, &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k4phi = dt * (J_dot_phi);
+
+        #if 1
+        printf("k4r, k4theta, k4phi, Totflag: %lg %lg %lg %i \n", k4r, k4theta, k4phi, Totflag);
+        fprintf(fptr, "k4r, k4theta, k4phi, Totflag: %lg %lg %lg %i \n", k4r, k4theta, k4phi, Totflag);
+        fflush(fptr);
+        #endif
 
         t[i] = t[i-1] + dt;
         // J_r_final[i] = J_r_final[i-1] + (k1r + 2. * k2r + 2. * k3r + k4r) / 6.;
@@ -165,6 +183,12 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
         J_r_final_temp = J_r_final[i-1] + (k1r + 2. * k2r + 2. * k3r + k4r) / 6.;
         J_theta_final_temp = J_theta_final[i-1] + (k1theta + 2. * k2theta + 2. * k3theta + k4theta) / 6.;
         J_phi_final_temp = J_phi_final[i-1] + (k1phi + 2. * k2phi + 2. * k3phi + k4phi) / 6.;
+
+        #if 1
+        printf("J_r_temp, J_theta_temp, J_phi_temp: %lg %lg %lg \n", J_r_final_temp, J_theta_final_temp, J_phi_final_temp);
+        fprintf(fptr, "J_r_temp, J_theta_temp, J_phi_temp: %lg %lg %lg \n", J_r_final_temp, J_theta_final_temp, J_phi_final_temp);
+        fflush(fptr);
+        #endif
 
         /* Condition for plunge i.e. gives NaN --- Update J_i pointers */
         if(isnan(J_r_final_temp) || isnan(J_theta_final_temp) || isnan(J_phi_final_temp) || Totflag > 0){
@@ -191,7 +215,7 @@ void rk4_J2Jdot(double t0, int n, double J_r_ini, double J_theta_ini, double J_p
         fprintf(fptr, "%i \t%f \t%e \t%e \t%e \t%e \t%e \t%e \t%e \n", i, t[i], J_r_final[i], J_theta_final[i], J_phi_final[i], Omega[0], Omega[1], Omega[2], dt);
         fflush(fptr);
     }
-    free((char*)t);
+    // free((char*)t);
     #if 0
     for (i = 1; i < (n+1); i++){
         /* k1_{r,theta,phi} will come from the same call of J2Jdot_component since no changes start yet */

@@ -81,12 +81,11 @@ void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp
 		for (i_k = -kmax; i_k <= kmax; i_k++){
 			for (i_m = -mmax; i_m <= mmax; i_m++){
 				if(i_n == 0 && i_k == 0 && i_m == 0){
-					printf("Skipping: i_n = %d, i_k = %d, i_m = %d\n", i_n, i_k, i_m); 
 					continue;
 				}
 				if(astar == 0 && i_n == 0 && i_k == -i_m) //Schwarzschild case a == 0
 					continue;
-				CKerr_RadialFunc(Minv, xuorig, M, astar, i_n, i_k, i_m, 42, 42, nl, C0, &omegagw, E0);
+				CKerr_RadialFunc(Minv, xuorig, M, astar, i_n, i_k, i_m, 28, 14, nl, C0, &omegagw, E0);
 				for (il = 0; (il) < nl; il++){
 					
 					omega_nkm = i_n * Omega[0] + i_k * Omega[1] + i_m * Omega[2];
@@ -98,8 +97,9 @@ void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp
 					
 					Z_down_square = C0[4*il]*C0[4*il] + C0[4*il+1]*C0[4*il+1];
 					Z_out_square = C0[4*il+2]*C0[4*il+2] + C0[4*il+3]*C0[4*il+3];
-					#if 1
-					printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_k, il, omega_nkm, lambda, alphankm, Z_down_square, Z_out_square);
+					#if 0
+					printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, omega_nkm, lambda, alphankm, Z_down_square, Z_out_square);
+					fflush(stdout);
 					// printf("%i \t %i \t %i \t %i \t %lg \t %lg \n", i_n, i_k, i_m, il, Z_down_square, Z_out_square);
 					#endif
 					//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, C0[4*il], C0[4*il+1], C0[4*il+2], C0[4*il+3], Z_down_square, Z_out_square);
