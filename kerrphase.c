@@ -460,9 +460,9 @@ int dM_dJ(double M[TOTAL_ELEMENTS], double partial_derivatives[3 * TOTAL_ELEMENT
 // Input: EQL, Delta_J_td_i, dOmega_dJ
 // Output: array with Delta_Phi for each spatial direction
 
-int Delta_Phi(double E, double Q, double L, double Delta_J_td_r, double Delta_J_td_theta, double Delta_J_td_phi , double *dOmega_dJ, double *Delta_Phi_components, double astar, double M){
+int Delta_Phi(double E, double Q, double L, double Delta_J_td_r, double Delta_J_td_theta, double Delta_J_td_phi , double *dOmega_dJ, double *Delta_Phi_components, double *t_scale, double astar, double M){
   double J[3], ancillary[3], J_dot_sf[3], EQL[3], Delta_J_td[3];
-  double t_scale, tot_J_res, tot_J_dot_res;
+  double tot_J_res = 0., tot_J_dot_res = 0.;
 
   EQL[0] = E;
   EQL[1] = Q;
@@ -489,15 +489,21 @@ int Delta_Phi(double E, double Q, double L, double Delta_J_td_r, double Delta_J_
     // printf("%d: %lg \n", i, J[i] / J_dot_sf[i]);
     tot_J_res += J[i];
     tot_J_dot_res += J_dot_sf[i];
-    t_scale = 1.0/8.0 * tot_J_res/tot_J_dot_res; // Time scale for resonance crossing
+    // printf("J[%i] = %e \n", i, J[i]);
+    // printf("J_dot_sf[%i] = %e \n", i, J_dot_sf[i]);
+    // printf("tot_J_res = %e \n", tot_J_res);
+    // printf("tot_J_dot_res = %e \n", tot_J_dot_res);
+    *t_scale = fabs(1.0/8.0 * tot_J_res/tot_J_dot_res); // Time scale for resonance crossing
   }
+
+  // printf("Inspiral time scale: %e \n", *t_scale);
 
   for (int i = 0; i < 3; i++){
     for (int k = 0; k < 3; k++){
-      Delta_Phi_components[i] += t_scale * dOmega_dJ[i + 9 * k] * Delta_J_td[k]; // Computing the change in Phi for each component
+      // printf("In Delta_Phi func, dOmega_dJ[%i] = %e\n", i+9*k, dOmega_dJ[i + 9 * k]);
+      Delta_Phi_components[i] += *t_scale * dOmega_dJ[i + 9 * k] * Delta_J_td[k]; // Computing the change in Phi for each component
     }
   }
-
 
 return (0);
 }
@@ -520,7 +526,7 @@ int main(int argc, char **argv) {
     double EQL[3], ancillary[3], r_roots[4]; // array for EQL and ancillary data
     double J[3], Minv[9], M_matrix[9], J_r, J_theta, J_phi; // array for action variables and Minv matrix
     double input_array[12], partial_derivatives[27], dM_dJ_result[27]; //Arrays for storing partial derivatives of J
-    double Delta_J_td_r, Delta_J_td_theta, Delta_J_td_phi;
+    double Delta_J_td_r, Delta_J_td_theta, Delta_J_td_phi, t_scale;
     double Delta_Phi_components[3], tot_Delta_Phi;
 
     sscanf(argv[1], "%lg", &a);
@@ -586,15 +592,14 @@ int main(int argc, char **argv) {
     complex double integral_d2JdQ2 = contour_integral_z(d2J_zdQ2, z_start, radius, num_points, a, E, L, Q, z_minus, z_plus);
     complex double integral_d2JdLQ = contour_integral_z(d2J_zdLQ, z_start, radius, num_points, a, E, L, Q, z_minus, z_plus);
      
-
-    // Print the result
-    // printf("d2JdE2 contour integral: %.10f + %.10f I\n", creal(integral_d2JdE2), cimag(integral_d2JdE2));
-    // printf("d2JdEdL contour integral: %.10f + %.10f I\n", creal(integral_d2JdEdL), cimag(integral_d2JdEdL));
-    // printf("d2JdL2 contour integral: %.10f + %.10f I\n", creal(integral_d2JdL2), cimag(integral_d2JdL2));
-    // printf("d2JdQ2 contour integral: %.10f + %.10f I\n", creal(integral_d2JdQ2), cimag(integral_d2JdQ2));
-    // printf("d2JdEQ contour integral: %.10f + %.10f I\n", creal(integral_d2JdEQ), cimag(integral_d2JdEQ));
-    // printf("d2JdLQ contour integral: %.10f + %.10f I\n", creal(integral_d2JdLQ), cimag(integral_d2JdLQ));
-    
+    #if 0
+    printf("d2JdE2 contour integral: %e + %e I\n", creal(integral_d2JdE2), cimag(integral_d2JdE2));
+    printf("d2JdEdL contour integral: %e + %e I\n", creal(integral_d2JdEdL), cimag(integral_d2JdEdL));
+    printf("d2JdL2 contour integral: %e + %e I\n", creal(integral_d2JdL2), cimag(integral_d2JdL2));
+    printf("d2JdQ2 contour integral: %e + %e I\n", creal(integral_d2JdQ2), cimag(integral_d2JdQ2));
+    printf("d2JdEQ contour integral: %e + %e I\n", creal(integral_d2JdEQ), cimag(integral_d2JdEQ));
+    printf("d2JdLQ contour integral: %e + %e I\n", creal(integral_d2JdLQ), cimag(integral_d2JdLQ));
+    #endif
 
     /* For radial integral */
     radial_roots(EQL, J, M, a, ancillary, r_roots); //compute radial roots
@@ -621,13 +626,15 @@ int main(int argc, char **argv) {
     complex double integral_d2J_r_dEL = contour_integral_r(d2J_rdEL, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
     complex double integral_d2J_r_dEQ = contour_integral_r(d2J_rdEQ, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
     complex double integral_d2J_r_dLQ = contour_integral_r(d2J_rdLQ, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
-   
-    // printf("d2J_rdE2 contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dE2), cimag(integral_d2J_r_dE2));
-    // printf("d2J_rdL2 contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dL2), cimag(integral_d2J_r_dL2));
-    // printf("d2J_rdQ2 contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dQ2), cimag(integral_d2J_r_dQ2));
-    // printf("d2J_rdEL contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dEL), cimag(integral_d2J_r_dEL));
-    // printf("d2J_rdEQ contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dEQ), cimag(integral_d2J_r_dEQ));
-    // printf("d2J_rdLQ contour integral: %.10f + %.10f I\n", creal(integral_d2J_r_dLQ), cimag(integral_d2J_r_dLQ));
+
+    #if 0
+    printf("d2J_rdE2 contour integral: %e + %e I\n", creal(integral_d2J_r_dE2), cimag(integral_d2J_r_dE2));
+    printf("d2J_rdL2 contour integral: %e + %e I\n", creal(integral_d2J_r_dL2), cimag(integral_d2J_r_dL2));
+    printf("d2J_rdQ2 contour integral: %e + %e I\n", creal(integral_d2J_r_dQ2), cimag(integral_d2J_r_dQ2));
+    printf("d2J_rdEL contour integral: %e + %e I\n", creal(integral_d2J_r_dEL), cimag(integral_d2J_r_dEL));
+    printf("d2J_rdEQ contour integral: %e + %e I\n", creal(integral_d2J_r_dEQ), cimag(integral_d2J_r_dEQ));
+    printf("d2J_rdLQ contour integral: %e + %e I\n", creal(integral_d2J_r_dLQ), cimag(integral_d2J_r_dLQ));
+    #endif
 
     /* Define input array for partial derivatives of J array */
     input_array[0] = integral_d2J_r_dE2;
@@ -645,29 +652,30 @@ int main(int argc, char **argv) {
 
     partial_J_derivatives(input_array, partial_derivatives); // Compute the array of partial derivatives of J
 
-    // printf("dJ_dBD components: \n");
-    // for (i = 0; i < 27; i++){
-    //   printf("%lg", partial_derivatives[i]);
-    //   printf("\n");
-    // }
 
     dM_dJ(M_matrix, partial_derivatives, dM_dJ_result); // Compute dM_dJ
 
-    // printf("dM_dJ components: \n");
-    // for (i = 0; i < 27; i++){
-    //   printf("%lg", dM_dJ_result[i]);
-    //   printf("\n");
-    // }
+    #if 0
 
-    // printf("dOmega_dJ components: \n"); // Computes dOmega_dJ = dM_dJ[i + 0 * A + 9 * k]
-    // for (i = 0; i < 3; i++){
-    //   for (j = 0; j < 3; j++){
-    //     printf("%lg", dM_dJ_result[i + 9 * j]);
-    //     printf("\n");
-    //   }
-    // }
+    printf("dJ_dBD components: \n");
+    for (i = 0; i < 27; i++){
+      printf("%lg", partial_derivatives[i]);
+      printf("\n");
+    }
+    printf("dM_dJ components: \n");
+    for (i = 0; i < 27; i++){
+      printf("%e\n", dM_dJ_result[i]);
+    }
 
-    Delta_Phi(E, Q, L, Delta_J_td_r, Delta_J_td_theta, Delta_J_td_phi, dM_dJ_result, Delta_Phi_components, a, M); // Compute Delta Phi for each direction
+    printf("dOmega_dJ components: \n"); // Computes dOmega_dJ = dM_dJ[i + 0 * A + 9 * k]
+    for (i = 0; i < 3; i++){
+      for (j = 0; j < 3; j++){
+        printf("%e\n", dM_dJ_result[i + 9 * j]);
+      }
+    }
+    #endif
+
+    Delta_Phi(E, Q, L, Delta_J_td_r, Delta_J_td_theta, Delta_J_td_phi, dM_dJ_result, Delta_Phi_components, &t_scale, a, M); // Compute Delta Phi for each direction
 
     // printf("Change in phase components: \n");
     // for (i = 0; i < 3; i++){
@@ -676,7 +684,7 @@ int main(int argc, char **argv) {
     
     tot_Delta_Phi = n_inner * Delta_Phi_components[0] + k_inner * Delta_Phi_components[1] + m_inner * Delta_Phi_components[2]; // Total change in Phi over a resonance crossing with mode (n,k,m)_inner
     // printf("Total change in phase over resonance mode (%i, %i, %i): %lg \n", n_inner, k_inner, m_inner, tot_Delta_Phi);
-    printf("%i \t %i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg", res_label, system_label, n_inner, k_inner, m_inner, J[0], J[1], J[2], E, Q, L, Delta_Phi_components[0], Delta_Phi_components[1], Delta_Phi_components[2], tot_Delta_Phi);
+    printf("%i \t %i \t %i \t %i \t %i \t %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e\n", res_label, system_label, n_inner, k_inner, m_inner, J[0], J[1], J[2], E, Q, L, t_scale, Delta_Phi_components[0], Delta_Phi_components[1], Delta_Phi_components[2], tot_Delta_Phi);
     return 0;
 }
 
