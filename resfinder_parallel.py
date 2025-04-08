@@ -54,8 +54,8 @@ with open("potential_resonances_" + str(system_label) + ".txt", 'w') as f:
     number = 0
     #Importing all the info from the files. Feel free to change this depending on the files you made
     #Also note how we use label, because there will (very likely) always be less data points in outer than inner.
-    _, time_value_1, J_r_inner_list, J_theta_inner_list, J_phi_inner_list, om_inner_r_list, om_inner_theta_list, om_inner_phi_list, delta_t_list_inner = np.loadtxt("outputs_data/J_evolve_inner_" + str(system_label) + ".txt", unpack=True, skiprows=2)
-    label, time_value_2, J_r_outer_list, J_theta_outer_list, J_phi_outer_list, om_outer_r_list, om_outer_theta_list, om_outer_phi_list, delta_t_list_outer = np.loadtxt("outputs_data/J_evolve_outer_" + str(system_label) + ".txt", unpack=True, skiprows=2) 
+    _, time_value_1, J_r_inner_list, J_theta_inner_list, J_phi_inner_list, om_inner_r_list, om_inner_theta_list, om_inner_phi_list, delta_t_list_inner = np.loadtxt("outputs_data/J_evolve_inner_" + str(system_label) + ".txt", unpack=True, skiprows=9)
+    label, time_value_2, J_r_outer_list, J_theta_outer_list, J_phi_outer_list, om_outer_r_list, om_outer_theta_list, om_outer_phi_list, delta_t_list_outer = np.loadtxt("outputs_data/J_evolve_outer_" + str(system_label) + ".txt", unpack=True, skiprows=9) 
         
     #Interpolation of J values
     J_inner_r_function = interpolate.CubicSpline(time_value_1, J_r_inner_list)
@@ -75,7 +75,7 @@ with open("potential_resonances_" + str(system_label) + ".txt", 'w') as f:
 
     #Setting up time axis. Note that since the inner body will (usually) run to less than the outer body, so we use its timescale.
     #Also, if any inner files goes to less than 100000, feel free to adjust this accordingly.
-    t = np.linspace(1, time_value_1[-1], 1000)
+    t = np.linspace(time_value_1[0], time_value_1[-1], 1000)
 
     #Composing A values (which are)
     A_inner_r_list = []
@@ -139,9 +139,9 @@ with open("potential_resonances_" + str(system_label) + ".txt", 'w') as f:
                                     if gd < 3 and ispos([m_i, n_inner, n_outer, k_inner, k_outer]):
                                         k_checker = ((k_inner-k_outer)/2) % 2
                                         if gd == 1 or k_checker != 0:
-                                            if t[i] != 1.0:
+                                            if t[i] != time_value_1[0]:
                                                     
-                                                #Calculates th
+                                                #Calculates the change angular acceleration (Gamma)
                                                 omega_inner_after = Omega_inner[i+1][0]*n_inner + Omega_inner[i+1][1]*k_inner + Omega_inner[i+1][2]*(m_i)
                                                 omega_inner_before = Omega_inner[i][0]*n_inner + Omega_inner[i][1]*k_inner + Omega_inner[i][2]*(m_i)
                                                 delta_t_inner = t[i+1] - t[i]
@@ -175,7 +175,7 @@ with open("potential_resonances_" + str(system_label) + ".txt", 'w') as f:
                                                 number = number + 1
                                                 #new_file_num = file_number + 1
                                                 f.write(f"{number} {system_label} {t[i]} {omega_inner_dot} {omega_outer_dot} {mu_inner} {mu_outer} {gamma} {m_i} {n_inner} {k_inner} {n_outer} {k_outer} {J_inner_res[0]} {J_inner_res[1]} {J_inner_res[2]} {J_outer_res[0]} {J_outer_res[1]} {J_outer_res[2]} {omega_inner[0]} {omega_inner[1]} {omega_inner[2]} {omega_outer[0]} {omega_outer[1]} {omega_outer[2]} {anc_inner[0]} {anc_inner[1]} {anc_inner[2]} {anc_outer[0]} {anc_outer[1]} {anc_outer[2]} {t_res_crossing}\n")
-                                                # print(f"{number} {system_label} {t[i]} {t_res_crossing} {omega_inner_dot} {omega_outer_dot} {mu_inner} {mu_outer} {gamma} {m_i} {n_inner} {k_inner} {n_outer} {k_outer} {J_inner_res[0]} {J_inner_res[1]} {J_inner_res[2]} {J_outer_res[0]} {J_outer_res[1]} {J_outer_res[2]} {omega_inner[0]} {omega_inner[1]} {omega_inner[2]} {omega_outer[0]} {omega_outer[1]} {omega_outer[2]} {anc_inner[0]} {anc_inner[1]} {anc_inner[2]} {anc_outer[0]} {anc_outer[1]} {anc_outer[2]}\n")
+                                                # print(f"{number} {system_label} {t[i]} {t_res_crossing} {omega_inner_dot} {omega_outer_dot} {mu_inner} {mu_outer} {gamma} {m_i} {n_inner} {k_inner} {n_outer} {k_outer} {J_inner_res[0]} {J_inner_res[1]} {J_inner_res[2]} {J_outer_res[0]} {J_outer_res[1]} {J_outer_res[2]} {omega_inner[0]} {omega_inner[1]} {omega_inner[2]} {omega_outer[0]} {omega_outer[1]} {omega_outer[2]} {anc_inner[0]} {anc_inner[1]} {anc_inner[2]} {anc_outer[0]} {anc_outer[1]} {anc_outer[2]}\n", flush=True)
                                                 # sys.stdout.flush()
                                         else:
                                             continue
