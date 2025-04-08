@@ -206,7 +206,7 @@ int main(int argc, char **argv){
 	
 
 	
-	#if 1
+	#if 0
 	printf("About to compute self-force J_dots \n");
 	J_dot_selfforce(nl_self, nmax, kmax, mmax, ra_inner, rp_inner, radius_outer, I_inner, mass, spin, J_dot_sf);
 	printf("J_dot_r_sf = %lg \n", J_dot_sf[0]);
@@ -862,6 +862,129 @@ int main(int argc, char **argv)
 	rk4_J2Jdot(t, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, fptr, mu_body, M, astar);
 	
 	fclose(fptr);
+		 
+ 
+	//printf("t \t J_r \t J_theta \t J_phi \n------------\n");
+	/* for (i = 0; i < n; i++) {
+		t = t0 + h * i;
+		printf("%i \t %g \t %e \t %e \t %e\n", i, t, J_r_final[i], J_theta_final[i], J_phi_final[i]);
+	} */
+ 
+ 	free((char*)J_r_final);
+ 	free((char*)J_theta_final);
+	free((char*)J_phi_final);
+	free((char*)t);
+	return(0);
+
+}
+#endif
+
+#if IS_RK4_J_DOT_norestart
+int main(int argc, char **argv)
+{
+	//double h=100, t, t0 = 1.; //Steps and initial start time
+	double *J_r_final, *J_theta_final, *J_phi_final, *t;
+	double J_r_ini, J_theta_ini, J_phi_ini, t0;
+	double mu_body, M = GLOBALPAR_M, astar = GLOBALPAR_astar; //Mass of body and BH parameters
+	int n, i_start; //Number of time steps
+	long label; //System label from data file
+	char sys_type[100]; //Inner or outer body label
+	int RESTART = 1; //Start from the beginning
+	
+
+	/* Inputs to be given in command line */
+	/* Initial action variables (J_i), initial starting time (t0), number of steps (n), mass ratio of orbiting body, system label, and system type */
+	sscanf(argv[1], "%lg", &J_r_ini);
+	sscanf(argv[2], "%lg", &J_theta_ini);
+	sscanf(argv[3], "%lg", &J_phi_ini);
+	sscanf(argv[4], "%lg", &t0);
+	sscanf(argv[5], "%ld", &n);
+	sscanf(argv[6], "%lg", &mu_body);
+	sscanf(argv[7], "%ld", &label);
+	sscanf(argv[8], "%s", &sys_type);
+	sscanf(argv[9], "%i", &i_start);
+
+	printf("Total number of arguments is %ld \n", argc);
+	printf("Number of time steps is n = %ld \n", n);
+	printf("Initial time is t0 = %lg \n", t0);
+	printf("Mass ratio of the inspiral body = %lg \n", mu_body);
+	printf("Mass and spin of central BH are = %lg %lg \n", M, astar);
+	printf("Inital Js are: %lg %lg %lg\n", J_r_ini, J_theta_ini, J_phi_ini);
+	printf("System label and type are: %ld %s \n", label, sys_type);
+
+	
+	J_r_final = (double *)malloc(sizeof(double) * n);
+	J_theta_final = (double *)malloc(sizeof(double) * n);
+	J_phi_final = (double *)malloc(sizeof(double) * n);
+
+	/* Define time step array, starts at inital time (input) */
+    t = (double *)malloc(sizeof(double) * (n));
+    // t[0] = t0;
+
+
+	rk4_J2Jdot_restartII(t0, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
+	
+		 
+ 
+	//printf("t \t J_r \t J_theta \t J_phi \n------------\n");
+	/* for (i = 0; i < n; i++) {
+		t = t0 + h * i;
+		printf("%i \t %g \t %e \t %e \t %e\n", i, t, J_r_final[i], J_theta_final[i], J_phi_final[i]);
+	} */
+ 
+ 	free((char*)J_r_final);
+ 	free((char*)J_theta_final);
+	free((char*)J_phi_final);
+	free((char*)t);
+	return(0);
+
+}
+#endif
+
+#if IS_RK4_J_DOT_restart
+int main(int argc, char **argv)
+{
+	//double h=100, t, t0 = 1.; //Steps and initial start time
+	double *J_r_final, *J_theta_final, *J_phi_final, *t;
+	double J_r_ini, J_theta_ini, J_phi_ini, t_start;
+	double mu_body, M = GLOBALPAR_M, astar = GLOBALPAR_astar; //Mass of body and BH parameters
+	int n, i_start; //Number of time steps
+	long label; //System label from data file
+	char sys_type[100]; //Inner or outer body label
+	int RESTART = 0; // Restart from intermediate time step
+	
+
+	/* Inputs to be given in command line */
+	/* Initial action variables (J_i), initial starting time (t0), number of steps (n), mass ratio of orbiting body, system label, and system type */
+	sscanf(argv[1], "%lg", &J_r_ini);
+	sscanf(argv[2], "%lg", &J_theta_ini);
+	sscanf(argv[3], "%lg", &J_phi_ini);
+	sscanf(argv[4], "%lg", &t_start);
+	sscanf(argv[5], "%i", &n);
+	sscanf(argv[6], "%lg", &mu_body);
+	sscanf(argv[7], "%ld", &label);
+	sscanf(argv[8], "%s", &sys_type);
+	sscanf(argv[9], "%i", &i_start);
+
+	// printf("Total number of arguments is %ld \n", argc);
+	// printf("Number of time steps is n = %ld \n", n);
+	// printf("Initial time is t0 = %lg \n", t0);
+	// printf("Mass ratio of the inspiral body = %lg \n", mu_body);
+	// printf("Mass and spin of central BH are = %lg %lg \n", M, astar);
+	// printf("Inital Js are: %lg %lg %lg\n", J_r_ini, J_theta_ini, J_phi_ini);
+	// printf("System label and type are: %ld %s \n", label, sys_type);
+
+	
+	J_r_final = (double *)malloc(sizeof(double) * n);
+	J_theta_final = (double *)malloc(sizeof(double) * n);
+	J_phi_final = (double *)malloc(sizeof(double) * n);
+
+	/* Define time step array, starts at inital time (input) */
+    t = (double *)malloc(sizeof(double) * (n));
+    // t[0] = t0;
+
+	// printf("\n");
+	rk4_J2Jdot_restartII(t_start, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
 		 
  
 	//printf("t \t J_r \t J_theta \t J_phi \n------------\n");
