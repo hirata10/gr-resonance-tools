@@ -54,18 +54,6 @@ if res_data.ndim == 1:  # If it's a 1D array
 
 print(len(res_data))
 
-#Make sure the Delta_J_log.txt file is removed before each NEW run of this Python script
-#Otherwise, it will append the new stuff to the old file
-
-# for fname in glob.glob("Delta_J_log.txt"):
-#     fname_bool = input(f"delete file [{fname}] (y/n): ")
-#     if fname_bool == "y":
-#         os.remove(fname)
-#     elif fname_bool == "n":
-#         print("appending onto existing file")
-#     else:
-#         print("invalid inputs")
-
 Plist = []
 iCount = 0
 chunk_size = globalpars.GLOBALPAR_chunk_size # number of jobs to do in parallel
@@ -114,41 +102,3 @@ print("Shape of data after concatenation and reshaping:", data.shape)
 
 sorted_data = data[data[:, 0].argsort()]
 numpy.savetxt("Output_Delta_J_" + str(system_label) + "/tot_Delta_J_" + str(system_label) + ".txt", sorted_data, fmt='%g', delimiter=' ')
-# data = numpy.loadtxt("Output_Delta_J_" + str(system_label) + "/tot_Delta_J_" + str(system_label) + ".txt")
-# sorted_data = data[data[:, 0].argsort()]
-# numpy.savetxt("Output_Delta_J_" + str(system_label) + "/tot_Delta_J_" + str(system_label) + ".txt", sorted_data, fmt='%g', delimiter=' ')
-
-# for row in res_data[0:50]:
-#     #print(row, "First row")
-#     cmd = f"./Delta_J_single {int(row[9])} {int(row[11])} {int(row[10])} {int(row[12])} {int(row[8])} {int(row[8])} {float(row[21])} {float(row[20])} {float(row[19])} {float(row[24])} {float(row[23])} {float(row[22])} {float(row[7])} {float(row[6])} {int(row[1])} {int(row[0])}"
-#     print(cmd)
-#     fout = open("Delta_J_log.txt", "a")
-#     Plist += [Popen(cmd, stdout = fout, shell = True)]
-#     # iCount += 1
-#     # if iCount >= 20:
-#     #     Plist[-20].wait()
-#     #Popen(cmd, stdout = fout, shell = True)
-
-# sys.exit()
-
-# cmd = []
-
-# for row in res_data[0:3]:
-#     #print(row, "First row")
-#     cmd.append(f"./Delta_J_single_set {int(row[9])} {int(row[11])} {int(row[10])} {int(row[12])} {int(row[8])} {int(row[8])} {float(row[21])} {float(row[20])} {float(row[19])} {float(row[24])} {float(row[23])} {float(row[22])} {float(row[7])} {float(row[6])} {int(row[1])}")
-#     print(cmd)
-
-# P = Popen(cmd, shell = True)
-# sys.exit()
-# poll = P.poll()
-
-# if poll is None:
-#     # p.subprocess is alive
-#     print("Running")
-
-# sys.exit()
-# for row in res_data[0:2]:
-#     #print(row, "First row")
-#     cmd = f"./Delta_J_single_set {int(row[9])} {int(row[11])} {int(row[10])} {int(row[12])} {int(row[8])} {int(row[8])} {float(row[21])} {float(row[20])} {float(row[19])} {float(row[24])} {float(row[23])} {float(row[22])} {float(row[7])} {float(row[6])} {int(row[1])}"
-#     print(cmd)
-#     Popen(cmd, shell = True)
