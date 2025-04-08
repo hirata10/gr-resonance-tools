@@ -98,7 +98,7 @@ void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp
 					Z_down_square = C0[4*il]*C0[4*il] + C0[4*il+1]*C0[4*il+1];
 					Z_out_square = C0[4*il+2]*C0[4*il+2] + C0[4*il+3]*C0[4*il+3];
 					#if 0
-					printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, omega_nkm, lambda, alphankm, Z_down_square, Z_out_square);
+					printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, omegagw, omega_nkm, lambda, alphankm, Z_down_square, Z_out_square);
 					fflush(stdout);
 					// printf("%i \t %i \t %i \t %i \t %lg \t %lg \n", i_n, i_k, i_m, il, Z_down_square, Z_out_square);
 					#endif
