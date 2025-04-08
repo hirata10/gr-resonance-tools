@@ -99,5 +99,9 @@ int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, doubl
 
 void rk4_J2Jdot(double *t, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, FILE *fptr, double mu_body, double M, double astar);
 
+void rk4_J2Jdot_restart(double *t, int i_start, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, int RESTART, double mu_body, double M, double astar);
+
+void rk4_J2Jdot_restartII(double t_start, double *t, int i_start, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, int RESTART, double mu_body, double M, double astar);
+
 //int readtxt(char FILENAME, struct data_vals *data);
 
