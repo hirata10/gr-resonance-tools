@@ -64,7 +64,11 @@ iCount = 0
 chunk_size = globalpars.GLOBALPAR_chunk_size # number of jobs to do in parallel
 tot_chunk = ceil(len(Delta_J_data)/chunk_size)
 
-os.mkdir(f"Output_Delta_Phi_{system_number}")
+output_dir = f"Output_Delta_Phi_{system_number}"
+
+# Check if the directory exists, and only create it if it does not
+if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
 
 #For loop that chunks the entire data file into chunk size and run the cmd for the entire chunk size before moving to the next chunk
 for chunk in range(0,len(Delta_J_data),chunk_size):
