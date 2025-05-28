@@ -134,12 +134,12 @@ if os.path.exists(omega_file):
 
     if already_done > 0:
         data = np.loadtxt(omega_file, comments="#")
-        om_inner_r_list = list(data[:, 1])
-        om_inner_theta_list = list(data[:, 2])
-        om_inner_phi_list = list(data[:, 3])
-        om_outer_r_list = list(data[:, 4])
-        om_outer_theta_list = list(data[:, 5])
-        om_outer_phi_list = list(data[:, 6])
+        om_inner_r_list = list(data[:, 2])
+        om_inner_theta_list = list(data[:, 3])
+        om_inner_phi_list = list(data[:, 4])
+        om_outer_r_list = list(data[:, 5])
+        om_outer_theta_list = list(data[:, 6])
+        om_outer_phi_list = list(data[:, 7])
 else:
     already_done = 0
     print("Starting fresh omega precomputation...")
@@ -196,6 +196,20 @@ for i in range(total_steps):
     A_outer_r_list.append(om_outer_r_list[i] / denom)
     A_outer_theta_list.append(om_outer_theta_list[i] / denom)
 
+# # DEBUGGING
+# A_inner_r = np.array(A_inner_r_list, dtype=np.float64)
+# A_inner_theta = np.array(A_inner_theta_list, dtype=np.float64)
+
+# A_outer_r = np.array(A_outer_r_list, dtype=np.float64)
+# A_outer_theta = np.array(A_outer_theta_list, dtype=np.float64)
+
+# A_inner = np.column_stack([A_inner_r, A_inner_theta])
+# np.savetxt("A_inner_all.txt", A_inner, header="r theta", fmt="%.18e")
+
+# A_outer = np.column_stack([A_outer_r, A_outer_theta])
+# np.savetxt("A_outer_all.txt", A_outer, header="r theta", fmt="%.18e")
+
+
 
 
 
@@ -222,7 +236,7 @@ for i in range(total_steps):
 
 # print("Loop time:", time.time() - start_time)
 
-
+Delta_omega = 0.
 # Begin resonance search
 label.tolist()
 [int(num) for num in label]
