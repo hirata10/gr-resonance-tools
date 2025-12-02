@@ -14,7 +14,7 @@ ________________________________________________________________________________
 Table of Contents:
 
 Part 1: System Requirements/Installation
-Part 2: Replicating (arxiv number)
+Part 2: Replicating arXiv:2507.22260
 Part 3: Physical Interpretations
 Part 4: FAQ/Tips
 
@@ -64,6 +64,30 @@ ________________________________________________________________________________
 
 PART 2:
 
+SETTING UP:
+
+***************************************************
+
+We recommend you primarily work (run terminal commands) in the same directory as the Makefile.
+
+Step 0: To change the parameters of the EMRI systems you want to generate, go into pars.txt and change the values of the variables, the Makefile will generate the necessary global parameter files for both the C and Python codes.
+
+Step 1: To build the necessary executables for the tidal resonance pipeline, run "make td_res" (the executables will be located in a directory called td_exe). You can clean this set up with "make clean-td_res"
+
+Step 2: To build some useful debugging executables, run "make test" (the executables will be located in a directory called test_exe). These executables include a map from Js to EQL, Js to J_dot_tidal, Js to J_dot_sf. You can clean this set up with "make clean-test"
+
+Step 2: Go to the directory src/python and run "python setup.py build_ext --inplace" to build cython and initalize C-functions as Python modules
+
+Step 3: The next step is to generate a bunch of potential EMRI systems with parameters as designated in the pars.txt file. Do this by running "action_angle_generator.py" into your terminal. You should get a text file with seven columns (system label, 6N action angle variables (J/mass)) named "action_angle_pairs.txt". If you wish to change the name of this file or it's location, you can do so by modifying line 34.
+
+Step 4: Make the directory labeled "outputs_data" BEFORE running J_evolve_single.py. This will generate two executable files with the names "J_evolve_single_restart" and "J_evolve_single_norestart" that takes the following inputs: initial action variables (doubles), initial time (double), number of time steps (long), system label (long), system type (char; inner or outer), mass of the body (float), system number (int), which step did it start on (int; for restart purposes). In order to run these executable files for each line in the files provided in Step 3, run the command "python src/python/J_evolve_single.py", this will output the system label, the time, the action variables of that time, the corresponding frequencies (in the r, \theta, and \phi directions), and the time step. The output will go into a directory called "outputs_data" in txt format with file names "J_evolve_[system type]_[system label].txt"
+
+Step 5: Upon completing all the rk4 runs, we find the resonances using "resfinder.py". This file does it by taking each pair of simulations (inner/outer) and checking them for potential resonances one-by-one. In order for this to happen, you must change lines 51/52 to read text from the directories you designated (outputs_data, Data/Inner_Body, etc). Once this is done, you can run resfinder.py from your terminal. You will get a text file names "potential_resonances.txt" that has a row for each potential resonance found within all of the simulations (resonance number, file number, resonance time, change in omega (inner/outer), inner body/SMBH mass ratio, outer body/SMBH mass ratio, gamma, n/k/m's, action variables for the inner and outer bodies (J/m_body), omegas for the inner and outer bodies, ancilliary data (inclination, periapse, apoapse)), and the crossing time for the resonance. If you wish to change the text file's name or location, you can do that in line 43.
+
+________________________________________________________________________________________________________
+
+PART 3 (UNDER MAINTENANCE):
+
 REPLICATING THE PAPER
 
 ***************************************************
@@ -92,19 +116,6 @@ Step 7: For computing the total change in the phase of the waveform, compile the
 
 ________________________________________________________________________________________________________
 
-PART 3:
-
-PHYSICAL INTERPRETATIONS
-
-***************************************************
-
-This section will go through the physical interpretations of what the code is doing to get the results of (). More description can be found in the methods section.
-
-
-
-
-
-________________________________________________________________________________________________________
 
 PART 4:
 
@@ -112,8 +123,6 @@ FAQ/TIPS
 
 TESTING/DEBUGGING:
 
-To make a print out of the amplitudes for the up and down gravitational modes, use this compile command "gcc calling.c -DIS_DELTA_J kerrtraj.c kerrmode.c kerrgwem.c resonance_find.c Gamma.c Delta_J.c J_dot.c -o Delta_J_J_input_print -w -lm"
 
-To make J_dot for a given set of action variables (J), resonance modes, and SMBH parameters run "gcc calling.c -DIS_J_DOT resonance_find.c J_dot.c kerrtraj.c kerrmode.c kerrgwem.c -w -o J_dot_res_case -lm"
 
 ***************************************************
