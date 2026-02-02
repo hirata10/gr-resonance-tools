@@ -14,9 +14,10 @@ ________________________________________________________________________________
 Table of Contents:
 
 Part 1: System Requirements/Installation
-Part 2: Replicating arXiv:2507.22260
-Part 3: Physical Interpretations
-Part 4: FAQ/Tips
+
+Part 2: Steps to replicating arXiv: 2207.07733 and 2507.22260
+
+Part 3: FAQ/Tips (Under Maintenance)
 
 ________________________________________________________________________________________________________
 
@@ -114,7 +115,7 @@ Step 7: For computing the total change in the phase of the waveform, compile the
 ________________________________________________________________________________________________________
 
 
-PART 4:
+PART 3:
 
 TESTING/DEBUGGING:
 
