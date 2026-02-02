@@ -104,7 +104,8 @@ TEST_LIBS   = -lm
 # Test executables
 TEST_EXES = $(TEST_OUTDIR)/J2EQL \
             $(TEST_OUTDIR)/J2J_DOT_TIDAL \
-            $(TEST_OUTDIR)/J2J_DOT_SF 
+            $(TEST_OUTDIR)/J2J_DOT_SF \
+            $(TEST_OUTDIR)/DELTA_EQL
 
 # Running "make test" builds all test executables
 test: $(TEST_OUTDIR) $(TEST_EXES)
@@ -120,6 +121,15 @@ $(TEST_OUTDIR)/J2EQL: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/$(C_HEADER)
 	$(CC) $(TEST_CFLAGS) -DIS_J2EQL $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Create executable to compute changes in EQL after resonance crossing
+$(TEST_OUTDIR)/DELTA_EQL: $(SRC_C)/calling.c $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) -DIS_DELTA_EQL $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/kerrphase.c $(SRC_C)/J_dot.c $(SRC_C)/resonance_find.c\
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
 # Create executable to compute a set of J_dot_tidal of inner body from Js (inner and outer) and resonance mode

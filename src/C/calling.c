@@ -666,3 +666,94 @@ int main(int argc, char **argv)
 }
 #endif
 
+#if IS_DELTA_EQL
+int main(int argc, char **argv)
+{
+	int i, j, k;
+	double Delta_J_r, Delta_J_theta, Delta_J_phi, Delta_J[3], Delta_EQL[3];
+	double J_r_res, J_theta_res, J_phi_res, J_res[3];
+	double EQL_res[3], anc_res[3], Minv_res[9], M_res[9], Ident[9];
+	double J_postres[3], EQL_postres[3], anc_postres[3];
+	double M, astar; //Mass of body and BH parameters
+	
+
+	/* Inputs to be given in command line */
+	/* Initial changes in action variables crossing tidal resonance action variables (Delta_J_i), 
+	action variables at resonance (J_i_res), 
+	mass and spin of central BH */
+	sscanf(argv[1], "%lg", &Delta_J_r);
+	sscanf(argv[2], "%lg", &Delta_J_theta);
+	sscanf(argv[3], "%lg", &Delta_J_phi);
+	sscanf(argv[4], "%lg", &J_r_res);
+	sscanf(argv[5], "%lg", &J_theta_res);
+	sscanf(argv[6], "%lg", &J_phi_res);
+	sscanf(argv[7], "%lg", &M);
+	sscanf(argv[8], "%lg", &astar);
+
+	J_res[0] = J_r_res;
+	J_res[1] = J_theta_res;
+	J_res[2] = J_phi_res;
+
+	CKerr_J2EQL(J_res, EQL_res, M, astar);
+	CKerr_EQL2J(EQL_res, J_res, M, astar, anc_res);
+
+	printf("At resonance: \n");
+	printf("J_r = %lg, J_theta = %lg, J_phi = %lg \n", J_res[0], J_res[1], J_res[2]);
+	printf("E = %lg, Q = %lg, L = %lg \n", EQL_res[0], EQL_res[1], EQL_res[2]);
+	printf("apo = %lg, peri = %lg, inc = %lg \n", anc_res[2], anc_res[1], anc_res[0]);
+
+	CKerr_Minverse(J_res, Minv_res, M, astar);
+
+	invertMatrix(Minv_res, M_res);
+
+	// for (int i = 0; i < 3; i++)
+	// {
+	// 	for (int j = 0; j < 3; j++)
+	// 	{
+	// 		for (int k = 0; k < 3; k++)
+	// 		{
+	// 			Ident[i + 3 * j] += Minv_res[i + 3 * j] * M_res[j + 3 * k]
+	// 		}
+			
+	// 	}
+		
+	// }
+
+	for (int i = 0; i < 3; i++) {
+    	for (int j = 0; j < 3; j++) {
+        	Ident[i * 3 + j] = 0.0;   // reset accumulator
+        	for (int k = 0; k < 3; k++) {
+            	Ident[i * 3 + j] += Minv_res[i * 3 + k] * M_res[k * 3 + j];
+        	}
+    	}
+	}
+
+	
+	for (int i = 0; i < 9; i++)
+	{
+		printf("Ident[%d] = %lg \n", i, Ident[i]);
+	}
+	
+
+	Delta_EQL[0] = M_res[0] * Delta_J_r + M_res[3] * Delta_J_theta + M_res[6] * Delta_J_phi;
+	Delta_EQL[1] = M_res[1] * Delta_J_r + M_res[4] * Delta_J_theta + M_res[7] * Delta_J_phi;
+	Delta_EQL[2] = M_res[2] * Delta_J_r + M_res[5] * Delta_J_theta + M_res[8] * Delta_J_phi;
+
+	printf("Delta_EQL = %lg %lg %lg \n", Delta_EQL[0], Delta_EQL[1], Delta_EQL[2]);
+
+	printf("After resonance: \n");
+	for (int i = 0; i < 3; i++)
+	{
+		EQL_postres[i] = EQL_res[i] + Delta_EQL[i];
+	}
+	
+	CKerr_EQL2J(EQL_postres, J_postres, M, astar, anc_postres);
+
+	printf("J_r = %lg, J_theta = %lg, J_phi = %lg \n", J_postres[0], J_postres[1], J_postres[2]);
+	printf("E = %lg, Q = %lg, L = %lg \n", EQL_postres[0], EQL_postres[1], EQL_postres[2]);
+	printf("apo = %lg, peri = %lg, inc = %lg \n", anc_postres[2], anc_postres[1], anc_postres[0]);
+
+	return(0);
+
+}
+#endif

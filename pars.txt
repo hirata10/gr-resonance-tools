@@ -4,7 +4,7 @@
 M 1.0 
 
 #Spin of BH in BH mass units
-astar 0.1
+astar 0.9
 
 #Mass ratio of inner body with BH mass
 mu_inner 0.00001
@@ -19,10 +19,10 @@ i_start_inner 1
 i_start_outer 1
 
 #Number of time steps in evolution for inner body
-n_time_inner 5
+n_time_inner 3
 
 #Number of time steps in evolution for outer body
-n_time_outer 5
+n_time_outer 2
 
 #Semi-major axis of inner body wrt BH
 sm_axis_inner 50
@@ -62,4 +62,4 @@ chunk_size 5
 tgrid_resfinder 100
 
 #System Label
-system_label "50_200-0.1"
+system_label "50_200-0.9"

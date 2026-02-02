@@ -509,7 +509,7 @@ return (0);
 }
 
 
-
+#ifdef KERRPHASE_STANDALONE
 // Contour integral calculation main function //
 int main(int argc, char **argv) {
     // double a = 0.5;  // spin
@@ -687,4 +687,5 @@ int main(int argc, char **argv) {
     printf("%i \t %i \t %i \t %i \t %i \t %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e\n", res_label, system_label, n_inner, k_inner, m_inner, J[0], J[1], J[2], E, Q, L, t_scale, Delta_Phi_components[0], Delta_Phi_components[1], Delta_Phi_components[2], tot_Delta_Phi);
     return 0;
 }
+#endif
 

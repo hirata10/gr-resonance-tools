@@ -1,13 +1,13 @@
 
 # gr-resonance-tools
 
-Hello all! If you are reading this, you are here to use the gr-resonance-tools toolkit to help you along your own research projects. The README file below should give a good outline as to how you can use this code to replicate the results in our paper (arXiv number here) as well as how to modify it for your own needs. If you have any questions, you can reach the developers here:
+Aloha mai kākou! Here is our gr-resonance-tools toolkit that is used to compute the tidal resonance from dynamic third body perturbers on extreme mass ratio inspirals. The README file below should give an outline as to how you can use this code/replicate the results in our papers (arXiv: 2207.07733 and 2507.22260) as well as how to modify it for your own needs. If you have any questions, you can reach the developers here:
 
-hirata.10@osu.edu
-k14masilv@gmail.com
-h.g.blake-goszyk@vanderbilt.edu
+Christopher Hirata (hirata.10@osu.edu)
+Makana Silva (k14masilv@gmail.com)
+Harrison Blake-Goszyk (h.g.blake-goszyk@vanderbilt.edu)
 
-Good luck and have fun!
+Me ke aloha pumehana!
 
 ________________________________________________________________________________________________________
 
@@ -52,13 +52,6 @@ This will allow you to use all of the C functions in a python context. Note that
 
 
 ***************************************************
-Running C code:
-
-For those attempting to use this repository and being unfamiliar with C, do not fret! There are several C calculation routines that are already specified in the calling.c file. If you want to run any of them, type this command:
-
-
-
-
 
 ________________________________________________________________________________________________________
 
@@ -80,12 +73,16 @@ Step 2: Go to the directory src/python and run "python setup.py build_ext --inpl
 
 Step 3: The next step is to generate a bunch of potential EMRI systems with parameters as designated in the pars.txt file. Do this by running "action_angle_generator.py" into your terminal. You should get a text file with seven columns (system label, 6N action angle variables (J/mass)) named "action_angle_pairs.txt". If you wish to change the name of this file or it's location, you can do so by modifying line 34.
 
-Step 4: Make the directory labeled "outputs_data" BEFORE running J_evolve_single.py. This will generate two executable files with the names "J_evolve_single_restart" and "J_evolve_single_norestart" that takes the following inputs: initial action variables (doubles), initial time (double), number of time steps (long), system label (long), system type (char; inner or outer), mass of the body (float), system number (int), which step did it start on (int; for restart purposes). In order to run these executable files for each line in the files provided in Step 3, run the command "python src/python/J_evolve_single.py", this will output the system label, the time, the action variables of that time, the corresponding frequencies (in the r, \theta, and \phi directions), and the time step. The output will go into a directory called "outputs_data" in txt format with file names "J_evolve_[system type]_[system label].txt"
+Step 4: In order to run compute the evolution of each body (inner/outer), run the command "python src/python/J_evolve_single.py", this will output the system label, the time, the action variables of that time, the corresponding frequencies (in the r, $\theta$, and $\phi$ directions), and the time step. The output will go into a directory called "outputs_data" in txt format with file names "J_evolve_{system_type}_{system_label}.txt". The two executable files with the names "J_evolve_single_restart" and "J_evolve_single_norestart" that takes the following inputs: initial action variables (doubles), initial time (double), number of time steps (long), system label (long), system type (char; inner or outer), mass of the body (float), system number (int), which step did it start on (int; for restart purposes).
 
-Step 5: Upon completing all the rk4 runs, we find the resonances using "resfinder.py". This file does it by taking each pair of simulations (inner/outer) and checking them for potential resonances one-by-one. In order for this to happen, you must change lines 51/52 to read text from the directories you designated (outputs_data, Data/Inner_Body, etc). Once this is done, you can run resfinder.py from your terminal. You will get a text file names "potential_resonances.txt" that has a row for each potential resonance found within all of the simulations (resonance number, file number, resonance time, change in omega (inner/outer), inner body/SMBH mass ratio, outer body/SMBH mass ratio, gamma, n/k/m's, action variables for the inner and outer bodies (J/m_body), omegas for the inner and outer bodies, ancilliary data (inclination, periapse, apoapse)), and the crossing time for the resonance. If you wish to change the text file's name or location, you can do that in line 43.
+Step 5: Upon completing all the rk4 runs, we find the resonances using "resfinder_parallel_restart.py {system_label}" where {system_label} is an integer that represents one of the systems in the J_evolve routines. This file does it by taking each pair of simulations (inner/outer) and checking them for potential resonances one-by-one. You will get a text file names "potential_resonances_{system_label}.txt" that has a row for each potential resonance found within all of the simulations (resonance number, file number, resonance time, change in omega (inner/outer), inner body/SMBH mass ratio, outer body/SMBH mass ratio, gamma, n/k/m's, action variables for the inner and outer bodies (J/m_body), omegas for the inner and outer bodies, ancilliary data (inclination, periapse, apoapse)), and the crossing time for the resonance.
+
+Step 6: In order to compute the changes in the action variables of the inner body crossing a resonance, run the python code "python src/python/Delta_J_single_sys_restart.py {system_label}" The output file will have the resonance label (long; which resonance from the resonance file are we computing), the system label (long; in which system does this resonance occur), the integer mode labels for the inner and outer body (int; n_inner, k_inner, n_outer, k_outer, m_outer), the fundamental resonant angle (double; location on the torus), the total angular acceleration multiplied by the mass of each body (Gamma_outer - Gamma_inner), the frequencies of each body at that resonance resonance, the action variables for each body at that resonance, the final change in action variables for the inner body (double; J/(mass_inner)), and the ratio of the change in action variable to the action variable at resonance (this is for inner body only). The files will be in txt format in the directory "Output_Delta_J_{system_label}" with the naming scheme "Delta_J_{system_label}_log_{tot_chunk}_{chunk + 1}.txt," where tot_chunk is the total number of runs needed to cover the entire resonance data file and chunk+1 is the job in that run. The final concatenated file will be named tot_Delta_J_{system_label}.txt
+
+Step 7: For computing the total change in the phase of the waveform, run the following command "python src/python/Delta_Phi_single.py {system_label}". The output is in the following order: resonance label (int), system label (int), nkm for the inner body (3 int), J_i (3 double), EQL (3 double), Delta_Phi_i (3 double), tot_Delta_Phi (double)
 
 ________________________________________________________________________________________________________
-
+<!-- 
 PART 3 (UNDER MAINTENANCE):
 
 REPLICATING THE PAPER
@@ -110,7 +107,7 @@ Step 6a: Make the directory labeled "Output_Delta_J" BEFORE compiling the follow
 
 Step 6b: Compile the C code "calling.c" using the following command "gcc calling.c -DIS_DELTA_J_SINGLE kerrtraj.c kerrmode.c kerrgwem.c resonance_find.c Gamma.c Delta_J.c J_dot.c -o Delta_J_single -w." This will generate an executable file with the name "Delta_J_single" that takes in the data from the resonance file and outputs the change in the action variables due to the resonance interaction. The python code "Delta_J_single_sys.py" will run the executable file in parallel for a given potential_resonance_{system_number}.txt file. Once the executable file is made, run the python code "Delta_J_single_sys.py {system_number}" The output file will have the resonance label (long; which resonance from the resonance file are we computing), the system label (long; in which system does this resonance occur), the integer mode labels for the inner and outer body (int; n_inner, k_inner, n_outer, k_outer, m_outer), the fundamental resonant angle (double; location on the torus), the total angular acceleration multiplied by the mass of each body (Gamma_outer - Gamma_inner), the frequencies of each body at that resonance resonance, the action variables for each body at that resonance, the final change in action variables for the inner body (double; J/(mass_inner)), and the ratio of the change in action variable to the action variable at resonance (this is for inner body only). The files will be in txt format in the directory "Output_Delta_J_{system_number}" with the naming scheme "Delta_J_{system_label}_log_{tot_chunk}_{chunk + 1}.txt," where tot_chunk is the total number of runs needed to cover the entire resonance data file (Step 3) and chunk+1 is the job in that run. Name the final concatenated file with tot_Delta_J_{system_label}.txt
 
-Step 7: For computing the total change in the phase of the waveform, compile the C code "kerrphase.c" using the following command "gcc kerrphase.c kerrtraj.c kerrgwem.c kerrmode.c resonance_find.c J_dot.c -w -o Delta_Phi_single". This will generate an executable (Delta_Phi_single) that will be used in the Python code "Delta_Phi_JOB_ARRAY.py" that will take the data files from the Delta_J files (Step 6). In order to apply the Python script to the Delta_J files, run the following command "python Delta_Phi_single.py {system_number}". The output is in the following order: resonance label (int), system label (int), nkm for the inner body (3 int), J_i (3 double), EQL (3 double), Delta_Phi_i (3 double), tot_Delta_Phi (double)
+Step 7: For computing the total change in the phase of the waveform, compile the C code "kerrphase.c" using the following command "gcc kerrphase.c kerrtraj.c kerrgwem.c kerrmode.c resonance_find.c J_dot.c -w -o Delta_Phi_single". This will generate an executable (Delta_Phi_single) that will be used in the Python code "Delta_Phi_JOB_ARRAY.py" that will take the data files from the Delta_J files (Step 6). In order to apply the Python script to the Delta_J files, run the following command "python Delta_Phi_single.py {system_number}". The output is in the following order: resonance label (int), system label (int), nkm for the inner body (3 int), J_i (3 double), EQL (3 double), Delta_Phi_i (3 double), tot_Delta_Phi (double) -->
 
 
 
@@ -118,8 +115,6 @@ ________________________________________________________________________________
 
 
 PART 4:
-
-FAQ/TIPS
 
 TESTING/DEBUGGING:
 
