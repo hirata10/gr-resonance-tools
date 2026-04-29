@@ -4,7 +4,9 @@
 Aloha mai kākou! Here is our gr-resonance-tools toolkit that is used to compute the tidal resonance from dynamic third body perturbers on extreme mass ratio inspirals. The README file below should give an outline as to how you can use this code/replicate the results in our papers (arXiv: 2207.07733 and 2507.22260) as well as how to modify it for your own needs. If you have any questions, you can reach the developers here:
 
 Christopher Hirata (hirata.10@osu.edu)
+
 Makana Silva (k14masilv@gmail.com)
+
 Harrison Blake-Goszyk (h.g.blake-goszyk@vanderbilt.edu)
 
 Me ke aloha pumehana!
@@ -31,6 +33,7 @@ Requirements:
 This code requires that you have the lates versions of Python, Perl, Cython, and C installed. For those of you unfamiliar with it Cython, it can be described a wrapping language that allows you to use C functions in Python in one line. This means that any of the C functions listed in the header file (CKerr.h) are fair game for Python users. To install Python and Cython, you can use pip:
 
 pip install python
+
 pip install cython
 
 Nice that it rhymes, eh? If any issues arise with either Python or Cython, the documentation for both are accessible and easy to use. The C documentation is a bit denser, but is still nice to skim if needed:
