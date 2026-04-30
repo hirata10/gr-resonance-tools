@@ -34,7 +34,7 @@ sm_axis_outer 200
 N_sys 2
 
 #Number of resonance modes
-N_res 5
+N_res 2
 
 #Number of \ell modes for resonance calculation
 nl_res 4
@@ -62,4 +62,4 @@ chunk_size 5
 tgrid_resfinder 100
 
 #System Label
-system_label "50_200-0.9"
+system_label "50_200-0.5"
