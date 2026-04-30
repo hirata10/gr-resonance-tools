@@ -138,31 +138,63 @@ int main(int argc, char **argv){
 
 #ifdef IS_J_DOT_TIDAL
 int main(int argc, char **argv){
+	setvbuf(stdout, NULL, _IOLBF, 0);
 	int j;
 	double J_dot_r, J_dot_theta, J_dot_phi;
 	double J_dot_r_tidal, J_dot_theta_tidal, J_dot_phi_tidal;
 	double J_dot_sf[3], J_dot_td[3];
 	double J_inner[3], J_outer[3], EQL_inner[3], EQL_outer[3], anc_inner[3], anc_outer[3];
-	double angle_space, angle_step, L_dot[50], Kepler_torque[50];
+	double angle_space, angle_step, L_dot[50], Jr_dot[50], Jtheta_dot[50], Kepler_torque[50];
 	int nl = GLOBALPAR_nl_res, nmax = GLOBALPAR_nmax, kmax = GLOBALPAR_kmax, mmax = GLOBALPAR_mmax, nl_self = GLOBALPAR_nl_self, N_res = GLOBALPAR_N_res;
 	int n_res_inner, k_res_inner, m_res_inner;
 	int n_res_outer, k_res_outer, m_res_outer;
 	double ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, radius_outer=0., guess1, guess2, angle_torus;
 	double mass = GLOBALPAR_M, spin = GLOBALPAR_astar, mu_outer = GLOBALPAR_mu_outer;
 
-	sscanf(argv[1], "%lg", &J_inner[0]);
-	sscanf(argv[2], "%lg", &J_inner[1]);
-	sscanf(argv[3], "%lg", &J_inner[2]);
-	sscanf(argv[4], "%lg", &J_outer[0]);
-	sscanf(argv[5], "%lg", &J_outer[1]);
-	sscanf(argv[6], "%lg", &J_outer[2]);
-	sscanf(argv[7], "%d", &n_res_inner);
-	sscanf(argv[8], "%d", &k_res_inner);
-	sscanf(argv[9], "%d", &m_res_inner);
-	sscanf(argv[10], "%d", &n_res_outer);
-	sscanf(argv[11], "%d", &k_res_outer);
-	sscanf(argv[12], "%d", &m_res_outer);
-	sscanf(argv[13], "%lg", &angle_torus);
+	if (argc == 14) {
+    // command-line mode
+    sscanf(argv[1], "%lf", &J_inner[0]);
+    sscanf(argv[2], "%lf", &J_inner[1]);
+    sscanf(argv[3], "%lf", &J_inner[2]);
+    sscanf(argv[4], "%lf", &J_outer[0]);
+    sscanf(argv[5], "%lf", &J_outer[1]);
+    sscanf(argv[6], "%lf", &J_outer[2]);
+    sscanf(argv[7], "%d", &n_res_inner);
+    sscanf(argv[8], "%d", &k_res_inner);
+    sscanf(argv[9], "%d", &m_res_inner);
+    sscanf(argv[10], "%d", &n_res_outer);
+    sscanf(argv[11], "%d", &k_res_outer);
+    sscanf(argv[12], "%d", &m_res_outer);
+    sscanf(argv[13], "%lf", &angle_torus);
+
+	} 
+	else {
+    // stdin mode (works with < file)
+    	if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %d %lf",
+              &J_inner[0], &J_inner[1], &J_inner[2],
+              &J_outer[0], &J_outer[1], &J_outer[2],
+              &n_res_inner, &k_res_inner, &m_res_inner,
+              &n_res_outer, &k_res_outer, &m_res_outer,
+              &angle_torus) != 13) {
+
+        fprintf(stderr, "Error: expected 13 inputs\n");
+        return 1;
+    	}
+	}
+	
+	// sscanf(argv[1], "%lg", &J_inner[0]);
+	// sscanf(argv[2], "%lg", &J_inner[1]);
+	// sscanf(argv[3], "%lg", &J_inner[2]);
+	// sscanf(argv[4], "%lg", &J_outer[0]);
+	// sscanf(argv[5], "%lg", &J_outer[1]);
+	// sscanf(argv[6], "%lg", &J_outer[2]);
+	// sscanf(argv[7], "%d", &n_res_inner);
+	// sscanf(argv[8], "%d", &k_res_inner);
+	// sscanf(argv[9], "%d", &m_res_inner);
+	// sscanf(argv[10], "%d", &n_res_outer);
+	// sscanf(argv[11], "%d", &k_res_outer);
+	// sscanf(argv[12], "%d", &m_res_outer);
+	// sscanf(argv[13], "%lg", &angle_torus);
 
 	#if 0
 	// printf("Enter inner pericenter: ");
@@ -224,7 +256,7 @@ int main(int argc, char **argv){
 	printf("I_outer, rp_outer, ra_outer, eccen_outer: %lg %lg %lg %lg \n", I_outer, rp_outer, ra_outer, e_outer);
 	printf("Inner and Outer EQL: %lg %lg %lg, %lg %lg %lg \n", EQL_inner[0], EQL_inner[1], EQL_inner[2], EQL_outer[0], EQL_outer[1], EQL_outer[2]);
 	
-	#if 1
+	#ifdef SINGLEVALUE
 	printf("About to compute tidal J_dots \n");
 	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_outer, J_dot_td);
 	printf("J_dot_r_tidal = %lg \n", J_dot_td[0]);
@@ -233,16 +265,22 @@ int main(int argc, char **argv){
 	// printf("Keplerian J_dot_phi at resonance = %lg \n", J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline));
 	#endif
 	
-	// printf("About to start L_dot \n");
-	// for (j = 0; j < 50; j++){
-	// 	angle_space = 2 * M_PI / 50;
-	// 	angle_step = j * angle_space;
-	// 	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_res, peri, radius_outer, incline, mass, spin, angle_step, J_dot_td);
-	// 	L_dot[j] = J_dot_td[2];
-	// 	Kepler_torque[j] = J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline, angle_step);
-	// 	printf("%lg %lg %lg \n", angle_step, L_dot[j], Kepler_torque[j]);
-	// }
-	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
+	#ifdef LOOPANGLE
+	printf("About to start angle for loop for tidal J_dots \n");
+	printf("i \t angle_step \t Jr_dot \t Jtheta_dot \t L_dot \n------------\n");
+	for (j = 0; j < 50; j++){
+		angle_space = 2 * M_PI / 50;
+		angle_step = j * angle_space;
+		// J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_res, peri, radius_outer, incline, mass, spin, angle_step, J_dot_td);
+		J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_step, mu_outer, J_dot_td);
+		Jr_dot[j] = J_dot_td[0];
+		Jtheta_dot[j] = J_dot_td[1];
+		L_dot[j] = J_dot_td[2];
+		// Kepler_torque[j] = J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline, angle_step);
+		printf("%i \t %lg \t %lg \t %lg \t %lg \n", j, angle_step, Jr_dot[j], Jtheta_dot[j], L_dot[j]);
+	}
+	#endif
+	// for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
 	return(0);
 }
 #endif
@@ -250,6 +288,7 @@ int main(int argc, char **argv){
 #ifdef IS_J2EQL
 int main(int argc, char **argv){
 	double J[3], EQL[3], anc[3];
+	double apo, peri, inc;
 	double mass = GLOBALPAR_M, spin = GLOBALPAR_astar;
 
 	/* Look for Jr, J_theta, and J_phi on command line */
@@ -274,6 +313,72 @@ int main(int argc, char **argv){
 	return(0);
 }
 #endif
+
+#ifdef IS_ORBIT2J
+int main(int argc, char **argv){
+	double J[3], EQL[3], anc[3], info[6];
+	double apo, peri, inc, radius;
+	double mass = GLOBALPAR_M, spin = GLOBALPAR_astar;
+
+	/* Look for apocenter, pericenter, and inclination on command line */
+	/* For CIRCULAR equatorial orbits, set apo, peri, and inc to zero on command line */
+
+	if (argc == 5){
+    	// command-line mode
+   		sscanf(argv[1], "%lg", &apo);
+    	sscanf(argv[2], "%lg", &peri);
+    	sscanf(argv[3], "%lg", &inc);
+    	sscanf(argv[4], "%lg", &radius);
+	} 
+	else {
+    	// stdin mode (works with < file or typing)
+    if (scanf("%lf %lf %lf %lf", &apo, &peri, &inc, &radius) != 4) {
+        fprintf(stderr, "Error: need 4 numbers\n");
+        return 1;
+    	}
+	}
+
+	if (apo == 0 && peri == 0 && inc == 0)
+	{
+		printf("Orbit is circular and equatorial \n");
+		CKerr_getData_CircEq(mass, spin, radius, info);
+		printf("E and L: %lg, %lg \n", info[1], info[0]);
+		EQL[0] = info[1];
+		EQL[1] = 0.;
+		EQL[2] = info[0];
+		CKerr_EQL2J(EQL, J, mass, spin, anc);
+		printf("Jr: %lg, Jtheta: %lg, Jphi: %lg \n", J[0], J[1], J[2]);
+		printf("inclination: %lg, pericenter: %lg, apocenter: %lg \n", anc[0], anc[1], anc[2]);
+	}
+
+	else
+	{
+		printf("Orbit is elliptical and inclined \n");
+		// Convert the orbit data to EQL
+		ra_rp_I2EQL(apo, EQL, peri, inc, spin, mass);
+		printf("EQL: %lg, %lg, %lg \n", EQL[0], EQL[1], EQL[2]);
+
+		// Convert EQL to J and check anc matches inputted orbit data (anc[0] = inclination, anc[1] = pericenter, anc[2] = apocenter)
+		CKerr_EQL2J(EQL, J, mass, spin, anc);
+
+		double eccen = (anc[2] - anc[1]) / (anc[2] + anc[1]);
+
+		printf("Jr: %lg, Jtheta: %lg, Jphi: %lg \n", J[0], J[1], J[2]);
+		printf("eccentricity: %lg \n", eccen);
+
+		double err_apo_rel = (anc[2] - apo) / apo;
+		double err_peri_rel = (anc[1] - peri) / peri;
+		double err_inc_rel = (anc[0] - inc) / inc;
+
+		printf("error for apo: %12.5le, peri: %12.5le, inclination: %12.5le \n", err_apo_rel, err_peri_rel, err_inc_rel);
+	}
+
+	return(0);
+}
+#endif
+	
+
+
 
 #ifdef IS_DELTA_J
 int main(){

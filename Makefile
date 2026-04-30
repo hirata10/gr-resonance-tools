@@ -88,7 +88,7 @@ $(OUTDIR)/Delta_Phi_single: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(CFLAGS) $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(CFLAGS) -DKERRPHASE_STANDALONE $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
         $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(LIBS)
@@ -103,9 +103,11 @@ TEST_LIBS   = -lm
 
 # Test executables
 TEST_EXES = $(TEST_OUTDIR)/J2EQL \
-            $(TEST_OUTDIR)/J2J_DOT_TIDAL \
+            $(TEST_OUTDIR)/J2J_DOT_TIDAL_SINGLE \
+            $(TEST_OUTDIR)/J2J_DOT_TIDAL_LOOP \
             $(TEST_OUTDIR)/J2J_DOT_SF \
-            $(TEST_OUTDIR)/DELTA_EQL
+            $(TEST_OUTDIR)/DELTA_EQL \
+            $(TEST_OUTDIR)/ORBIT2J
 
 # Running "make test" builds all test executables
 test: $(TEST_OUTDIR) $(TEST_EXES)
@@ -133,11 +135,20 @@ $(TEST_OUTDIR)/DELTA_EQL: $(SRC_C)/calling.c $(SRC_C)/kerrphase.c $(SRC_C)/kerrt
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
 # Create executable to compute a set of J_dot_tidal of inner body from Js (inner and outer) and resonance mode
-$(TEST_OUTDIR)/J2J_DOT_TIDAL: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+$(TEST_OUTDIR)/J2J_DOT_TIDAL_SINGLE: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(TEST_CFLAGS) -DIS_J_DOT_TIDAL $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(TEST_CFLAGS) -DIS_J_DOT_TIDAL -DSINGLEVALUE $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Create executable to compute J_dot_tidals of inner body from Js (inner and outer) and resonance mode over a range of angle values
+$(TEST_OUTDIR)/J2J_DOT_TIDAL_LOOP: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) -DIS_J_DOT_TIDAL -DLOOPANGLE $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
@@ -147,6 +158,15 @@ $(TEST_OUTDIR)/J2J_DOT_SF: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
 	$(CC) $(TEST_CFLAGS) -DIS_J_DOT_SF $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Create executable to convert orbit data (apo, peri, inclination) to Js
+$(TEST_OUTDIR)/ORBIT2J: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) -DIS_ORBIT2J $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
