@@ -2,4 +2,6 @@ test_exe
 td_res_exe
 globalpars_c.h
 globalpars.py
-TEST/*
+TEST/*.input
+TEST/*.output
+
