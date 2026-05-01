@@ -49,7 +49,7 @@ int main(){
 }
 #endif
 
-#ifdef IS_RESFIND
+#ifdef IS_RESFIND_APO
 int main(){
 	int j;
 	int n, k, m;
@@ -145,6 +145,7 @@ int main(int argc, char **argv){
 	double J_dot_sf[3], J_dot_td[3];
 	double J_inner[3], J_outer[3], EQL_inner[3], EQL_outer[3], anc_inner[3], anc_outer[3];
 	double angle_space, angle_step, L_dot[50], Jr_dot[50], Jtheta_dot[50], Kepler_torque[50];
+	double Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer[3];
 	int nl = GLOBALPAR_nl_res, nmax = GLOBALPAR_nmax, kmax = GLOBALPAR_kmax, mmax = GLOBALPAR_mmax, nl_self = GLOBALPAR_nl_self, N_res = GLOBALPAR_N_res;
 	int n_res_inner, k_res_inner, m_res_inner;
 	int n_res_outer, k_res_outer, m_res_outer;
@@ -227,9 +228,15 @@ int main(int argc, char **argv){
 
 	CKerr_J2EQL(J_inner, EQL_inner, mass, spin);
 	CKerr_EQL2J(EQL_inner, J_inner, mass, spin, anc_inner);
+	CKerr_Minverse(J_inner, Minv_inner, mass, spin);
+	CKerr_Minv2Omega(Minv_inner, Omega_inner);
 
 	CKerr_J2EQL(J_outer, EQL_outer, mass, spin);
 	CKerr_EQL2J(EQL_outer, J_outer, mass, spin, anc_outer);
+	CKerr_Minverse(J_outer, Minv_outer, mass, spin);
+	CKerr_Minv2Omega(Minv_outer, Omega_outer);
+	
+	double Delta_omega = (n_res_outer * Omega_outer[0] + k_res_outer * Omega_outer[1] + m_res_outer * Omega_outer[2]) - (n_res_inner * Omega_inner[0] + k_res_inner * Omega_inner[1] + m_res_inner * Omega_inner[2]);
 
 	I_inner = anc_inner[0];
 	rp_inner = anc_inner[1];
@@ -252,9 +259,15 @@ int main(int argc, char **argv){
 	double e_inner = (ra_inner - rp_inner) / (ra_inner + rp_inner);
 	double e_outer = (ra_outer - rp_outer) / (ra_outer + rp_outer);
 
+	printf("SMBH M: %lg spin: %lg \n", mass, spin);
+	printf("Resonance modes (n,k,m): inner: (%i, %i, %i) outer: (%i, %i,% i) \n", n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, m_res_outer);
+	printf("Resonance (Jr, Jtheta, Jphi): inner: (%lg, %lg, %lg) outer: (%lg, %lg, %lg)\n", J_inner[0], J_inner[1], J_inner[2], J_outer[0], J_outer[1], J_outer[2]);
+	printf("Resonance (Omegar, Omegatheta, Omegaphi): inner: (%12.5le, %12.5le, %12.5le) outer: (%12.5le, %12.5le, %12.5le)\n", Omega_inner[0], Omega_inner[1], Omega_inner[2], Omega_outer[0], Omega_outer[1], Omega_outer[2]);
+	printf("Resonance condition (omega_outer - omega_inner) = %12.5le \n", Delta_omega);
+
 	printf("I_inner, rp_inner, ra_inner, eccen_inner: %lg %lg %lg %lg \n", I_inner, rp_inner, ra_inner, e_inner);
 	printf("I_outer, rp_outer, ra_outer, eccen_outer: %lg %lg %lg %lg \n", I_outer, rp_outer, ra_outer, e_outer);
-	printf("Inner and Outer EQL: %lg %lg %lg, %lg %lg %lg \n", EQL_inner[0], EQL_inner[1], EQL_inner[2], EQL_outer[0], EQL_outer[1], EQL_outer[2]);
+	printf("Inner and Outer EQL: inner: (%lg, %lg, %lg) outer: (%lg, %lg, %lg) \n", EQL_inner[0], EQL_inner[1], EQL_inner[2], EQL_outer[0], EQL_outer[1], EQL_outer[2]);
 	
 	#ifdef SINGLEVALUE
 	printf("About to compute tidal J_dots \n");
@@ -370,8 +383,141 @@ int main(int argc, char **argv){
 		double err_peri_rel = (anc[1] - peri) / peri;
 		double err_inc_rel = (anc[0] - inc) / inc;
 
-		printf("error for apo: %12.5le, peri: %12.5le, inclination: %12.5le \n", err_apo_rel, err_peri_rel, err_inc_rel);
+		printf("rel. error for apo: %12.5le, peri: %12.5le, inclination: %12.5le \n", err_apo_rel, err_peri_rel, err_inc_rel);
 	}
+
+	return(0);
+}
+#endif
+
+
+#ifdef IS_CHECK_RES_COND
+int main(int argc, char **argv){
+	setvbuf(stdout, NULL, _IOLBF, 0);
+	double J_inner[3], J_outer[3], EQL_inner[3], EQL_outer[3], anc_inner[3], anc_outer[3];
+	double Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer[3];
+	int n_res_inner, k_res_inner, m_res_inner;
+	int n_res_outer, k_res_outer, m_res_outer;
+	double ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer;
+	double mass = GLOBALPAR_M, spin = GLOBALPAR_astar;
+
+	if (argc == 13) {
+    // command-line mode
+    sscanf(argv[1], "%lf", &J_inner[0]);
+    sscanf(argv[2], "%lf", &J_inner[1]);
+    sscanf(argv[3], "%lf", &J_inner[2]);
+    sscanf(argv[4], "%lf", &J_outer[0]);
+    sscanf(argv[5], "%lf", &J_outer[1]);
+    sscanf(argv[6], "%lf", &J_outer[2]);
+    sscanf(argv[7], "%d", &n_res_inner);
+    sscanf(argv[8], "%d", &k_res_inner);
+    sscanf(argv[9], "%d", &m_res_inner);
+    sscanf(argv[10], "%d", &n_res_outer);
+    sscanf(argv[11], "%d", &k_res_outer);
+    sscanf(argv[12], "%d", &m_res_outer);
+	// sscanf(argv[13], "%lf", &mass);
+    // sscanf(argv[14], "%lf", &spin);
+
+	} 
+	else {
+    // stdin mode (works with < file)
+    	if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %d",
+              &J_inner[0], &J_inner[1], &J_inner[2],
+              &J_outer[0], &J_outer[1], &J_outer[2],
+              &n_res_inner, &k_res_inner, &m_res_inner,
+              &n_res_outer, &k_res_outer, &m_res_outer) != 12) {
+
+        fprintf(stderr, "Error: expected 12 inputs\n");
+        return 1;
+    	}
+	}
+	
+	// sscanf(argv[1], "%lg", &J_inner[0]);
+	// sscanf(argv[2], "%lg", &J_inner[1]);
+	// sscanf(argv[3], "%lg", &J_inner[2]);
+	// sscanf(argv[4], "%lg", &J_outer[0]);
+	// sscanf(argv[5], "%lg", &J_outer[1]);
+	// sscanf(argv[6], "%lg", &J_outer[2]);
+	// sscanf(argv[7], "%d", &n_res_inner);
+	// sscanf(argv[8], "%d", &k_res_inner);
+	// sscanf(argv[9], "%d", &m_res_inner);
+	// sscanf(argv[10], "%d", &n_res_outer);
+	// sscanf(argv[11], "%d", &k_res_outer);
+	// sscanf(argv[12], "%d", &m_res_outer);
+	// sscanf(argv[13], "%lg", &angle_torus);
+
+	#if 0
+	// printf("Enter inner pericenter: ");
+	// scanf("%lf", &rp_inner);
+	// printf("Enter inner inlincation angle (radians): ");
+	// scanf("%lf", &I_inner);
+	// printf("Enter central mass: ");
+	// scanf("%lf", &mass);
+	// printf("Enter spin parameter of BH: ");
+	// scanf("%lf", &spin);
+	printf("Enter radius of outer orbit (if applicable): ");
+	scanf("%lf", &radius_outer);
+	// printf("Enter inner apocenter: ");
+	// scanf("%lf", &ra_inner);
+
+	// printf("Enter outer pericenter: ");
+	// scanf("%lf", &rp_outer);
+	// printf("Enter outer inlincation angle (radians): ");
+	// scanf("%lf", &I_outer);
+	// printf("Enter outer apocenter: ");
+	// scanf("%lf", &ra_outer);
+
+	printf("Enter J_inner components: ");
+	scanf("%lg %lg %lg", &J_inner[0], &J_inner[1], &J_inner[2]);
+
+	printf("Enter J_outer components: ");
+	scanf("%lg %lg %lg", &J_outer[0], &J_outer[1], &J_outer[2]);
+
+	#endif
+
+	CKerr_J2EQL(J_inner, EQL_inner, mass, spin);
+	CKerr_EQL2J(EQL_inner, J_inner, mass, spin, anc_inner);
+	CKerr_Minverse(J_inner, Minv_inner, mass, spin);
+	CKerr_Minv2Omega(Minv_inner, Omega_inner);
+
+	CKerr_J2EQL(J_outer, EQL_outer, mass, spin);
+	CKerr_EQL2J(EQL_outer, J_outer, mass, spin, anc_outer);
+	CKerr_Minverse(J_outer, Minv_outer, mass, spin);
+	CKerr_Minv2Omega(Minv_outer, Omega_outer);
+	
+	double Delta_omega = (n_res_outer * Omega_outer[0] + k_res_outer * Omega_outer[1] + m_res_outer * Omega_outer[2]) - (n_res_inner * Omega_inner[0] + k_res_inner * Omega_inner[1] + m_res_inner * Omega_inner[2]);
+
+	I_inner = anc_inner[0];
+	rp_inner = anc_inner[1];
+	ra_inner = anc_inner[2];
+
+	I_outer = anc_outer[0];
+	rp_outer = anc_outer[1];
+	ra_outer = anc_outer[2];
+
+
+	// printf("Mode vector for inner orbit: ");
+	// scanf("%i %i %i", &n_res_inner, &k_res_inner, &m_res_inner);
+
+	// printf("Number of resonance terms: ");
+	// scanf("%i", &N_res);
+
+	// printf("Mode vector for outer orbit: ");
+	// scanf("%i %i %i", &n_res_outer, &k_res_outer, &m_res_outer);
+
+	double e_inner = (ra_inner - rp_inner) / (ra_inner + rp_inner);
+	double e_outer = (ra_outer - rp_outer) / (ra_outer + rp_outer);
+
+	printf("SMBH M: %lg spin: %lg \n", mass, spin);
+	printf("Resonance modes (n,k,m): inner: (%i, %i, %i) outer: (%i, %i,% i) \n", n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, m_res_outer);
+	printf("Resonance (Jr, Jtheta, Jphi): inner: (%lg, %lg, %lg) outer: (%lg, %lg, %lg)\n", J_inner[0], J_inner[1], J_inner[2], J_outer[0], J_outer[1], J_outer[2]);
+	printf("Resonance (Omegar, Omegatheta, Omegaphi): inner: (%12.5le, %12.5le, %12.5le) outer: (%12.5le, %12.5le, %12.5le)\n", Omega_inner[0], Omega_inner[1], Omega_inner[2], Omega_outer[0], Omega_outer[1], Omega_outer[2]);
+	printf("Resonance condition (omega_outer - omega_inner) = %12.5le \n", Delta_omega);
+
+	printf("I_inner, rp_inner, ra_inner, eccen_inner: %lg %lg %lg %lg \n", I_inner, rp_inner, ra_inner, e_inner);
+	printf("I_outer, rp_outer, ra_outer, eccen_outer: %lg %lg %lg %lg \n", I_outer, rp_outer, ra_outer, e_outer);
+	printf("Inner and Outer EQL: inner: (%lg, %lg, %lg) outer: (%lg, %lg, %lg) \n", EQL_inner[0], EQL_inner[1], EQL_inner[2], EQL_outer[0], EQL_outer[1], EQL_outer[2]);
+
 
 	return(0);
 }

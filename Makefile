@@ -107,7 +107,9 @@ TEST_EXES = $(TEST_OUTDIR)/J2EQL \
             $(TEST_OUTDIR)/J2J_DOT_TIDAL_LOOP \
             $(TEST_OUTDIR)/J2J_DOT_SF \
             $(TEST_OUTDIR)/DELTA_EQL \
-            $(TEST_OUTDIR)/ORBIT2J
+            $(TEST_OUTDIR)/ORBIT2J \
+            $(TEST_OUTDIR)/CHECK_RES_COND \
+            $(TEST_OUTDIR)/RESFIND_APO
 
 # Running "make test" builds all test executables
 test: $(TEST_OUTDIR) $(TEST_EXES)
@@ -167,6 +169,22 @@ $(TEST_OUTDIR)/ORBIT2J: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
 	$(CC) $(TEST_CFLAGS) -DIS_ORBIT2J $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+$(TEST_OUTDIR)/CHECK_RES_COND: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) -DIS_CHECK_RES_COND $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+$(TEST_OUTDIR)/RESFIND_APO: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) -DIS_RESFIND_APO $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
