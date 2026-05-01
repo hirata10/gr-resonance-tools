@@ -32,9 +32,9 @@ Requirements:
 
 This code requires that you have the lates versions of Python, Perl, Cython, and C installed. For those of you unfamiliar with it Cython, it can be described a wrapping language that allows you to use C functions in Python in one line. This means that any of the C functions listed in the header file (CKerr.h) are fair game for Python users. To install Python and Cython, you can use pip:
 
-pip install python
+```pip install python```
 
-pip install cython
+```pip install cython```
 
 Nice that it rhymes, eh? If any issues arise with either Python or Cython, the documentation for both are accessible and easy to use. The C documentation is a bit denser, but is still nice to skim if needed:
 
@@ -50,7 +50,7 @@ Running Cython code:
 
 The way in which Cython is able to wrap C functions into Python is through three files: gr_wrapper.pxd, gr_wrapper.pyx, and setup.py. The first file acts as a sort of "header" file while the second file is actually doing the work of taking the inputs of the Python version of the function and putting them into the C version, and then back out again. The setup.py file takes all the C files with functions in the pxd file and "cythonizes" them. In order to initialize the setup.py file, type this into your terminal:
 
-python setup.py build_ext --inplace
+```python setup.py build_ext --inplace```
 
 This will allow you to use all of the C functions in a python context. Note that the only function that is not wrapped is the rk4. If this statement is wrong, please let us know!
 
@@ -65,25 +65,25 @@ SETTING UP:
 
 ***************************************************
 
-We recommend you primarily work (run terminal commands) in the same directory as the Makefile.
+We recommend you primarily work (run terminal commands) in the same directory as the ```Makefile```.
 
-Step 0: To change the parameters of the EMRI systems you want to generate, go into pars.txt and change the values of the variables, the Makefile will generate the necessary global parameter files for both the C and Python codes.
+Step 0: To change the parameters of the EMRI systems you want to generate, go into ```pars.txt``` and change the values of the variables, the ```Makefile``` will generate the necessary global parameter files for both the C and Python codes.
 
-Step 1: To build the necessary executables for the tidal resonance pipeline, run "make td_res" (the executables will be located in a directory called td_exe). You can clean this set up with "make clean-td_res"
+Step 1: To build the necessary executables for the tidal resonance pipeline, run ```make td_res``` (the executables will be located in a directory called td_exe). You can clean this set up with ```make clean-td_res```
 
-Step 2: To build some useful debugging executables, run "make test" (the executables will be located in a directory called test_exe). These executables include a map from Js to EQL, Js to J_dot_tidal, Js to J_dot_sf. You can clean this set up with "make clean-test"
+Step 2: To build some useful debugging executables, run ```make test``` (the executables will be located in a directory called test_exe). These executables include a map from Js to EQL, Js to J_dot_tidal, Js to J_dot_sf. You can clean this set up with ```make clean-test```
 
-Step 2: Go to the directory src/python and run "python setup.py build_ext --inplace" to build cython and initalize C-functions as Python modules
+Step 2: Go to the directory ```src/python``` and run ```python setup.py build_ext --inplace``` to build cython and initalize C-functions as Python modules
 
-Step 3: The next step is to generate a bunch of potential EMRI systems with parameters as designated in the pars.txt file. Do this by running "action_angle_generator.py" into your terminal. You should get a text file with seven columns (system label, 6N action angle variables (J/mass)) named "action_angle_pairs.txt". If you wish to change the name of this file or it's location, you can do so by modifying line 34.
+Step 3: The next step is to generate a bunch of potential EMRI systems with parameters as designated in the ```pars.txt``` file. Do this by running "action_angle_generator.py" into your terminal. You should get a text file with seven columns (system label, 6N action angle variables (J/mass)) named "action_angle_pairs.txt". If you wish to change the name of this file or it's location, you can do so by modifying line 34.
 
-Step 4: In order to run compute the evolution of each body (inner/outer), run the command "python src/python/J_evolve_single.py", this will output the system label, the time, the action variables of that time, the corresponding frequencies (in the r, $\theta$, and $\phi$ directions), and the time step. The output will go into a directory called "outputs_data" in txt format with file names "J_evolve_{system_type}_{system_label}.txt". The two executable files with the names "J_evolve_single_restart" and "J_evolve_single_norestart" that takes the following inputs: initial action variables (doubles), initial time (double), number of time steps (long), system label (long), system type (char; inner or outer), mass of the body (float), system number (int), which step did it start on (int; for restart purposes).
+Step 4: In order to run compute the evolution of each body (inner/outer), run the command ```python src/python/J_evolve_single.py```, this will output the system label, the time, the action variables of that time, the corresponding frequencies (in the r, $\theta$, and $\phi$ directions), and the time step. The output will go into a directory called ```outputs_data``` in txt format with file names ```J_evolve_{system_type}_{system_label}.txt```. The two executable files with the names ```J_evolve_single_restart``` and ```J_evolve_single_norestart``` that takes the following inputs: initial action variables (doubles), initial time (double), number of time steps (long), system label (long), system type (char; inner or outer), mass of the body (float), system number (int), which step did it start on (int; for restart purposes).
 
-Step 5: Upon completing all the rk4 runs, we find the resonances using "resfinder_parallel_restart.py {system_label}" where {system_label} is an integer that represents one of the systems in the J_evolve routines. This file does it by taking each pair of simulations (inner/outer) and checking them for potential resonances one-by-one. You will get a text file names "potential_resonances_{system_label}.txt" that has a row for each potential resonance found within all of the simulations (resonance number, file number, resonance time, change in omega (inner/outer), inner body/SMBH mass ratio, outer body/SMBH mass ratio, gamma, n/k/m's, action variables for the inner and outer bodies (J/m_body), omegas for the inner and outer bodies, ancilliary data (inclination, periapse, apoapse)), and the crossing time for the resonance.
+Step 5: Upon completing all the rk4 runs, we find the resonances using ```resfinder_parallel_restart.py {system_label}``` where ```{system_label}``` is an integer that represents one of the systems in the J_evolve routines. This file does it by taking each pair of simulations (inner/outer) and checking them for potential resonances one-by-one. You will get a text file names ```potential_resonances_{system_label}.txt``` that has a row for each potential resonance found within all of the simulations (resonance number, file number, resonance time, change in omega (inner/outer), inner body/SMBH mass ratio, outer body/SMBH mass ratio, gamma, n/k/m's, action variables for the inner and outer bodies (J/m_body), omegas for the inner and outer bodies, ancilliary data (inclination, periapse, apoapse)), and the crossing time for the resonance.
 
-Step 6: In order to compute the changes in the action variables of the inner body crossing a resonance, run the python code "python src/python/Delta_J_single_sys_restart.py {system_label}" The output file will have the resonance label (long; which resonance from the resonance file are we computing), the system label (long; in which system does this resonance occur), the integer mode labels for the inner and outer body (int; n_inner, k_inner, n_outer, k_outer, m_outer), the fundamental resonant angle (double; location on the torus), the total angular acceleration multiplied by the mass of each body (Gamma_outer - Gamma_inner), the frequencies of each body at that resonance resonance, the action variables for each body at that resonance, the final change in action variables for the inner body (double; J/(mass_inner)), and the ratio of the change in action variable to the action variable at resonance (this is for inner body only). The files will be in txt format in the directory "Output_Delta_J_{system_label}" with the naming scheme "Delta_J_{system_label}_log_{tot_chunk}_{chunk + 1}.txt," where tot_chunk is the total number of runs needed to cover the entire resonance data file and chunk+1 is the job in that run. The final concatenated file will be named tot_Delta_J_{system_label}.txt
+Step 6: In order to compute the changes in the action variables of the inner body crossing a resonance, run the python code ```python src/python/Delta_J_single_sys_restart.py {system_label}``` The output file will have the resonance label (long; which resonance from the resonance file are we computing), the system label (long; in which system does this resonance occur), the integer mode labels for the inner and outer body (int; n_inner, k_inner, n_outer, k_outer, m_outer), the fundamental resonant angle (double; location on the torus), the total angular acceleration multiplied by the mass of each body (Gamma_outer - Gamma_inner), the frequencies of each body at that resonance resonance, the action variables for each body at that resonance, the final change in action variables for the inner body (double; J/(mass_inner)), and the ratio of the change in action variable to the action variable at resonance (this is for inner body only). The files will be in txt format in the directory "Output_Delta_J_{system_label}" with the naming scheme ```Delta_J_{system_label}_log_{tot_chunk}_{chunk + 1}.txt``` where tot_chunk is the total number of runs needed to cover the entire resonance data file and chunk+1 is the job in that run. The final concatenated file will be named tot_Delta_J_{system_label}.txt
 
-Step 7: For computing the total change in the phase of the waveform, run the following command "python src/python/Delta_Phi_single.py {system_label}". The output is in the following order: resonance label (int), system label (int), nkm for the inner body (3 int), J_i (3 double), EQL (3 double), Delta_Phi_i (3 double), tot_Delta_Phi (double)
+Step 7: For computing the total change in the phase of the waveform, run the following command ```python src/python/Delta_Phi_single.py {system_label}```. The output is in the following order: resonance label (int), system label (int), nkm for the inner body (3 int), J_i (3 double), EQL (3 double), Delta_Phi_i (3 double), tot_Delta_Phi (double)
 
 ________________________________________________________________________________________________________
 <!-- 
