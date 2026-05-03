@@ -4,7 +4,7 @@
 M 1.0 
 
 #Spin of BH in BH mass units
-astar 0.9
+astar 0.1
 
 #Mass ratio of inner body with BH mass
 mu_inner 0.00001
