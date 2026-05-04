@@ -142,7 +142,7 @@ $(TEST_OUTDIR)/J2J_DOT_TIDAL_SINGLE: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
 	$(CC) $(TEST_CFLAGS) -DIS_J_DOT_TIDAL -DSINGLEVALUE $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
-        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/kerrphase.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
 # Create executable to compute J_dot_tidals of inner body from Js (inner and outer) and resonance mode over a range of angle values
@@ -151,7 +151,7 @@ $(TEST_OUTDIR)/J2J_DOT_TIDAL_LOOP: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
 	$(CC) $(TEST_CFLAGS) -DIS_J_DOT_TIDAL -DLOOPANGLE $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
-        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/kerrphase.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
 # Create executable to compute a set of J_dot_selfforce of a body
