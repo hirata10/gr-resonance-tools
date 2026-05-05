@@ -377,22 +377,25 @@ int main(int argc, char **argv){
 int main(int argc, char **argv){
 	double J[3], EQL[3], anc[3], info[6];
 	double apo, peri, inc, radius;
-	double mass = GLOBALPAR_M, spin = GLOBALPAR_astar;
+	// double mass = GLOBALPAR_M, spin = GLOBALPAR_astar;
+	double mass, spin;
 
 	/* Look for apocenter, pericenter, and inclination on command line */
 	/* For CIRCULAR equatorial orbits, set apo, peri, and inc to zero on command line */
 
-	if (argc == 5){
+	if (argc == 7){
     	// command-line mode
    		sscanf(argv[1], "%lg", &apo);
     	sscanf(argv[2], "%lg", &peri);
     	sscanf(argv[3], "%lg", &inc);
     	sscanf(argv[4], "%lg", &radius);
+		sscanf(argv[5], "%lg", &mass);
+    	sscanf(argv[6], "%lg", &spin);
 	} 
 	else {
     	// stdin mode (works with < file or typing)
-    if (scanf("%lf %lf %lf %lf", &apo, &peri, &inc, &radius) != 4) {
-        fprintf(stderr, "Error: need 4 numbers\n");
+    if (scanf("%lf %lf %lf %lf %lf %lf", &apo, &peri, &inc, &radius, &mass, &spin) != 6) {
+        fprintf(stderr, "Error: need 6 numbers\n");
         return 1;
     	}
 	}
@@ -445,9 +448,10 @@ int main(int argc, char **argv){
 	int n_res_inner, k_res_inner, m_res_inner;
 	int n_res_outer, k_res_outer, m_res_outer;
 	double ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer;
-	double mass = GLOBALPAR_M, spin = GLOBALPAR_astar;
+	// double mass = GLOBALPAR_M, spin = GLOBALPAR_astar;
+	double mass, spin;
 
-	if (argc == 13) {
+	if (argc == 15) {
     // command-line mode
     sscanf(argv[1], "%lf", &J_inner[0]);
     sscanf(argv[2], "%lf", &J_inner[1]);
@@ -461,19 +465,19 @@ int main(int argc, char **argv){
     sscanf(argv[10], "%d", &n_res_outer);
     sscanf(argv[11], "%d", &k_res_outer);
     sscanf(argv[12], "%d", &m_res_outer);
-	// sscanf(argv[13], "%lf", &mass);
-    // sscanf(argv[14], "%lf", &spin);
+	sscanf(argv[13], "%lf", &mass);
+    sscanf(argv[14], "%lf", &spin);
 
 	} 
 	else {
     // stdin mode (works with < file)
-    	if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %d",
+    	if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %d %lf %lf",
               &J_inner[0], &J_inner[1], &J_inner[2],
               &J_outer[0], &J_outer[1], &J_outer[2],
               &n_res_inner, &k_res_inner, &m_res_inner,
-              &n_res_outer, &k_res_outer, &m_res_outer) != 12) {
+              &n_res_outer, &k_res_outer, &m_res_outer, &mass, &spin) != 14) {
 
-        fprintf(stderr, "Error: expected 12 inputs\n");
+        fprintf(stderr, "Error: expected 14 inputs\n");
         return 1;
     	}
 	}
