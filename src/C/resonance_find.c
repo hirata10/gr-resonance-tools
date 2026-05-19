@@ -211,34 +211,66 @@ double find_resonance_apo_OuterCirc(int n, int k, int m, double radius, double g
 	double error=0;
 	int i=0;
 	double mold=0;
+	double rescon_mid;
+	double width = 0., width_tol = 0.;
 
-	printf("f at bounds %lg %lg\n",ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M),ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess2, rp, I, astar, M));
-	if(ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M)*ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess2, rp, I, astar, M)>0){
-        	printf("Value at first and second guess: %lf, %lf \n", ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M), ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess2, rp, I, astar, M));
+	double rescon_guess1 = ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M);
+	double rescon_guess2 = ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess2, rp, I, astar, M);
+
+	printf("f at bounds %lg %lg\n",rescon_guess1, rescon_guess2);
+	if(rescon_guess1 * rescon_guess2 > 0){
+        	printf("Value at first and second guess: %lf, %lf \n", rescon_guess1, rescon_guess2);
         	printf("Invalid Interval Exit! \n");       //to test whether search interval
         	exit(1);                                                        //is okay or not
 	}
-	else if(ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M)==0 || ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess2, rp, I, astar, M)==0){
-        	printf("Value at first and second guess: %lf, %lf \n", ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M), ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess2, rp, I, astar, M));
+	else if(fabs(rescon_guess1) < 1e-12 || fabs(rescon_guess2) < 1e-12){
+        	printf("Value at first and second guess: %lf, %lf \n", rescon_guess1, rescon_guess2);
         	printf("Root is one of interval bounds. Root is %f\n",ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M)==0?guess1:guess2);
         	exit(0);
 	}
-	printf("Ite\ta\t\tb\t\tmid_apo\t\tf(mid_apo)\t\terror\n");
+	printf("Ite\ta\t\tb\t\tmid_apo\t\tf(mid_apo)\t\twidth\t\twidth_tol\n");
+
+	// error tolerances
+	double xtol_abs = 1e-12;
+	double xtol_rel = 1e-12;
+	double ftol = 1e-12;
+
 	do{
         	mold = mid_apo;
         	mid_apo = (guess1 + guess2)/2;
-        	printf("%2d\t%4.6f\t%4.6f\t%4.6f\t%lg\t",i++,guess1,guess2,mid_apo,ra_rp_I2Omega_OuterCirc(n, k, m, radius, mid_apo, rp, I, astar, M));
-        	if(ra_rp_I2Omega_OuterCirc(n, k, m, radius, mid_apo, rp, I, astar, M)==0){
-                	printf("Root is %4.6f\n",mid_apo);
-        	}else if ((ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M)*ra_rp_I2Omega_OuterCirc(n, k, m, radius, mid_apo, rp, I, astar, M))<0){
+			rescon_mid = ra_rp_I2Omega_OuterCirc(n, k, m, radius, mid_apo, rp, I, astar, M);
+
+        	printf("%2d\t\t%.10g\t\t%.10g\t\t%.10g\t\t%.10g\t\t",i++,guess1,guess2,mid_apo,rescon_mid);
+
+			if(i==1){
+                	printf("NA \t\t NA\n");
+        	}else printf("%.15g \t %.15g \n",width, width_tol);
+
+        	if(fabs(rescon_mid) < ftol){
+                	printf("Root is %.15g \n",mid_apo);
+					break; // Stops when resonance condition is less than tolerance
+        	}
+			
+			else if ((rescon_guess1 * rescon_mid)<0){
                 	guess2 = mid_apo;
-        	}else guess1 = mid_apo;
+					rescon_guess2 = rescon_mid;
+        	}
+			
+			else {
+				guess1 = mid_apo;
+				rescon_guess1 = rescon_mid;
+			}
+
+			width = fabs(guess2 - guess1); // Updates width after every cycle
+
         	error=fabs((mid_apo - mold)/mid_apo);
-        	if(i==1){
-                	printf("----\n");
-        	}else printf("%4.6f\n",error);
-	}while(error>1e-4);
-	printf("Approximate Root is %4.6f \n",mid_apo);
+			width_tol = (xtol_abs + xtol_rel * fabs(mid_apo));
+
+
+	}
+	// while(error>1e-7);
+	while(width > width_tol); // Stop when the width is too narrow
+	printf("Approximate Root is %.15g \n",mid_apo);
 	return(mid_apo);
 	}
 	

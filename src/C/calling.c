@@ -82,7 +82,7 @@ int main(){
 	guess2 = radius_outer - 2.;
 
 	apo_res = find_resonance_apo_OuterCirc(n, k, m, radius_outer, guess1, guess2, peri, incline, spin, mass);
-	printf("Apocenter for this resonance is = %lg \n", apo_res);
+	printf("Apocenter for this resonance is = %.15g \n", apo_res);
 	#if 0
 	for (j = 0; j < 1000; j++){
 		step = (guess2 - guess1)/1000;
@@ -304,16 +304,16 @@ int main(int argc, char **argv){
 	#ifdef SINGLEVALUE
 	printf("About to compute tidal J_dots and EQL_dots \n");
 	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_outer, J_dot_td);
-	printf("J_dot_r_tidal = %12.5le \n", J_dot_td[0]);
-	printf("J_dot_theta_tidal = %12.5le \n", J_dot_td[1]);
-	printf("J_dot_phi_tidal = %12.5le \n", J_dot_td[2]);
+	printf("J_dot_r_tidal = %.15g \n", J_dot_td[0]);
+	printf("J_dot_theta_tidal = %.15g \n", J_dot_td[1]);
+	printf("J_dot_phi_tidal = %.15g \n", J_dot_td[2]);
 
 	/* Computes EQL_dot_tidal from J_dot_tidal */
 	Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
 	Delta_EQL_dot_tidal[1] = M_res[1] * J_dot_td[0] + M_res[4] * J_dot_td[1] + M_res[7] * J_dot_td[2];
 	Delta_EQL_dot_tidal[2] = M_res[2] * J_dot_td[0] + M_res[5] * J_dot_td[1] + M_res[8] * J_dot_td[2];
 
-	printf("Delta_EQL = %12.5le %12.5le %12.5le \n", Delta_EQL_dot_tidal[0], Delta_EQL_dot_tidal[1], Delta_EQL_dot_tidal[2]);
+	printf("Delta_EQL = %.15g %.15g %.15g \n", Delta_EQL_dot_tidal[0], Delta_EQL_dot_tidal[1], Delta_EQL_dot_tidal[2]);
 
 	// printf("Keplerian J_dot_phi at resonance = %lg \n", J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline));
 	#endif
@@ -404,13 +404,13 @@ int main(int argc, char **argv){
 	{
 		printf("Orbit is circular and equatorial \n");
 		CKerr_getData_CircEq(mass, spin, radius, info);
-		printf("E and L: %lg, %lg \n", info[1], info[0]);
+		printf("E and L: %.15g, %.15g \n", info[1], info[0]);
 		EQL[0] = info[1];
 		EQL[1] = 0.;
 		EQL[2] = info[0];
 		CKerr_EQL2J(EQL, J, mass, spin, anc);
-		printf("Jr: %lg, Jtheta: %lg, Jphi: %lg \n", J[0], J[1], J[2]);
-		printf("inclination: %lg, pericenter: %lg, apocenter: %lg \n", anc[0], anc[1], anc[2]);
+		printf("Jr: %.15g, Jtheta: %.15g, Jphi: %.15g \n", J[0], J[1], J[2]);
+		printf("inclination: %.15g, pericenter: %.15g, apocenter: %.15g \n", anc[0], anc[1], anc[2]);
 	}
 
 	else
@@ -418,15 +418,15 @@ int main(int argc, char **argv){
 		printf("Orbit is elliptical and inclined \n");
 		// Convert the orbit data to EQL
 		ra_rp_I2EQL(apo, EQL, peri, inc, spin, mass);
-		printf("EQL: %lg, %lg, %lg \n", EQL[0], EQL[1], EQL[2]);
+		printf("EQL: %.15g, %.15g, %.15g \n", EQL[0], EQL[1], EQL[2]);
 
 		// Convert EQL to J and check anc matches inputted orbit data (anc[0] = inclination, anc[1] = pericenter, anc[2] = apocenter)
 		CKerr_EQL2J(EQL, J, mass, spin, anc);
 
 		double eccen = (anc[2] - anc[1]) / (anc[2] + anc[1]);
 
-		printf("Jr: %lg, Jtheta: %lg, Jphi: %lg \n", J[0], J[1], J[2]);
-		printf("eccentricity: %lg \n", eccen);
+		printf("Jr: %.15g, Jtheta: %.15g, Jphi: %.15g \n", J[0], J[1], J[2]);
+		printf("eccentricity: %.15g \n", eccen);
 
 		double err_apo_rel = (anc[2] - apo) / apo;
 		double err_peri_rel = (anc[1] - peri) / peri;
