@@ -115,6 +115,8 @@ void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp
 	free((char*)E0);
 }
 
+
+// MAKANA: Rework J_dot_tidal to be parallelizable in mode for loop
 /* Computing the J_dot_tidal,i */
 void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double mu_outer ,double *J_dot_td){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
