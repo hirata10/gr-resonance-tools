@@ -308,6 +308,9 @@ int main(int argc, char **argv){
 	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_outer, J_dot_td);
 	clock_t end = clock();
 	double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+
+	printf("Time = %.6f s\n", elapsed - start);
+
 	printf("J_dot_r_tidal = %.15g \n", J_dot_td[0]);
 	printf("J_dot_theta_tidal = %.15g \n", J_dot_td[1]);
 	printf("J_dot_phi_tidal = %.15g \n", J_dot_td[2]);
