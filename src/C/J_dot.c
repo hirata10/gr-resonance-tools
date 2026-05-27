@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <omp.h>
 
 #include "CKerr.h"
 
@@ -323,6 +324,256 @@ void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_
 			}
 	free((char*)E0_inner);
 	free((char*)E0_outer);
+}
+
+
+/*
+------------------------------------------------------------
+Compute J_dot_tidal using OpenMP parallelization
+over independent resonance modes (i-loop)
+------------------------------------------------------------
+*/
+
+void J_dot_tidal_openmp(
+    int nl,
+    int N_res,
+    int n_res_inner, int n_res_outer,
+    int k_res_inner, int k_res_outer,
+    int m_res_inner, int m_res_outer,
+    double ra_inner, double rp_inner,
+    double radius_outer,
+    double I_inner, double ra_outer, double rp_outer,
+    double I_outer,
+    double M, double astar,
+    double theta_res_F,
+    double mu_outer,
+    double *J_dot_td)
+{
+    // --------------------------------------------------------
+    // Global accumulation (final result)
+    // --------------------------------------------------------
+    double J_global[3] = {0.0, 0.0, 0.0};
+
+    // --------------------------------------------------------
+    // Precompute orbit quantities (NOT parallel region)
+    // --------------------------------------------------------
+    double EQL_inner[3], J_inner[3], Minv_inner[9], Omega_inner[3];
+    double EQL_outer[3], J_outer[3], Minv_outer[9];
+
+	// Inner body apocenter, pericenter, inclination -> EQL and Minv
+    ra_rp_I2EQL(ra_inner, EQL_inner, rp_inner, I_inner, astar, M);
+    CKerr_EQL2J(EQL_inner, J_inner, M, astar, NULL);
+    CKerr_Minverse(J_inner, Minv_inner, M, astar);
+    // CKerr_Minv2Omega(Minv_inner, Omega_inner);
+
+	// Outer body apocenter, pericenter, inclination -> EQL and Minv
+    if (ra_outer == 0 && rp_outer == 0 && I_outer == 0) {
+        CKerr_FindEQL_IRCirc(0, radius_outer, EQL_outer, M, astar);
+    } else {
+        ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
+    }
+
+    CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+    CKerr_Minverse(J_outer, Minv_outer, M, astar);
+
+	// Set up initial conditions to integrate on tori
+    double xuorig_inner[6], xuorig_outer[6];
+    CKerr_TorusOrigin(J_inner, xuorig_inner, M, astar);
+    CKerr_TorusOrigin(J_outer, xuorig_outer, M, astar);
+
+	double rH = M + sqrt(M*M - astar*astar*M*M);
+	double epsilon = sqrt(M*M - astar*astar*M*M) / (4 * M * rH);
+
+    // --------------------------------------------------------
+    // Main OpenMP region
+    // --------------------------------------------------------
+    #pragma omp parallel
+    {
+		    // --------------------------------------------------------
+   	 		// Thread-private working buffers
+    		// Allocated ONCE per thread (not per iteration)
+    		// --------------------------------------------------------
+			int tid = omp_get_thread_num(); // Get thread ID
+			double thread_t0 = omp_get_wtime(); // Start time at each thread
+
+			double *C0_inner, *E0_inner, *E1_inner, *C0_outer, *E0_outer, *E1_outer;
+    		E0_inner = (double*)malloc((size_t)(nl*10*sizeof(double)));
+  			E1_inner = E0_inner + nl;
+  			C0_inner = E1_inner + nl;
+
+  			E0_outer = (double*)malloc((size_t)(nl*10*sizeof(double)));
+  			E1_outer = E0_outer + nl;
+  			C0_outer = E1_outer + nl;
+
+    		// Safety check (good HPC habit)
+    		if (!E0_inner || !E0_outer) {
+            	printf("Memory allocation failed in thread %d\n", omp_get_thread_num());
+        		exit(1);
+   	 		}
+        double J_local[3] = {0.0, 0.0, 0.0};
+
+        #pragma omp for schedule(guided)
+        for (int i = -N_res; i <= N_res; i++) {
+
+            int i_n_inner = i * n_res_inner;
+            int i_k_inner = i * k_res_inner;
+            int i_m_inner = i * m_res_inner;
+
+            int i_n_outer = i * n_res_outer;
+            int i_k_outer = i * k_res_outer;
+            int i_m_outer = i * m_res_outer;
+
+            // Skip invalid / out-of-range modes
+            if ((i_n_outer == 0 && i_k_outer == 0 && i_m_outer == 0) ||
+                (i_n_inner == 0 && i_k_inner == 0 && i_m_inner == 0) ||
+                abs(i_n_outer) > 20 || abs(i_k_outer) > 20 ||
+                abs(i_n_inner) > 20 || abs(i_k_inner) > 20)
+            {
+                continue;
+            }
+
+            double Rtheta = cos(i * theta_res_F);
+            double Itheta = sin(i * theta_res_F);
+
+            double omegagw_inner, omegagw_outer;
+            double cscat[16], aux[4];
+
+            // Radial functions (mode-dependent setup)
+            CKerr_RadialFunc(Minv_outer, xuorig_outer, M, astar,
+                             i_n_outer, i_k_outer, i_m_outer,
+                             42, 42, nl,
+                             C0_outer, &omegagw_outer, E0_outer);
+
+            CKerr_RadialFunc(Minv_inner, xuorig_inner, M, astar,
+                             i_n_inner, i_k_inner, i_m_inner,
+                             42, 42, nl,
+                             C0_inner, &omegagw_inner, E0_inner);
+			
+			// double omega_nkm =
+            //         i_n_inner * Omega_inner[0] +
+            //         i_k_inner * Omega_inner[1] +
+            //         i_m_inner * Omega_inner[2];
+			
+			// Set the frequency to the inner body value, 
+			// but either body is fine since the system is in resonance
+			double omega_nkm = omegagw_inner; 
+			
+			double denom = fabs(omegagw_inner) + fabs(omegagw_outer); // absolute sum of both outputs from inner and outer bodies
+
+			double rel_diff;
+
+			if (denom > 0.0)
+				{
+    				rel_diff = 2.0 * fabs(omegagw_inner - omegagw_outer) / denom;
+				}
+			else
+				{
+    				rel_diff = 0.0; // both are zero
+				}
+
+			double delta_omega_tol = 1.0e-4; // 0.1%
+
+			if (rel_diff > delta_omega_tol)
+				{
+    				printf("WARNING: GW frequencies differ by %.6e (tol %.6e)\n",
+						rel_diff, delta_omega_tol);
+				}
+					
+
+            // ----------------------------------------------------
+            // Inner sum over l
+            // ----------------------------------------------------
+            for (int il = 0; il < nl; il++) {
+
+                CKerr_GWScatMatrix(M, astar, omega_nkm,
+                                   i_m_inner,
+                                   E0_outer[il],
+                                   cscat, aux);
+
+                double lambda =
+                    E0_inner[il]
+                    - 2 * astar * M * i_m_inner * omega_nkm
+                    + astar * astar * M * M * omega_nkm * omega_nkm
+                    - 2;
+
+                double P = omega_nkm - i_m_inner * astar * M / (2 * M * (M + sqrt(M*M - astar*astar*M*M)));
+
+                double numer = 256 * pow(2 * M * rH,5) * P * (P*P + 4 * epsilon*epsilon) * (P*P + 16 * epsilon*epsilon) * omega_nkm * omega_nkm * omega_nkm;
+
+                double C2 = ((lambda + 2)*(lambda + 2) + 4 * i_m_inner * astar * M * omega_nkm 
+					- 4 * astar*astar*M*M * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m_inner * astar * M *omega_nkm - 36 * astar*astar*M*M * omega_nkm*omega_nkm) 
+					+ (2 * lambda +3) * (96 * astar*astar*M*M * omega_nkm*omega_nkm - 48 * i_m_inner * astar * M * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar*M*M);
+
+                double alphankm = numer / C2;
+
+				#if 0
+				printf("Frequencies from resonance and RadialFunc: %lg \t %lg \t %lg\n", omega_nkm, omegagw_inner, omegagw_outer);
+				printf("%i \t %lg \t %lg \t %lg\n", il, omega_nkm, lambda, alphankm);
+
+				printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n_inner, i_k_inner, i_m_inner, il,  C0_inner[4*il], C0_inner[4*il+1], C0_inner[4*il+2], C0_inner[4*il+3], C0_outer[4*il], C0_outer[4*il+1], C0_outer[4*il+2], C0_outer[4*il+3]);
+				//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, C0[4*il], C0[4*il+1], C0[4*il+2], C0[4*il+3], Z_down_square, Z_out_square);
+				#endif
+				/* For INNER/OUTER Body: */
+				/* C0_{inner/outer}[4*il    ] = Re[Z_down, inner] */
+				/* C0_{inner/outer}[4*il + 1] = Im[Z_down, inner] */
+				/* C0_{inner/outer}[4*il + 2] = Re[Z_out, inner] */
+				/* C0_{inner/outer}[4*il + 3] = Im[Z_out, inner] */
+
+                double term =
+                    C0_inner[4*il+2] * cscat[0] * Rtheta * C0_outer[4*il] +
+                    C0_outer[4*il+1] * cscat[0] * C0_inner[4*il+2] * Itheta +
+                    C0_outer[4*il]   * cscat[1] * C0_inner[4*il+3] * Rtheta +
+                    C0_outer[4*il+1] * cscat[1] * C0_inner[4*il+3] * Itheta;
+
+                double another_term =
+                    -C0_outer[4*il]   * C0_inner[4*il+3] * cscat[0] * Itheta +
+                     C0_outer[4*il+1] * C0_inner[4*il+3] * cscat[0] * Rtheta +
+                     C0_outer[4*il]   * cscat[1] * C0_inner[4*il+2] * Itheta +
+                    -C0_outer[4*il+1] * cscat[1] * C0_inner[4*il+2] * Rtheta;
+
+                double last_term =
+                    C0_outer[4*il]   * C0_inner[4*il]   * Rtheta +
+                    C0_outer[4*il+1] * C0_inner[4*il]   * Itheta -
+                    C0_outer[4*il]   * C0_inner[4*il+1] * Itheta +
+                    C0_outer[4*il+1] * C0_inner[4*il+1] * Rtheta;
+
+                double contrib =
+                    (term + another_term + alphankm * last_term)
+                    / (omega_nkm * omega_nkm * omega_nkm);
+
+                // ------------------------------------------------
+                // LOCAL accumulation (thread-safe)
+                // ------------------------------------------------
+                J_local[0] += -i_n_inner * mu_outer * contrib;
+                J_local[1] += -i_k_inner * mu_outer * contrib;
+                J_local[2] += -i_m_inner * mu_outer * contrib;
+            }
+        }
+
+		double thread_t1 = omp_get_wtime(); // End time of thread calculation
+
+        // --------------------------------------------------------
+        // Merge thread-local results
+        // --------------------------------------------------------
+        #pragma omp critical
+        {
+			printf("Thread %d total time = %.6f s\n",tid, thread_t1 - thread_t0); // Thread ID and how long calculation took
+
+            J_global[0] += J_local[0];
+            J_global[1] += J_local[1];
+            J_global[2] += J_local[2];
+        }
+
+		free((char*)E0_inner);
+		free((char*)E0_outer);
+    }
+
+    // ------------------------------------------------------------
+    // Final output
+    // ------------------------------------------------------------
+    J_dot_td[0] = J_global[0];
+    J_dot_td[1] = J_global[1];
+    J_dot_td[2] = J_global[2];
 }
 
 /* Keplerian expression for evolution of L_z, while only keeping the resonant prefactor terms. We will compare this to our general machine for computing J_phi_dot since it equals L_z_dot */

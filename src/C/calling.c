@@ -3,6 +3,7 @@
 #include <math.h>
 #include <time.h>
 #include "CKerr.h"
+#include <omp.h>
 #include "globalpars_c.h"
 
 #define N_LINES_MAX 30000
@@ -286,9 +287,9 @@ int main(int argc, char **argv){
 	}
 	
 
-	Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
-	Delta_EQL_dot_tidal[1] = M_res[1] * J_dot_td[0] + M_res[4] * J_dot_td[1] + M_res[7] * J_dot_td[2];
-	Delta_EQL_dot_tidal[2] = M_res[2] * J_dot_td[0] + M_res[5] * J_dot_td[1] + M_res[8] * J_dot_td[2];
+	// Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
+	// Delta_EQL_dot_tidal[1] = M_res[1] * J_dot_td[0] + M_res[4] * J_dot_td[1] + M_res[7] * J_dot_td[2];
+	// Delta_EQL_dot_tidal[2] = M_res[2] * J_dot_td[0] + M_res[5] * J_dot_td[1] + M_res[8] * J_dot_td[2];
 
 
 	printf("SMBH M: %lg spin: %lg \n", mass, spin);
@@ -303,10 +304,43 @@ int main(int argc, char **argv){
 	
 	#ifdef SINGLEVALUE
 	printf("About to compute tidal J_dots and EQL_dots \n");
+	clock_t start = clock();
 	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_outer, J_dot_td);
+	clock_t end = clock();
+	double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
 	printf("J_dot_r_tidal = %.15g \n", J_dot_td[0]);
 	printf("J_dot_theta_tidal = %.15g \n", J_dot_td[1]);
 	printf("J_dot_phi_tidal = %.15g \n", J_dot_td[2]);
+
+	/* Computes EQL_dot_tidal from J_dot_tidal */
+	Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
+	Delta_EQL_dot_tidal[1] = M_res[1] * J_dot_td[0] + M_res[4] * J_dot_td[1] + M_res[7] * J_dot_td[2];
+	Delta_EQL_dot_tidal[2] = M_res[2] * J_dot_td[0] + M_res[5] * J_dot_td[1] + M_res[8] * J_dot_td[2];
+
+	printf("Delta_EQL = %.15g %.15g %.15g \n", Delta_EQL_dot_tidal[0], Delta_EQL_dot_tidal[1], Delta_EQL_dot_tidal[2]);
+
+	// printf("Keplerian J_dot_phi at resonance = %lg \n", J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline));
+	#endif
+
+	#ifdef SINGLEVALUE_OMP
+	printf("=== OpenMP run info ===\n");
+
+	#pragma omp parallel
+	{
+    		#pragma omp single
+    			{
+        			printf("Threads available: %d\n", omp_get_num_threads());
+    			}
+	}
+
+	printf("About to compute tidal J_dots and EQL_dots using OpenMP \n");
+	double t0 = omp_get_wtime();
+	J_dot_tidal_openmp(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_outer, J_dot_td);
+	double t1 = omp_get_wtime();
+	printf("J_dot_r_tidal = %.15g \n", J_dot_td[0]);
+	printf("J_dot_theta_tidal = %.15g \n", J_dot_td[1]);
+	printf("J_dot_phi_tidal = %.15g \n", J_dot_td[2]);
+	printf("Time = %.6f s\n", t1 - t0);
 
 	/* Computes EQL_dot_tidal from J_dot_tidal */
 	Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
