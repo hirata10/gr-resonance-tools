@@ -412,7 +412,7 @@ void J_dot_tidal_openmp(
    	 		}
         double J_local[3] = {0.0, 0.0, 0.0};
 
-        #pragma omp for schedule(guided)
+        #pragma omp for schedule(dynamic,1)
         for (int i = -N_res; i <= N_res; i++) {
 
             int i_n_inner = i * n_res_inner;
