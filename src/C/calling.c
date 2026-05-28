@@ -309,7 +309,7 @@ int main(int argc, char **argv){
 	clock_t end = clock();
 	double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
 
-	printf("Time = %.6f s\n", elapsed - start);
+	printf("Time = %.6f s\n", elapsed);
 
 	printf("J_dot_r_tidal = %.15g \n", J_dot_td[0]);
 	printf("J_dot_theta_tidal = %.15g \n", J_dot_td[1]);
