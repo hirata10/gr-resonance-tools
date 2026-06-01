@@ -3,7 +3,8 @@
 # =========================
 
 # Compiler and flags
-CC     = gcc-15
+CC = gcc # For HPC compiler flag
+# CC     = gcc-15
 CFLAGS = -w
 OMPFLAGS = -fopenmp
 LIBS   = -lm
