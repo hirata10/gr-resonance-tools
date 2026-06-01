@@ -4,4 +4,4 @@ globalpars_c.h
 globalpars.py
 TEST/*
 dumps/*
-
+.DS_Store
