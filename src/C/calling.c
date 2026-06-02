@@ -945,14 +945,14 @@ int main(int argc, char **argv)
 	sscanf(argv[2], "%lg", &J_theta_ini);
 	sscanf(argv[3], "%lg", &J_phi_ini);
 	sscanf(argv[4], "%lg", &t0);
-	sscanf(argv[5], "%ld", &n);
+	sscanf(argv[5], "%i", &n);
 	sscanf(argv[6], "%lg", &mu_body);
 	sscanf(argv[7], "%ld", &label);
 	sscanf(argv[8], "%s", &sys_type);
 	sscanf(argv[9], "%i", &i_start);
 
-	printf("Total number of arguments is %ld \n", argc);
-	printf("Number of time steps is n = %ld \n", n);
+	printf("Total number of arguments is %d \n", argc);
+	printf("Number of time steps is n = %d \n", n);
 	printf("Initial time is t0 = %lg \n", t0);
 	printf("Mass ratio of the inspiral body = %lg \n", mu_body);
 	printf("Mass and spin of central BH are = %lg %lg \n", M, astar);
@@ -969,7 +969,8 @@ int main(int argc, char **argv)
     // t[0] = t0;
 
 
-	rk4_J2Jdot_restart(t0, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
+	// rk4_J2Jdot_restart(t0, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
+	rk4_J2Jdot_restart_openmp(t0, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
 	
 		 
  
@@ -1031,7 +1032,8 @@ int main(int argc, char **argv)
     // t[0] = t0;
 
 	// printf("\n");
-	rk4_J2Jdot_restart(t_start, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
+	// rk4_J2Jdot_restart(t_start, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
+	rk4_J2Jdot_restart_openmp(t_start, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
 		 
  
 	//printf("t \t J_r \t J_theta \t J_phi \n------------\n");

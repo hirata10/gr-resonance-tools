@@ -4,7 +4,7 @@
 M 1.0 
 
 #Spin of BH in BH mass units
-astar 0.1
+astar 0.9
 
 #Mass ratio of inner body with BH mass
 mu_inner 0.00001
@@ -31,7 +31,7 @@ sm_axis_inner 50
 sm_axis_outer 200
 
 #Number of systems
-N_sys 2
+N_sys 1
 
 #Number of resonance modes
 N_res 2

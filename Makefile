@@ -58,7 +58,7 @@ $(OUTDIR)/J_evolve_single_start: $(SRC_C)/calling.c $(SRC_C)/resonance_find.c \
                                      $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
                                      $(SRC_C)/kerrgwem.c $(SRC_C)/J_dot.c \
                                      $(SRC_C)/J2J_dot.c $(SRC_C)/$(C_HEADER)
-	$(CC) $(CFLAGS) -DIS_RK4_J_DOT_start \
+	$(CC) $(CFLAGS) $(OMPFLAGS) -DIS_RK4_J_DOT_start \
         $(SRC_C)/calling.c $(SRC_C)/resonance_find.c \
         $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/J_dot.c $(SRC_C)/J2J_dot.c \
@@ -69,7 +69,7 @@ $(OUTDIR)/J_evolve_single_restart: $(SRC_C)/calling.c $(SRC_C)/resonance_find.c 
                                    $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
                                    $(SRC_C)/kerrgwem.c $(SRC_C)/J_dot.c \
                                    $(SRC_C)/J2J_dot.c $(SRC_C)/$(C_HEADER)
-	$(CC) $(CFLAGS) -DIS_RK4_J_DOT_restart \
+	$(CC) $(CFLAGS) $(OMPFLAGS) -DIS_RK4_J_DOT_restart \
         $(SRC_C)/calling.c $(SRC_C)/resonance_find.c \
         $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/J_dot.c $(SRC_C)/J2J_dot.c \
@@ -80,7 +80,7 @@ $(OUTDIR)/Delta_J_single: $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmo
                           $(SRC_C)/kerrgwem.c $(SRC_C)/resonance_find.c \
                           $(SRC_C)/Gamma.c $(SRC_C)/Delta_J.c $(SRC_C)/J_dot.c \
                           $(SRC_C)/$(C_HEADER)
-	$(CC) $(CFLAGS) $(SRC_C)/calling.c -DIS_DELTA_J_SINGLE \
+	$(CC) $(CFLAGS) $(OMPFLAGS) $(SRC_C)/calling.c -DIS_DELTA_J_SINGLE \
         $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c $(SRC_C)/kerrgwem.c \
         $(SRC_C)/resonance_find.c $(SRC_C)/Gamma.c $(SRC_C)/Delta_J.c \
         $(SRC_C)/J_dot.c -I$(SRC_C) -o $@ $(LIBS)
@@ -90,7 +90,7 @@ $(OUTDIR)/Delta_Phi_single: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(CFLAGS) -DKERRPHASE_STANDALONE $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(CFLAGS) $(OMPFLAGS) -DKERRPHASE_STANDALONE $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
         $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(LIBS)
