@@ -3,8 +3,8 @@
 # =========================
 
 # Compiler and flags
-CC = gcc # For HPC compiler flag
-# CC     = gcc-15
+# CC = gcc # For HPC compiler flag
+CC     = gcc-15
 CFLAGS = -w
 OMPFLAGS = -fopenmp
 LIBS   = -lm
@@ -111,6 +111,7 @@ TEST_EXES = $(TEST_OUTDIR)/J2EQL \
             $(TEST_OUTDIR)/J2J_DOT_TIDAL_SINGLE_OMP \
             $(TEST_OUTDIR)/J2J_DOT_TIDAL_LOOP \
             $(TEST_OUTDIR)/J2J_DOT_SF \
+            $(TEST_OUTDIR)/J2J_DOT_SF_OMP \
             $(TEST_OUTDIR)/DELTA_EQL \
             $(TEST_OUTDIR)/ORBIT2J \
             $(TEST_OUTDIR)/CHECK_RES_COND \
@@ -173,7 +174,16 @@ $(TEST_OUTDIR)/J2J_DOT_SF: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_SF $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_SF -DSINGLEVALUE $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Create executable to compute a set of J_dot_selfforce of a body using OpenMP
+$(TEST_OUTDIR)/J2J_DOT_SF_OMP: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_SF -DSINGLEVALUE_OMP $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 

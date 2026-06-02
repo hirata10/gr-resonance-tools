@@ -116,8 +116,163 @@ void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp
 	free((char*)E0);
 }
 
+void J_dot_selfforce_openmp(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_sf){
 
-// MAKANA: Rework J_dot_tidal to be parallelizable in mode for loop
+	double EQL[3], J[3], Minv[9], Omega[3], info[6], info_outer[6], xuorig[6];
+
+	double J_dot_sf_global[3] = {0.,0., 0.};
+
+
+	/* For CIRCULAR orbits */
+	if(apo == 0 && rp == 0 && I == 0){
+		/* Orbital frequencies for circular equitorial orbits */
+		CKerr_FindEQL_IRCirc(0, radius_outer, EQL, M, astar);
+		CKerr_EQL2J(EQL, J, M, astar, NULL);
+		CKerr_Minverse(J, Minv, M, astar);
+		// CKerr_Minv2Omega(Minv, Omega);
+		//printf("Minv for circular equitorial case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
+		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
+		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
+		//printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
+		//printf("Omega for circular equatorial is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+
+		/* Torus Origin for circular equatorial orbits */
+		CKerr_TorusOrigin(J, xuorig, M, astar);
+	}
+
+	/* For GENERIC orbits */
+	else{
+		/* Routine to find location of resonant apocenter */
+		//guess1 = rp + 3.;
+		//guess2 = radius_outer - 3.;
+		//apo = find_resonance_apo(n_res_inner, k_res_inner, m_res_inner, radius_outer, guess1, guess2, rp, I, astar, M);
+		
+		/* Get orbital frequencies for inner generic orbit */
+		ra_rp_I2EQL(apo, EQL, rp, I, astar, M);
+		CKerr_EQL2J(EQL, J, M, astar, NULL);
+		CKerr_Minverse(J, Minv, M, astar);
+		// CKerr_Minv2Omega(Minv, Omega);
+		//printf("Minv for generic case = \n %lg %lg %lg \n", Minv[0], Minv[1], Minv[2]);
+		//printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
+		//printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
+		//printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
+		//printf("Omega for generic is: %lg %lg %lg \n", Omega[0], Omega[1], Omega[2]);
+
+		/* Torus origin for inner body orbit */
+		CKerr_TorusOrigin(J, xuorig, M, astar);
+		//for(i=0;i<6;i++) printf("xuorig[%d] = %lg\n", i, xuorig[i]);
+	}
+
+	/* Compute outer Kerr horizon and function needed for scattering data (epsilon) */
+	double rH = M + sqrt(M*M - astar*M*astar*M);
+	double epsilon = sqrt(M*M - astar*M*astar*M) / (4 * M * rH);
+	
+	
+
+  	/* This takes the M_inv, the origin in phase space, mass and spin of BH, {n,k,m}, 
+	number of steps in r and theta, number of modes (nl), and the angular frequency of the perturber orbit
+	Returns the Z-coeff. and energy eigenvalues E[nl]. */
+
+	#pragma omp parallel 
+	{
+		// --------------------------------------------------------
+   	 		// Thread-private working buffers
+    		// Allocated ONCE per thread (not per iteration)
+    		// --------------------------------------------------------
+			int tid = omp_get_thread_num(); // Get thread ID
+			double thread_t0 = omp_get_wtime(); // Start time at each thread
+			double *C0, *E0, *E1;
+			
+			E0 = (double*)malloc((size_t)(nl*10*sizeof(double)));
+			
+			// Safety check that E0 was made correctly
+    		if (!E0) {
+            	printf("Memory allocation failed in thread %d\n", omp_get_thread_num());
+        		exit(1);
+   	 		}
+
+  			E1 = E0 + nl;
+  			C0 = E1 + nl;
+
+			
+			
+			// Initialize the values of J_dot_sf to be zero
+			double J_dot_sf_local[3] = {0.0, 0.0, 0.0};
+
+			#pragma omp for schedule(dynamic,1)
+			/* Compute the J_dot_selfforce */
+			for (int i_n = -nmax; i_n <= nmax; i_n++){
+				for (int i_k = -kmax; i_k <= kmax; i_k++){
+					for (int i_m = -mmax; i_m <= mmax; i_m++){
+						if(i_n == 0 && i_k == 0 && i_m == 0){ // Remove 0 mode (time indepedent perturbation)
+							continue;
+						}
+						if(astar == 0 && i_n == 0 && i_k == -i_m) //Schwarzschild case a == 0
+							continue;
+						double omegagw;
+						CKerr_RadialFunc(Minv, xuorig, M, astar, i_n, i_k, i_m, 28, 14, nl, C0, &omegagw, E0);
+						for (int il = 0; (il) < nl; il++){
+							
+							// omega_nkm = i_n * Omega[0] + i_k * Omega[1] + i_m * Omega[2];
+							double omega_nkm = omegagw;
+
+							double lambda = E0[il] 
+							- 2 * astar * M * i_m * omega_nkm 
+							+ astar * M * astar * M * omega_nkm * omega_nkm - 2;
+
+							double P = omega_nkm - i_m * astar * M / (2 * M * rH);
+
+							double numer = 256 * pow(2 * M * rH,5) * P * (P*P + 4 * epsilon*epsilon) * (P*P + 16 * epsilon*epsilon) * omega_nkm * omega_nkm * omega_nkm;
+							
+							double C2 = ((lambda + 2)*(lambda + 2) + 4 * i_m * astar * omega_nkm - 4 * astar * M * astar * M * omega_nkm*omega_nkm) * (lambda*lambda + 36 * i_m * astar * M *omega_nkm - 36 * astar * M * astar * M * omega_nkm*omega_nkm) 
+							+ (2 * lambda +3) * (96 * astar * M * astar * M * omega_nkm*omega_nkm - 48 * i_m * astar * M * omega_nkm) + 144 * omega_nkm*omega_nkm * (M*M - astar*astar*M*M);
+
+							double alphankm = numer / C2;
+					
+							double Z_down_square = C0[4*il]*C0[4*il] + C0[4*il+1]*C0[4*il+1];
+							double Z_out_square = C0[4*il+2]*C0[4*il+2] + C0[4*il+3]*C0[4*il+3];
+							#if 0
+							printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, omegagw, omega_nkm, lambda, alphankm, Z_down_square, Z_out_square);
+							fflush(stdout);
+							// printf("%i \t %i \t %i \t %i \t %lg \t %lg \n", i_n, i_k, i_m, il, Z_down_square, Z_out_square);
+							#endif
+							//printf("%i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg\n", i_n, i_k, i_m, il, C0[4*il], C0[4*il+1], C0[4*il+2], C0[4*il+3], Z_down_square, Z_out_square);
+					
+							J_dot_sf_local[0] += -i_n * (Z_out_square + alphankm * Z_down_square) / (2. * omega_nkm*omega_nkm*omega_nkm);
+							J_dot_sf_local[1] += -i_k * (Z_out_square + alphankm * Z_down_square) / (2. * omega_nkm*omega_nkm*omega_nkm);
+							J_dot_sf_local[2] += -i_m * (Z_out_square + alphankm * Z_down_square) / (2. * omega_nkm*omega_nkm*omega_nkm);
+
+						}
+					}
+				}
+			}
+
+			double thread_t1 = omp_get_wtime(); // End time of thread calculation
+
+        	// --------------------------------------------------------
+        	// Merge thread-local results
+       		// --------------------------------------------------------
+
+
+			#pragma omp critical
+			{
+				printf("Thread %d total time = %.6f s\n",tid, thread_t1 - thread_t0); // Thread ID and how long calculation took
+
+            	J_dot_sf_global[0] += J_dot_sf_local[0];
+            	J_dot_sf_global[1] += J_dot_sf_local[1];
+            	J_dot_sf_global[2] += J_dot_sf_local[2];
+			}
+			free((char*)E0);
+	}
+	// ------------------------------------------------------------
+    // Final output
+    // ------------------------------------------------------------
+	J_dot_sf[0] = J_dot_sf_global[0];
+	J_dot_sf[1] = J_dot_sf_global[1];
+	J_dot_sf[2] = J_dot_sf_global[2];
+}
+
+
 /* Computing the J_dot_tidal,i */
 void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double mu_outer ,double *J_dot_td){
 	int i, i_n_inner, i_k_inner, i_m_inner, il;
@@ -475,7 +630,7 @@ void J_dot_tidal_openmp(
 
 			if (rel_diff > delta_omega_tol)
 				{
-    				printf("WARNING: GW frequencies differ by %.6e (tol %.6e)\n",
+    				printf("WARNING: GW frequencies for inner and outer bodies differ by %.6e (tol %.6e)\n",
 						rel_diff, delta_omega_tol);
 				}
 					
