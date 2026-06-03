@@ -31,7 +31,7 @@ sm_axis_inner 50
 sm_axis_outer 200
 
 #Number of systems
-N_sys 1
+N_sys 2
 
 #Number of resonance modes
 N_res 2
