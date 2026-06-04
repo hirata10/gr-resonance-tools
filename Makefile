@@ -3,8 +3,10 @@
 # =========================
 
 # Compiler and flags
-CC     = gcc
+# CC = gcc # For HPC compiler flag
+CC     = gcc-15
 CFLAGS = -w
+OMPFLAGS = -fopenmp
 LIBS   = -lm
 
 # Directories
@@ -56,7 +58,7 @@ $(OUTDIR)/J_evolve_single_start: $(SRC_C)/calling.c $(SRC_C)/resonance_find.c \
                                      $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
                                      $(SRC_C)/kerrgwem.c $(SRC_C)/J_dot.c \
                                      $(SRC_C)/J2J_dot.c $(SRC_C)/$(C_HEADER)
-	$(CC) $(CFLAGS) -DIS_RK4_J_DOT_start \
+	$(CC) $(CFLAGS) $(OMPFLAGS) -DIS_RK4_J_DOT_start \
         $(SRC_C)/calling.c $(SRC_C)/resonance_find.c \
         $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/J_dot.c $(SRC_C)/J2J_dot.c \
@@ -67,7 +69,7 @@ $(OUTDIR)/J_evolve_single_restart: $(SRC_C)/calling.c $(SRC_C)/resonance_find.c 
                                    $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
                                    $(SRC_C)/kerrgwem.c $(SRC_C)/J_dot.c \
                                    $(SRC_C)/J2J_dot.c $(SRC_C)/$(C_HEADER)
-	$(CC) $(CFLAGS) -DIS_RK4_J_DOT_restart \
+	$(CC) $(CFLAGS) $(OMPFLAGS) -DIS_RK4_J_DOT_restart \
         $(SRC_C)/calling.c $(SRC_C)/resonance_find.c \
         $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/J_dot.c $(SRC_C)/J2J_dot.c \
@@ -78,7 +80,7 @@ $(OUTDIR)/Delta_J_single: $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmo
                           $(SRC_C)/kerrgwem.c $(SRC_C)/resonance_find.c \
                           $(SRC_C)/Gamma.c $(SRC_C)/Delta_J.c $(SRC_C)/J_dot.c \
                           $(SRC_C)/$(C_HEADER)
-	$(CC) $(CFLAGS) $(SRC_C)/calling.c -DIS_DELTA_J_SINGLE \
+	$(CC) $(CFLAGS) $(OMPFLAGS) $(SRC_C)/calling.c -DIS_DELTA_J_SINGLE \
         $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c $(SRC_C)/kerrgwem.c \
         $(SRC_C)/resonance_find.c $(SRC_C)/Gamma.c $(SRC_C)/Delta_J.c \
         $(SRC_C)/J_dot.c -I$(SRC_C) -o $@ $(LIBS)
@@ -88,7 +90,7 @@ $(OUTDIR)/Delta_Phi_single: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(CFLAGS) -DKERRPHASE_STANDALONE $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(CFLAGS) $(OMPFLAGS) -DKERRPHASE_STANDALONE $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
         $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(LIBS)
@@ -100,12 +102,16 @@ $(OUTDIR)/Delta_Phi_single: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
 # You can change these compiler options:
 TEST_CFLAGS = -Wall    
 TEST_LIBS   = -lm
+TEST_OMPFLAGS = -fopenmp
+TEST_OPENMPLIBS = -fopenmp -lgomp -pthread
 
 # Test executables
 TEST_EXES = $(TEST_OUTDIR)/J2EQL \
             $(TEST_OUTDIR)/J2J_DOT_TIDAL_SINGLE \
+            $(TEST_OUTDIR)/J2J_DOT_TIDAL_SINGLE_OMP \
             $(TEST_OUTDIR)/J2J_DOT_TIDAL_LOOP \
             $(TEST_OUTDIR)/J2J_DOT_SF \
+            $(TEST_OUTDIR)/J2J_DOT_SF_OMP \
             $(TEST_OUTDIR)/DELTA_EQL \
             $(TEST_OUTDIR)/ORBIT2J \
             $(TEST_OUTDIR)/CHECK_RES_COND \
@@ -123,7 +129,7 @@ $(TEST_OUTDIR)/J2EQL: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(TEST_CFLAGS) -DIS_J2EQL $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J2EQL $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
@@ -132,7 +138,7 @@ $(TEST_OUTDIR)/DELTA_EQL: $(SRC_C)/calling.c $(SRC_C)/kerrphase.c $(SRC_C)/kerrt
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(TEST_CFLAGS) -DIS_DELTA_EQL $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_DELTA_EQL $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/kerrphase.c $(SRC_C)/J_dot.c $(SRC_C)/resonance_find.c\
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
@@ -141,7 +147,16 @@ $(TEST_OUTDIR)/J2J_DOT_TIDAL_SINGLE: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(TEST_CFLAGS) -DIS_J_DOT_TIDAL -DSINGLEVALUE $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_TIDAL -DSINGLEVALUE $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/kerrphase.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Create executable to compute a set of J_dot_tidal using OpenMP of inner body from Js (inner and outer) and resonance mode
+$(TEST_OUTDIR)/J2J_DOT_TIDAL_SINGLE_OMP: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_TIDAL -DSINGLEVALUE_OMP $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/kerrphase.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
@@ -150,7 +165,7 @@ $(TEST_OUTDIR)/J2J_DOT_TIDAL_LOOP: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(TEST_CFLAGS) -DIS_J_DOT_TIDAL -DLOOPANGLE $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_TIDAL -DLOOPANGLE $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/kerrphase.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
@@ -159,7 +174,16 @@ $(TEST_OUTDIR)/J2J_DOT_SF: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(TEST_CFLAGS) -DIS_J_DOT_SF $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_SF -DSINGLEVALUE $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Create executable to compute a set of J_dot_selfforce of a body using OpenMP
+$(TEST_OUTDIR)/J2J_DOT_SF_OMP: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_SF -DSINGLEVALUE_OMP $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
@@ -168,23 +192,25 @@ $(TEST_OUTDIR)/ORBIT2J: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(TEST_CFLAGS) -DIS_ORBIT2J $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_ORBIT2J $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
+# Create executable to check resonance conditions like delta_omega, etc.
 $(TEST_OUTDIR)/CHECK_RES_COND: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(TEST_CFLAGS) -DIS_CHECK_RES_COND $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_CHECK_RES_COND $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
+# Create executable to compute apocenter that via bisection method for resonance orbit
 $(TEST_OUTDIR)/RESFIND_APO: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
-	$(CC) $(TEST_CFLAGS) -DIS_RESFIND_APO $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_RESFIND_APO $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 

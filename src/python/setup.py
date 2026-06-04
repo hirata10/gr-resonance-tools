@@ -18,11 +18,23 @@ c_sources = [os.path.join("..", "C", f) for f in files]
 
 sourcefiles = ["gr_wrapper.pyx"] + c_sources
 
+# BEFORE OpenMP features
+# extensions = [
+#     Extension(
+#         "gr_wrapper",
+#         sourcefiles,
+#         include_dirs=[c_dir],  # headers location (this can be absolute)
+#     )
+# ]
+
+# AFTER OpenMP features
 extensions = [
     Extension(
         "gr_wrapper",
         sourcefiles,
-        include_dirs=[c_dir],  # headers location (this can be absolute)
+        include_dirs=[c_dir],
+        extra_compile_args=["-fopenmp"],
+        extra_link_args=["-fopenmp"],
     )
 ]
 

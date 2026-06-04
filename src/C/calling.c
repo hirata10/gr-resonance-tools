@@ -3,6 +3,7 @@
 #include <math.h>
 #include <time.h>
 #include "CKerr.h"
+#include <omp.h>
 #include "globalpars_c.h"
 
 #define N_LINES_MAX 30000
@@ -99,19 +100,34 @@ int main(){
 
 #ifdef IS_J_DOT_SF
 int main(int argc, char **argv){
+	setvbuf(stdout, NULL, _IOLBF, 0);
 	int j;
 	double J[3], EQL[3], anc[3];
 	double J_dot_sf[3];
 	double angle_space, angle_step, L_dot[50], Kepler_torque[50];
 	int nmax = GLOBALPAR_nmax, kmax = GLOBALPAR_kmax, mmax = GLOBALPAR_mmax, nl_self = GLOBALPAR_nl_self;
-	double mass = GLOBALPAR_M, spin = GLOBALPAR_astar, radius_outer = 0.;
+	double mass, spin, radius_outer = 0.;
 
 	/* Input Js on command line */
-	sscanf(argv[1], "%lg", &J[0]);
-	sscanf(argv[2], "%lg", &J[1]);
-	sscanf(argv[3], "%lg", &J[2]);
-	
+	if (argc==6){
+		sscanf(argv[1], "%lg", &J[0]);
+		sscanf(argv[2], "%lg", &J[1]);
+		sscanf(argv[3], "%lg", &J[2]);
+		sscanf(argv[4], "%lg", &mass);
+		sscanf(argv[5], "%lg", &spin);
+	}
 
+	else {
+    // stdin mode (works with < file)
+    	if (scanf("%lf %lf %lf %lf %lf",
+              &J[0], &J[1], &J[2],
+			  &mass, &spin) != 5) {
+
+        fprintf(stderr, "Error: expected 5 inputs\n");
+        return 1;
+    	}
+	}
+	
 	CKerr_J2EQL(J, EQL, mass, spin);
 	CKerr_EQL2J(EQL, J, mass, spin, anc);
 
@@ -119,18 +135,47 @@ int main(int argc, char **argv){
 	double rp = anc[1];
 	double ra = anc[2];
 
-
 	double eccen = (ra - rp) / (ra + rp);
 
-	printf("I, rp, ra, eccentricity: %lg %lg %lg %lg \n", I, rp, ra, eccen);
+	printf("I, rp, ra, eccentricity: %.15g %.15g %.15g %.15g \n", I, rp, ra, eccen);
 
-	printf("EQL: %lg %lg %lg \n", EQL[0], EQL[1], EQL[2]);
+	printf("EQL: %.15g %.15g %.15g \n", EQL[0], EQL[1], EQL[2]);
 
-	printf("About to compute self-force J_dots \n");
+	#ifdef SINGLEVALUE
+	printf("About to compute self-force J_dots in serial \n");
+	clock_t start = clock();
 	J_dot_selfforce(nl_self, nmax, kmax, mmax, ra, rp, radius_outer, I, mass, spin, J_dot_sf);
-	printf("J_dot_r_sf = %lg \n", J_dot_sf[0]);
-	printf("J_dot_theta_sf = %lg \n", J_dot_sf[1]);
-	printf("J_dot_phi_sf = %lg \n", J_dot_sf[2]);
+	clock_t end = clock();
+	double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+	printf("Time = %.6f s\n", elapsed);
+
+	printf("J_dot_r_sf = %.15g \n", J_dot_sf[0]);
+	printf("J_dot_theta_sf = %.15g \n", J_dot_sf[1]);
+	printf("J_dot_phi_sf = %.15g \n", J_dot_sf[2]);
+	#endif
+
+	#ifdef SINGLEVALUE_OMP
+	printf("About to compute self-force J_dots using OpenMP \n");
+
+	printf("=== OpenMP run info ===\n");
+
+	#pragma omp parallel
+	{
+    		#pragma omp single
+    			{
+        			printf("Threads available: %d\n", omp_get_num_threads());
+    			}
+	}
+
+	double t0 = omp_get_wtime();
+	J_dot_selfforce_openmp(nl_self, nmax, kmax, mmax, ra, rp, radius_outer, I, mass, spin, J_dot_sf);
+	double t1 = omp_get_wtime();
+	printf("Time = %.6f s\n", t1 - t0);
+
+	printf("J_dot_r_sf = %.15g \n", J_dot_sf[0]);
+	printf("J_dot_theta_sf = %.15g \n", J_dot_sf[1]);
+	printf("J_dot_phi_sf = %.15g \n", J_dot_sf[2]);
+	#endif
 
 	return(0);
 }
@@ -286,9 +331,9 @@ int main(int argc, char **argv){
 	}
 	
 
-	Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
-	Delta_EQL_dot_tidal[1] = M_res[1] * J_dot_td[0] + M_res[4] * J_dot_td[1] + M_res[7] * J_dot_td[2];
-	Delta_EQL_dot_tidal[2] = M_res[2] * J_dot_td[0] + M_res[5] * J_dot_td[1] + M_res[8] * J_dot_td[2];
+	// Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
+	// Delta_EQL_dot_tidal[1] = M_res[1] * J_dot_td[0] + M_res[4] * J_dot_td[1] + M_res[7] * J_dot_td[2];
+	// Delta_EQL_dot_tidal[2] = M_res[2] * J_dot_td[0] + M_res[5] * J_dot_td[1] + M_res[8] * J_dot_td[2];
 
 
 	printf("SMBH M: %lg spin: %lg \n", mass, spin);
@@ -303,11 +348,48 @@ int main(int argc, char **argv){
 	
 	#ifdef SINGLEVALUE
 	printf("About to compute tidal J_dots and EQL_dots \n");
+	clock_t start = clock();
 	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_outer, J_dot_td);
+	clock_t end = clock();
+	double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+
+	printf("Time = %.6f s\n", elapsed);
+
 	printf("J_dot_r_tidal = %.15g \n", J_dot_td[0]);
 	printf("J_dot_theta_tidal = %.15g \n", J_dot_td[1]);
 	printf("J_dot_phi_tidal = %.15g \n", J_dot_td[2]);
 
+	/* Computes EQL_dot_tidal from J_dot_tidal */
+	Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
+	Delta_EQL_dot_tidal[1] = M_res[1] * J_dot_td[0] + M_res[4] * J_dot_td[1] + M_res[7] * J_dot_td[2];
+	Delta_EQL_dot_tidal[2] = M_res[2] * J_dot_td[0] + M_res[5] * J_dot_td[1] + M_res[8] * J_dot_td[2];
+
+	printf("Delta_EQL = %.15g %.15g %.15g \n", Delta_EQL_dot_tidal[0], Delta_EQL_dot_tidal[1], Delta_EQL_dot_tidal[2]);
+
+	// printf("Keplerian J_dot_phi at resonance = %lg \n", J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline));
+	#endif
+
+	#ifdef SINGLEVALUE_OMP
+	printf("=== OpenMP run info ===\n");
+
+	#pragma omp parallel
+	{
+    		#pragma omp single
+    			{
+        			printf("Threads available: %d\n", omp_get_num_threads());
+    			}
+	}
+
+	printf("About to compute tidal J_dots and EQL_dots using OpenMP \n");
+	double t0 = omp_get_wtime();
+	J_dot_tidal_openmp(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_outer, J_dot_td);
+	double t1 = omp_get_wtime();
+	printf("Time = %.6f s\n", t1 - t0);
+
+	printf("J_dot_r_tidal = %.15g \n", J_dot_td[0]);
+	printf("J_dot_theta_tidal = %.15g \n", J_dot_td[1]);
+	printf("J_dot_phi_tidal = %.15g \n", J_dot_td[2]);
+	
 	/* Computes EQL_dot_tidal from J_dot_tidal */
 	Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
 	Delta_EQL_dot_tidal[1] = M_res[1] * J_dot_td[0] + M_res[4] * J_dot_td[1] + M_res[7] * J_dot_td[2];
@@ -863,14 +945,14 @@ int main(int argc, char **argv)
 	sscanf(argv[2], "%lg", &J_theta_ini);
 	sscanf(argv[3], "%lg", &J_phi_ini);
 	sscanf(argv[4], "%lg", &t0);
-	sscanf(argv[5], "%ld", &n);
+	sscanf(argv[5], "%i", &n);
 	sscanf(argv[6], "%lg", &mu_body);
 	sscanf(argv[7], "%ld", &label);
 	sscanf(argv[8], "%s", &sys_type);
 	sscanf(argv[9], "%i", &i_start);
 
-	printf("Total number of arguments is %ld \n", argc);
-	printf("Number of time steps is n = %ld \n", n);
+	printf("Total number of arguments is %d \n", argc);
+	printf("Number of time steps is n = %d \n", n);
 	printf("Initial time is t0 = %lg \n", t0);
 	printf("Mass ratio of the inspiral body = %lg \n", mu_body);
 	printf("Mass and spin of central BH are = %lg %lg \n", M, astar);
@@ -887,7 +969,8 @@ int main(int argc, char **argv)
     // t[0] = t0;
 
 
-	rk4_J2Jdot_restart(t0, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
+	// rk4_J2Jdot_restart(t0, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
+	rk4_J2Jdot_restart_openmp(t0, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
 	
 		 
  
@@ -949,7 +1032,8 @@ int main(int argc, char **argv)
     // t[0] = t0;
 
 	// printf("\n");
-	rk4_J2Jdot_restart(t_start, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
+	// rk4_J2Jdot_restart(t_start, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
+	rk4_J2Jdot_restart_openmp(t_start, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
 		 
  
 	//printf("t \t J_r \t J_theta \t J_phi \n------------\n");

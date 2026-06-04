@@ -2,6 +2,11 @@ test_exe
 td_res_exe
 globalpars_c.h
 globalpars.py
-TEST/*
-dumps/*
+TEST/
+dumps/
+dump/
 .DS_Store
+build/
+gr_wrapper.cpython-311-darwin.so
+gr_wrapper.c
+__pycache__/
