@@ -13,17 +13,21 @@
 * (-2\Omega^{\phi} + 2\Omega^{\theta} + \Omega^{\r})_{inner} = -2\Omega^{\phi}_{outer} 
 */
 
+/* Radial function for Kerr geodesic (dr/dtau)^2  = R / rho in units 1/mass */
+double R_geodesic(double r, double E, double Q, double L, double a, double M){
+	double Delta = r * r - 2 * M * r + a * a;
+	double radial_geo = ((r * r + a * a) * E - a * L) * ((r * r + a * a) * E - a * L) - Delta * (r * r + (L - a * E) * (L - a * E) + Q);
+	return (radial_geo);
+}
 
 /* Make function that converts the input data from 
 * (apocenter (ra), pericenter (rp), inclination (I), central BH mass (M), spin of BH (a)) --> (E,Q,L)
 * EQL[0] = E, EQL[1] = Q, EQL[2] = L
 */
-
 void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, double M) {
 	int i;
 	double z;
 	double a;
-	/*double EQL[3];*/
 	double Coeff_rp[4];
 	double Coeff_ra[4];
 	double Delta_rp;
@@ -37,6 +41,7 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 	double denom_minus;
 	double which_E[2];
 	double which_ratio[2];
+	double R_geodesic(double, double, double, double, double, double);
 
 
 	/* Defining the coefficients that will appear in the conic section expression for EL relation */
@@ -77,7 +82,7 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 	which_E[0] = sqrt(Coeff_rp[3]/denom_plus);
 	/*E1_plus = sqrt(Coeff_rp[3]/denom_plus);*/
 	/*E1_minus = -sqrt(Coeff_rp[3]/denom_plus);*/
-	which_E[1] = sqrt(Coeff_rp[3]/denom_minus);
+	which_E[1] = sqrt(Coeff_rp[3]/denom_minus); 
 	/*E2_plus = sqrt(Coeff_rp[3]/denom_minus);*/
 	/*E2_minus = -sqrt(Coeff_rp[3]/denom_minus);*/
 
@@ -87,27 +92,41 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 
 	/* Now we make conditions to choose which value of E is the true E */
 	/* -- FILL IN LOGIC STATEMENT TO PICK WHICH E IS THE TRUE E -- */
+	for (i=0; i<3; i++) {EQL[i] = NAN;} // Initialize EQL in case no branches work...
 	for (i=0; i<2; i++){
-		if(which_E[i]<1){
-			EQL[0] = which_E[i];
-			relevant_ratio = which_ratio[i];
-			/*printf("The relevant ratio of L/E is: %lf \n The relevant E is: %lf \n", relevant_ratio, EQL[0]);*/
-		}
-		/*else{
-		*	EQL[0] = E2_plus;
-		*	relevant_ratio = ratio_LE_minus;
-		*	printf("The relevant ratio of L/E is: %lf \nThe relevant E is: %lf \n", relevant_ratio, EQL[0]);
-		}*/
+		double temp_E = which_E[i];
+
+    	if (temp_E <= 0.0 || temp_E >= 1.0) // Only allow 0 < E < 1 (bound orbits)
+        	continue;
+
+    	double temp_L = which_ratio[i] * temp_E;
+
+    	double temp_Q = z*z/(1-z*z)*temp_L*temp_L
+                  	- a*a*z*z*temp_E*temp_E
+                  	+ a*a*z*z;
+		/* Check that the chosen EQL in the radial geodesic quartic give R(ra) = R(rp) = 0 and that R(r_mid) > 0 to ensure the momentum is real within the bound motion */
+		double r_mid = (rp + ra) / 2; // Point within peri and apo
+		double R_geodesic_rp = R_geodesic(rp, temp_E, temp_Q, temp_L, a, M);
+		double R_geodesic_ra = R_geodesic(ra, temp_E, temp_Q, temp_L, a, M);
+		double R_geodesic_midpoint = R_geodesic(r_mid, temp_E, temp_Q, temp_L, a, M);
+
+		if (fabs(R_geodesic_rp) > 1e-10)
+			continue;
+		if (fabs(R_geodesic_ra) > 1e-10)
+			continue;
+		if (R_geodesic_midpoint < -1e-12)
+			continue;
+		if (temp_L < 0.0) // Restrict to prograde orbits
+    		continue;
+		
+		EQL[0] = temp_E;
+		EQL[1] = temp_Q;
+		EQL[2] = temp_L;
+		return;
 	}
-
-	/* Now we get L from the chosen E */
-	EQL[2] = relevant_ratio*EQL[0];
-
-	/* Finally, we get Q from the computed E and L */
-	EQL[1] = z*z/(1 - z*z)*EQL[2]*EQL[2] - a*a*z*z*EQL[0]*EQL[0] + a*a*z*z;
-
-	/*printf("For a given apo, peri, incline, spin parameter, and central mass, we get the values \nE = %lf \nQ = %lf \nL = %lf \n", EQL[0], EQL[1], EQL[2]);*/
-	/*return(EQL);*/
+	if (isnan(EQL[0]) || isnan(EQL[1]) || isnan(EQL[2])) {
+		printf("Warning: No physical EQL found! \n");
+	}
 }
 
 /* Defining the outer angular frequency using the expression derived in Chandrasekhar Ch. 7 for direct orbits */

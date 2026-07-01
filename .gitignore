@@ -10,3 +10,4 @@ build/
 gr_wrapper.cpython-311-darwin.so
 gr_wrapper.c
 __pycache__/
+.vscode

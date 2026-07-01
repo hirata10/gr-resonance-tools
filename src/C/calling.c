@@ -457,8 +457,9 @@ int main(int argc, char **argv){
 
 #ifdef IS_ORBIT2J
 int main(int argc, char **argv){
-	double J[3], EQL[3], anc[3], info[6];
+	double J[3], EQL[3], Omega[3], anc[3], info[6];
 	double apo, peri, inc, radius;
+	double Minv[9], M_res[9];
 	// double mass = GLOBALPAR_M, spin = GLOBALPAR_astar;
 	double mass, spin;
 
@@ -491,7 +492,9 @@ int main(int argc, char **argv){
 		EQL[1] = 0.;
 		EQL[2] = info[0];
 		CKerr_EQL2J(EQL, J, mass, spin, anc);
-		printf("Jr: %.15g, Jtheta: %.15g, Jphi: %.15g \n", J[0], J[1], J[2]);
+		double Omega_circ = 1 / (radius * sqrt(radius) + spin); // In units where M = 1
+		printf("J_r, J_theta, J_phi: %.15g %.15g %.15g \n", J[0], J[1], J[2]);
+		printf("Omega_phi: %.15g \n", Omega_circ);
 		printf("inclination: %.15g, pericenter: %.15g, apocenter: %.15g \n", anc[0], anc[1], anc[2]);
 	}
 
@@ -504,10 +507,14 @@ int main(int argc, char **argv){
 
 		// Convert EQL to J and check anc matches inputted orbit data (anc[0] = inclination, anc[1] = pericenter, anc[2] = apocenter)
 		CKerr_EQL2J(EQL, J, mass, spin, anc);
+		CKerr_Minverse(J, Minv, mass, spin);
+		// invertMatrix(Minv, M_res); // From kerrphase.c; computes the matrix of partial derivatives of EQL w.r.t Js
+		CKerr_Minv2Omega(Minv, Omega);
 
 		double eccen = (anc[2] - anc[1]) / (anc[2] + anc[1]);
 
-		printf("Jr: %.15g, Jtheta: %.15g, Jphi: %.15g \n", J[0], J[1], J[2]);
+		printf("J_r, J_theta, J_phi: %.15g %.15g %.15g \n", J[0], J[1], J[2]);
+		printf("Omega_r, Omega_theta, Omega_phi: %.15g %.15g %.15g \n", Omega[0], Omega[1], Omega[2]);
 		printf("eccentricity: %.15g \n", eccen);
 
 		double err_apo_rel = (anc[2] - apo) / apo;

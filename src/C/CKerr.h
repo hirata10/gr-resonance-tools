@@ -65,6 +65,7 @@ double CKerr_LindbladResonanceStrength(double M, double astar, double r0, long m
 /* circular, equitorial orbiting perturber */
 
 void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, double M);
+double R_geodesic(double r, double E, double Q, double L, double a, double M);
 double Omega_outer_direct(double radius, double M, double spin);
 double ra_rp_I2Omega_OuterCirc(int n, int k, int m, double radius, double ra, double rp, double I, double astar, double M);
 double ra_rp_I2Omega_generic(int n_inner, int k_inner, int m_inner, int n_outer, int k_outer, double ra_inner, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M);
