@@ -100,7 +100,7 @@ $(OUTDIR)/Delta_Phi_single: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
 # ==================================================
 
 # You can change these compiler options:
-TEST_CFLAGS = -Wall    
+TEST_CFLAGS = -Wall -g # include -g for degugging output
 TEST_LIBS   = -lm
 TEST_OMPFLAGS = -fopenmp
 TEST_OPENMPLIBS = -fopenmp -lgomp -pthread
