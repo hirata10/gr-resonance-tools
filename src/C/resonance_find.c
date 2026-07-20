@@ -106,15 +106,29 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
                   	+ a*a*z*z;
 		/* Check that the chosen EQL in the radial geodesic quartic give R(ra) = R(rp) = 0 and that R(r_mid) > 0 to ensure the momentum is real within the bound motion */
 		double r_mid = (rp + ra) / 2; // Point within peri and apo
-		double R_geodesic_rp = R_geodesic(rp, temp_E, temp_Q, temp_L, a, M);
-		double R_geodesic_ra = R_geodesic(ra, temp_E, temp_Q, temp_L, a, M);
+		// double R_geodesic_rp = R_geodesic(rp, temp_E, temp_Q, temp_L, a, M);
+		// double R_geodesic_ra = R_geodesic(ra, temp_E, temp_Q, temp_L, a, M);
 		double R_geodesic_midpoint = R_geodesic(r_mid, temp_E, temp_Q, temp_L, a, M);
 
-		if (fabs(R_geodesic_rp) > 1e-10)
+		/* Check that the values of R_geodesic evaluated
+		apo and peri with the temp EQL are zero within some tolerance of dra and drp */
+		double dra = 1e-10 * (M + ra);
+		double ra_plus = ra + dra;
+		double ra_minus = ra - dra;
+		double drp = 1e-10 * (M + rp);
+		double rp_plus = rp + drp;
+		double rp_minus = rp - drp;
+		double R_geodesic_ra_plus = R_geodesic(ra_plus, temp_E, temp_Q, temp_L, a, M);
+		double R_geodesic_ra_minus = R_geodesic(ra_minus, temp_E, temp_Q, temp_L, a, M);
+		double R_geodesic_rp_plus = R_geodesic(rp_plus, temp_E, temp_Q, temp_L, a, M);
+		double R_geodesic_rp_minus = R_geodesic(rp_minus, temp_E, temp_Q, temp_L, a, M);
+		double R_geodesic_midpoint_tol = 1e-12;
+
+		if ((R_geodesic_rp_plus / R_geodesic_rp_minus) > 1)
 			continue;
-		if (fabs(R_geodesic_ra) > 1e-10)
+		if ((R_geodesic_ra_plus / R_geodesic_ra_minus) > 1)
 			continue;
-		if (R_geodesic_midpoint < -1e-12)
+		if ((R_geodesic_midpoint) < -R_geodesic_midpoint_tol)
 			continue;
 		if (temp_L < 0.0) // Restrict to prograde orbits
     		continue;
@@ -258,6 +272,10 @@ double find_resonance_apo_OuterCirc(int n, int k, int m, double radius, double g
         	mold = mid_apo;
         	mid_apo = (guess1 + guess2)/2;
 			rescon_mid = ra_rp_I2Omega_OuterCirc(n, k, m, radius, mid_apo, rp, I, astar, M);
+			if (!isfinite(rescon_mid)) {
+				printf("Warning: Cannot find mid point, exiting...");
+    			return 1;
+			}
 
         	printf("%2d\t\t%.10g\t\t%.10g\t\t%.10g\t\t%.10g\t\t",i++,guess1,guess2,mid_apo,rescon_mid);
 
