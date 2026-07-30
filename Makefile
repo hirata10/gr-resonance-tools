@@ -115,7 +115,8 @@ TEST_EXES = $(TEST_OUTDIR)/J2EQL \
             $(TEST_OUTDIR)/DELTA_EQL \
             $(TEST_OUTDIR)/ORBIT2J \
             $(TEST_OUTDIR)/CHECK_RES_COND \
-            $(TEST_OUTDIR)/RESFIND_APO
+            $(TEST_OUTDIR)/RESFIND_APO \
+            $(TEST_OUTDIR)/RESFIND_APO_GENERIC
 
 # Running "make test" builds all test executables
 test: $(TEST_OUTDIR) $(TEST_EXES)
@@ -211,6 +212,15 @@ $(TEST_OUTDIR)/RESFIND_APO: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
 	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_RESFIND_APO $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Create executable to compute apocenter that via bisection method for resonance orbit with generic outer perturber
+$(TEST_OUTDIR)/RESFIND_APO_GENERIC: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_RESFIND_APO_GENERIC $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
