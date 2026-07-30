@@ -76,13 +76,19 @@ int main(){
 	printf("Enter mode vector: ");
 	scanf("%i %i %i", &n, &k, &m);
 
+	/* Set up interval for bisection to find resonant apocenter */
+	printf("Enter interval to find resonant apocenter: ");
+	scanf("%lf %lf", &guess1, &guess2);
+
 	//printf("Mode vector for outer orbit: ");
 	//scanf("%i %i %i", &n_res_outer, &k_res_outer, &m_res_outer);
 
-	guess1 = peri + 1.5;
-	guess2 = radius_outer - 2.;
+	// guess1 = peri + 1.5;
+	// guess2 = peri +  200.; // NOTE: Trying a smaller outer ra guess due to retrograde orbits being weird
+	// guess2 = radius_outer - 2.; This works fine for most prograde orbits
 
 	apo_res = find_resonance_apo_OuterCirc(n, k, m, radius_outer, guess1, guess2, peri, incline, spin, mass);
+
 	printf("Apocenter for this resonance is = %.15g \n", apo_res);
 	#if 0
 	for (j = 0; j < 1000; j++){
@@ -94,6 +100,42 @@ int main(){
 	#endif
 	
 	//for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
+	return(0);
+}
+#endif
+
+#ifdef IS_RESFIND_APO_GENERIC
+int main(){
+	int n_inner, k_inner, m_inner, n_outer, k_outer;
+	double apo_res, mass, spin, guess1, guess2;
+	double rp_inner, I_inner, ra_outer, rp_outer, I_outer;
+
+	printf("Enter inner pericenter: ");
+	scanf("%lf", &rp_inner);
+	printf("Enter inner inlincation angle (radians): ");
+	scanf("%lf", &I_inner);
+	printf("Enter outer apocenter: ");
+	scanf("%lf", &ra_outer);
+	printf("Enter outer pericenter: ");
+	scanf("%lf", &rp_outer);
+	printf("Enter outer inlincation angle (radians): ");
+	scanf("%lf", &I_outer);
+	printf("Enter central mass: ");
+	scanf("%lf", &mass);
+	printf("Enter spin parameter of BH: ");
+	scanf("%lf", &spin);
+
+	printf("Enter inner and outer mode vector: ");
+	scanf("%i %i %i %i %i", &n_inner, &k_inner, &m_inner, &n_outer, &k_outer);
+
+	/* Set up interval for bisection to find resonant apocenter */
+	printf("Enter interval to find resonant apocenter: ");
+	scanf("%lf %lf", &guess1, &guess2);
+
+	apo_res = find_resonance_apo_OuterGeneric(n_inner, k_inner, m_inner, n_outer, k_outer, guess1, guess2, rp_inner, I_inner, ra_outer, rp_outer, I_outer, spin, mass);
+
+	printf("Apocenter for this resonance is = %.15g \n", apo_res);
+
 	return(0);
 }
 #endif

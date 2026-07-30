@@ -70,6 +70,8 @@ double Omega_outer_direct(double radius, double M, double spin);
 double ra_rp_I2Omega_OuterCirc(int n, int k, int m, double radius, double ra, double rp, double I, double astar, double M);
 double ra_rp_I2Omega_generic(int n_inner, int k_inner, int m_inner, int n_outer, int k_outer, double ra_inner, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M);
 double find_resonance_apo_OuterCirc(int n, int k, int m, double radius, double guess1, double guess2, double rp, double I, double astar, double M);
+double find_resonance_apo_OuterGeneric(int n_inner, int k_inner, int m_inner, int n_outer, int k_outer, double guess1, double guess2, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M);
+
 
 /* J_dot.c: finds the time derivative of the J components for the self-force and tidal field */
 

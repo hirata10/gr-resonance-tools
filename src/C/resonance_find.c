@@ -130,7 +130,7 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 			continue;
 		if ((R_geodesic_midpoint) < -R_geodesic_midpoint_tol)
 			continue;
-		if (temp_L < 0.0) // Restrict to prograde orbits
+		if (temp_L * cos(I) < 0.0) // Restrict to prograde orbits
     		continue;
 		
 		EQL[0] = temp_E;
@@ -193,6 +193,7 @@ double ra_rp_I2Omega_OuterCirc(int n, int k, int m, double radius, double ra, do
 }
 
 /* If you want a both orbits to be generic, then give apocenter, pericenter, and inclination for both */
+/* TODO: Make this the main user in the bisection solver for the resonant apocenter...  */
 double ra_rp_I2Omega_generic(int n_inner, int k_inner, int m_inner, int n_outer, int k_outer, double ra_inner, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M){
 	double EQL_inner[3], EQL_outer[3];
 	double J_inner[3], J_outer[3];
@@ -203,30 +204,52 @@ double ra_rp_I2Omega_generic(int n_inner, int k_inner, int m_inner, int n_outer,
 	double function;
 
 	/* Inner Data */
-	if(rp_inner == 0 && I_inner == 0){
-		Omega_inner[0] = 0;
-		Omega_inner[1] = 0;
-		Omega_inner[2] = Omega_outer_direct(ra_inner, M, astar);
+
+	ra_rp_I2EQL(ra_inner, EQL_inner, rp_inner, I_inner, astar, M);
+	CKerr_EQL2J(EQL_inner, J_inner, M, astar, NULL);
+	CKerr_Minverse(J_inner, Minv_inner, M, astar);
+	CKerr_Minv2Omega(Minv_inner, Omega_inner);
+	for (int i = 0; i < 3; i++) {
+    	if (!isfinite(Omega_inner[i])) {
+        printf("No values of Omega_inner found, exiting...\n");
+        return 1;
+		}
 	}
-	else{
-		ra_rp_I2EQL(ra_inner, EQL_inner, rp_inner, I_inner, astar, M);
-		CKerr_EQL2J(EQL_inner, J_inner, M, astar, NULL);
-		CKerr_Minverse(J_inner, Minv_inner, M, astar);
-		CKerr_Minv2Omega(Minv_inner, Omega_inner);
-	}
+	// if(rp_inner == 0 && I_inner == 0){
+	// 	Omega_inner[0] = 0;
+	// 	Omega_inner[1] = 0;
+	// 	Omega_inner[2] = Omega_outer_direct(ra_inner, M, astar);
+	// }
+	// else{
+	// 	ra_rp_I2EQL(ra_inner, EQL_inner, rp_inner, I_inner, astar, M);
+	// 	CKerr_EQL2J(EQL_inner, J_inner, M, astar, NULL);
+	// 	CKerr_Minverse(J_inner, Minv_inner, M, astar);
+	// 	CKerr_Minv2Omega(Minv_inner, Omega_inner);
+	// }
 	
 	/* Outer Data */
-	if(rp_outer == 0 && I_outer == 0){
-		Omega_outer[0] = 0;
-		Omega_outer[1] = 0;
-		Omega_outer[2] = Omega_outer_direct(ra_outer, M, astar);
+
+	ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
+	CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+	CKerr_Minverse(J_outer, Minv_outer, M, astar);
+	CKerr_Minv2Omega(Minv_outer, Omega_outer);
+	for (int i = 0; i < 3; i++) {
+    	if (!isfinite(Omega_outer[i])) {
+        printf("No values of Omega_outer found, exiting...\n");
+        return 1;
+		}
 	}
-	else{
-		ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
-		CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
-		CKerr_Minverse(J_outer, Minv_outer, M, astar);
-		CKerr_Minv2Omega(Minv_outer, Omega_outer);
-	}
+	// if(rp_outer == 0 && I_outer == 0){
+	// 	Omega_outer[0] = 0;
+	// 	Omega_outer[1] = 0;
+	// 	Omega_outer[2] = Omega_outer_direct(ra_outer, M, astar);
+	// }
+	// else{
+	// 	ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
+	// 	CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+	// 	CKerr_Minverse(J_outer, Minv_outer, M, astar);
+	// 	CKerr_Minv2Omega(Minv_outer, Omega_outer);
+	// }
 	
 
 	//omega_out = Omega_outer_direct(radius, M, astar);
@@ -261,6 +284,11 @@ double find_resonance_apo_OuterCirc(int n, int k, int m, double radius, double g
         	printf("Root is one of interval bounds. Root is %f\n",ra_rp_I2Omega_OuterCirc(n, k, m, radius, guess1, rp, I, astar, M)==0?guess1:guess2);
         	exit(0);
 	}
+
+	if (!isfinite(rescon_guess1) || !isfinite(rescon_guess1)) {
+		printf("Warning: Cannot find mid point, exiting...");
+    	return 1;
+	}
 	printf("Ite\ta\t\tb\t\tmid_apo\t\tf(mid_apo)\t\twidth\t\twidth_tol\n");
 
 	// error tolerances
@@ -272,6 +300,84 @@ double find_resonance_apo_OuterCirc(int n, int k, int m, double radius, double g
         	mold = mid_apo;
         	mid_apo = (guess1 + guess2)/2;
 			rescon_mid = ra_rp_I2Omega_OuterCirc(n, k, m, radius, mid_apo, rp, I, astar, M);
+			if (!isfinite(rescon_mid)) {
+				printf("Warning: Cannot find mid point, exiting...");
+    			return 1;
+			}
+
+        	printf("%2d\t\t%.10g\t\t%.10g\t\t%.10g\t\t%.10g\t\t",i++,guess1,guess2,mid_apo,rescon_mid);
+
+			if(i==1){
+                	printf("NA \t\t NA\n");
+        	}else printf("%.15g \t %.15g \n",width, width_tol);
+
+        	if(fabs(rescon_mid) < ftol){
+                	printf("Root is %.15g \n",mid_apo);
+					break; // Stops when resonance condition is less than tolerance
+        	}
+			
+			else if ((rescon_guess1 * rescon_mid)<0){
+                	guess2 = mid_apo;
+					rescon_guess2 = rescon_mid;
+        	}
+			
+			else {
+				guess1 = mid_apo;
+				rescon_guess1 = rescon_mid;
+			}
+
+			width = fabs(guess2 - guess1); // Updates width after every cycle
+
+        	error=fabs((mid_apo - mold)/mid_apo);
+			width_tol = (xtol_abs + xtol_rel * fabs(mid_apo));
+
+
+	}
+	// while(error>1e-7);
+	while(width > width_tol); // Stop when the width is too narrow
+	printf("Approximate Root is %.15g \n",mid_apo);
+	return(mid_apo);
+	}
+
+	/* Bisection method for finding the apocenter of the resonance condition given the outer (pertuber) body is on a generic orbit */
+double find_resonance_apo_OuterGeneric(int n_inner, int k_inner, int m_inner, int n_outer, int k_outer, double guess1, double guess2, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M){
+	double mid_apo=0;
+	double error=0;
+	int i=0;
+	double mold=0;
+	double rescon_mid;
+	double width = 0., width_tol = 0.;
+
+	double rescon_guess1 = ra_rp_I2Omega_generic(n_inner, k_inner, m_inner, n_outer, k_outer, guess1, rp_inner, I_inner, ra_outer, rp_outer, I_outer, astar, M);
+	double rescon_guess2 = ra_rp_I2Omega_generic(n_inner, k_inner, m_inner, n_outer, k_outer, guess2, rp_inner, I_inner, ra_outer, rp_outer, I_outer, astar, M);
+
+	printf("f at bounds %lg %lg\n",rescon_guess1, rescon_guess2);
+	if(rescon_guess1 * rescon_guess2 > 0){
+        	printf("Value at first and second guess: %lf, %lf \n", rescon_guess1, rescon_guess2);
+        	printf("Invalid Interval Exit! \n");       //to test whether search interval
+        	exit(1);                                                        //is okay or not
+	}
+	else if(fabs(rescon_guess1) < 1e-12 || fabs(rescon_guess2) < 1e-12){
+        	printf("Value at first and second guess: %lf, %lf \n", rescon_guess1, rescon_guess2);
+        	printf("Root is one of interval bounds. Root is %f\n",ra_rp_I2Omega_generic(n_inner, k_inner, m_inner, n_outer, k_outer, guess1, rp_inner, I_inner, ra_outer, rp_outer, I_outer, astar, M)==0?guess1:guess2);
+        	exit(0);
+	}
+
+	if (!isfinite(rescon_guess1) || !isfinite(rescon_guess1)) {
+		printf("Warning: Cannot find mid point, exiting...");
+    	return 1;
+	}
+	printf("Ite\ta\t\tb\t\tmid_apo\t\tf(mid_apo)\t\twidth\t\twidth_tol\n");
+
+	// error tolerances
+	double xtol_abs = 1e-12;
+	double xtol_rel = 1e-12;
+	double ftol = 1e-12;
+
+	do{
+        	mold = mid_apo;
+        	mid_apo = (guess1 + guess2)/2;
+			rescon_mid = ra_rp_I2Omega_generic(n_inner, k_inner, m_inner, n_outer, k_outer, mid_apo, rp_inner, I_inner, ra_outer, rp_outer, I_outer, astar, M);
 			if (!isfinite(rescon_mid)) {
 				printf("Warning: Cannot find mid point, exiting...");
     			return 1;
