@@ -498,6 +498,7 @@ int main(int argc, char **argv){
 #endif
 
 #ifdef IS_ORBIT2J
+//TODO: Clean up how we discern between circular, eccentric, equatorial, and inclined orbits
 int main(int argc, char **argv){
 	double J[3], EQL[3], Omega[3], anc[3], info[6];
 	double apo, peri, inc, radius;
