@@ -43,6 +43,14 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 	double which_ratio[2];
 	double R_geodesic(double, double, double, double, double, double);
 
+	// /* Check if the orbit is near circular (e ~ 10^-5), if so, adjust the orbit to not be too circular */
+	// double eccen = (ra - rp) / (ra + rp);
+
+	// if (eccen < 1.e-5) {
+	// 	double e_min = 1.e-5;
+	// 	ra = rp * (1 + e_min) / (1 - e_min);
+	// 	// printf("Adjusting apocenter to %.15g \n", ra);
+	// }
 
 	/* Defining the coefficients that will appear in the conic section expression for EL relation */
 	a = astar*M;
@@ -67,7 +75,7 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 	constant_prefactor_ratio_LE = Coeff_rp[0]*Coeff_ra[3] - Coeff_ra[0]*Coeff_rp[3];
 	discriminant = linear_prefactor_ratio_LE*linear_prefactor_ratio_LE - 4*squared_prefactor_ratio_LE*constant_prefactor_ratio_LE;
 
-	/*printf("squared coeff.: %E, linear coeff.: %E, constant coeff.: %E, discriminant: %E \n", squared_prefactor_ratio_LE, linear_prefactor_ratio_LE, constant_prefactor_ratio_LE, discriminant);*/
+	// printf("squared coeff.: %E, linear coeff.: %E, constant coeff.: %E, discriminant: %E \n", squared_prefactor_ratio_LE, linear_prefactor_ratio_LE, constant_prefactor_ratio_LE, discriminant);
 
 	/* The two solutions from the ratio quadratic */
 	which_ratio[0] = (-linear_prefactor_ratio_LE + sqrt(discriminant))/(2*squared_prefactor_ratio_LE);
