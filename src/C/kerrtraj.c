@@ -9,6 +9,7 @@
 #define CKERR_ACTION_MAX 1e49
 #define CKERR_NPOINT_DERIV 3
 #define CKERR_DACTION_DERIV 5e-4
+#define CKERR_ACTION_TOL 1e-12
 
 /* Routine to convert (E,Q,L) --> (Jr,Jtheta,Jphi).
  * Returns 1 if successful, 0 if no orbit with those parameters (energy too low or Q<0), and
@@ -127,13 +128,16 @@ int CKerr_EQL2J(double *EQL, double *J, double M, double astar, double *ancillar
   /* Are these peaks successively below and above zero? */
   r = rpeak;
   if ( (((c[4]*r+c[3])*r+c[2])*r+c[1])*r+c[0] < 0 ) returnflag=0;
+#if 0
+fprintf(stderr, "at rpeak: %12.5le,%12.5le,%12.5le\n", r, (((c[4]*r+c[3])*r+c[2])*r+c[1])*r+c[0], ((4.*c[4]*r + 3.*c[3])*r + 2.*c[2])*r + c[1]);
+#endif  
   r = rdip;
   if ( (((c[4]*r+c[3])*r+c[2])*r+c[1])*r+c[0] > 0 ) {
     returnflag=0;
     if (inflsign==0) returnflag = 2;
   }
 #if 0
-fprintf(stderr, "%12.5le,%12.5le,%12.5le\n", r, (((c[4]*r+c[3])*r+c[2])*r+c[1])*r+c[0], ((4.*c[4]*r + 3.*c[3])*r + 2.*c[2])*r + c[1]);
+fprintf(stderr, "at rdip: %12.5le,%12.5le,%12.5le\n", r, (((c[4]*r+c[3])*r+c[2])*r+c[1])*r+c[0], ((4.*c[4]*r + 3.*c[3])*r + 2.*c[2])*r + c[1]);
 #endif
 
   /* Find turning points */
@@ -233,8 +237,12 @@ double CKerr_Emax(double Q, double L, double M, double astar, double *Jrmax) {
   double EQL[3], J[3];
 
   EQL[1] = Q; EQL[2] = L;
-
   EQL[0] = CKerr_Emin(Q,L,M,astar);
+  #if 0
+  fprintf(stderr,
+        "CKerr_Emax: Emin = %.17e, Q = %.17e, L = %.17e\n",
+        EQL[0], EQL[1], EQL[2]);
+  #endif
   if (EQL[0]<0.95) {
     delta = (1.-EQL[0]) * 0.1;
     while(CKerr_EQL2J(EQL,J,M,astar,NULL)<2) {
@@ -259,6 +267,11 @@ double CKerr_Emax(double Q, double L, double M, double astar, double *Jrmax) {
     if (CKerr_EQL2J(EQL,J,M,astar,NULL)==0) *Jrmax=0;
     EQL[0] += CKERR_J_TOL;
   }
+  #if 0
+  fprintf(stderr,
+        "CKerr_Emax: Emax = %.17e, Jrmax = %.17e\n",
+        EQL[0], Jrmax != NULL ? *Jrmax : -999.);
+  #endif
   return(EQL[0]);
 }
 
@@ -275,8 +288,20 @@ double CKerr_QLJr2E(double Q, double L, double Jr, double M, double astar, doubl
   Emax = CKerr_Emax(Q,L,M,astar,&Jrmax);
 
   if (Jr<0) return(-2);
-  if (Jr>Jrmax) return(2);
+  // if (Jr>Jrmax) return(2);
+  if (Jr > Jrmax) {
 
+    #if 0
+    printf("QLJr2E FAILURE: Jr > Jrmax\n");
+    printf("  Q     = %.17e\n", Q);
+    printf("  L     = %.17e\n", L);
+    printf("  Jr    = %.17e\n", Jr);
+    printf("  Jrmax = %.17e\n", Jrmax);
+    printf("  Emin  = %.17e\n", Emin);
+    printf("  Emax  = %.17e\n", Emax);
+    #endif
+    return(2);
+}
   EQL[1] = Q; EQL[2] = L;
 
   /* Bisection to get the energy */
@@ -303,14 +328,90 @@ double CKerr_QLJr2E(double Q, double L, double Jr, double M, double astar, doubl
   return(EQL[0]);
 }
 
+// /* Takes in an action J and sets the energy, Carter constant, and angular momentum.
+//  * Returns 1 (successful) or 0 (failed: Jr too large).
+//  */
+// int CKerr_J2EQL(double *J, double *EQL, double M, double astar) {
+
+//   int i;
+//   int id=0,iu=0;
+//   double current_E, current_Jtheta, delta;
+
+//   /* Angular momentum is azimuthal action */
+//   EQL[2] = J[2];
+
+//   /* The rest of this is a 2D nonlinear equation solver.  We first guess the Carter constant,
+//    * and then iterate until the desired J_theta is obtained.
+//    */
+//   EQL[1] = J[1]*J[1]+2*J[1]*fabs(J[2]); /* Guess */ // Modified then J[2] --> fabs(J[2]) to account for L<0
+
+//   /* Final bisection in negative powers of 2 */
+//   delta = sqrt(2.);
+//   for(i=0;i<CKERR_NBISECT_ITER;i++) {
+//     current_E = CKerr_QLJr2E(EQL[1],J[2],J[0],M,astar,&current_Jtheta);
+//     #if 1
+//     printf("\nFIRST LOOP iteration %d\n", i);
+//     printf("Q                = %.17e\n", EQL[1]);
+//     printf("current_E RAW    = %.17e\n", current_E);
+//     printf("target Jtheta    = %.17e\n", J[1]);
+//     printf("current Jtheta RAW = %.17e\n", current_Jtheta);
+//     printf("difference RAW   = %.17e\n",
+//            current_Jtheta - J[1]);
+//     #endif
+//     if (current_E<-1) current_Jtheta = -CKERR_ACTION_MAX;
+//     if (current_E>1) current_Jtheta = CKERR_ACTION_MAX;
+//       /* Check if the inital Q and guess Q are the same */
+//   double tol = CKERR_ACTION_TOL * fmax(1.0, fabs(J[1]));
+
+//   if (fabs(current_Jtheta - J[1]) <= tol &&
+//     fabs(current_E) <= 1.0) {
+
+//     EQL[0] = current_E;
+//     return 1;
+// }
+//     #if 1
+//     printf("current Jtheta AFTER sentinel = %.17e\n",
+//            current_Jtheta);
+//     #endif
+//     EQL[1] *= current_Jtheta<J[1]? delta: 1./delta;
+//     #if 1
+//     printf("Q after update   = %.17e\n", EQL[1]);
+//     #endif
+//     if (current_Jtheta<J[1]) {iu++;} else {id++;}
+//     if (iu*id>0) break;
+//   }
+//   for(i=0;i<CKERR_NBISECT_ITER;i++) {
+//     current_E = CKerr_QLJr2E(EQL[1],J[2],J[0],M,astar,&current_Jtheta);
+//     if (current_E<-1) current_Jtheta = -CKERR_ACTION_MAX;
+//     if (current_E>1) current_Jtheta = CKERR_ACTION_MAX;
+// #if 0
+//     if (fabs(current_E)>1) current_Jtheta = -CKERR_ACTION_MAX;
+// #endif
+//     EQL[1] *= current_Jtheta<J[1]? delta: 1./delta;
+//     delta=sqrt(delta);
+//     #if 0
+//     printf("target Jtheta  = %.17e\n", J[1]);
+//     printf("current Jtheta = %.17e\n", current_Jtheta);
+//     printf("difference     = %.17e\n",
+//           current_Jtheta - J[1]);
+//     printf("Q before       = %.17e\n", EQL[1]);
+//     #endif
+//   }
+
+//   EQL[0] = current_E;
+//   if (fabs(EQL[0])>1) return(0);
+//   return(1);
+// }
+
 /* Takes in an action J and sets the energy, Carter constant, and angular momentum.
  * Returns 1 (successful) or 0 (failed: Jr too large).
+ * Modified Q-bisection solver, if EQL[0]=2, increase Q and check again
  */
 int CKerr_J2EQL(double *J, double *EQL, double M, double astar) {
-
-  int i;
-  int id=0,iu=0;
-  double current_E, current_Jtheta, delta;
+int i;
+int id=0,iu=0;
+double current_E, current_Jtheta, delta;
+double tol;
 
   /* Angular momentum is azimuthal action */
   EQL[2] = J[2];
@@ -320,30 +421,105 @@ int CKerr_J2EQL(double *J, double *EQL, double M, double astar) {
    */
   EQL[1] = J[1]*J[1]+2*J[1]*fabs(J[2]); /* Guess */ // Modified then J[2] --> fabs(J[2]) to account for L<0
 
+  /* Set tolerance for J_theta convergence */
+  tol = CKERR_ACTION_TOL * fmax(1.0, fabs(J[1]));
+
   /* Final bisection in negative powers of 2 */
   delta = sqrt(2.);
   for(i=0;i<CKERR_NBISECT_ITER;i++) {
+
     current_E = CKerr_QLJr2E(EQL[1],J[2],J[0],M,astar,&current_Jtheta);
+    #if 1
+    printf("\nFIRST LOOP iteration %d\n", i);
+    printf("Q                = %.17e\n", EQL[1]);
+    printf("current_E RAW    = %.17e\n", current_E);
+    printf("target Jtheta    = %.17e\n", J[1]);
+    printf("current Jtheta RAW = %.17e\n", current_Jtheta);
+    #endif
+
+    /* If the requested Jr does not exist at this Q, increase Q */
+    if (current_E>1) {
+      EQL[1] *= delta;
+      iu++;
+      #if 1
+      printf("current_E > 1: increasing Q\n");
+      printf("Q after update   = %.17e\n", EQL[1]);
+      #endif
+      continue;
+    }
+
     if (current_E<-1) current_Jtheta = -CKERR_ACTION_MAX;
-    if (current_E>1) current_Jtheta = CKERR_ACTION_MAX;
+    #if 1
+    printf("difference RAW   = %.17e\n",
+           current_Jtheta - J[1]);
+    #endif
+    /* Check if the initial Q and guess Q are the same */
+    if (fabs(current_Jtheta - J[1]) <= tol &&
+      fabs(current_E) <= 1.0) {
+      EQL[0] = current_E;
+      return 1;
+    }
+
+    #if 1
+    printf("current Jtheta AFTER sentinel = %.17e\n",
+           current_Jtheta);
+    #endif
+
     EQL[1] *= current_Jtheta<J[1]? delta: 1./delta;
+
+    #if 1
+    printf("Q after update   = %.17e\n", EQL[1]);
+    #endif
+
     if (current_Jtheta<J[1]) {iu++;} else {id++;}
     if (iu*id>0) break;
-  }
-  for(i=0;i<CKERR_NBISECT_ITER;i++) {
-    current_E = CKerr_QLJr2E(EQL[1],J[2],J[0],M,astar,&current_Jtheta);
-    if (current_E<-1) current_Jtheta = -CKERR_ACTION_MAX;
-    if (current_E>1) current_Jtheta = CKERR_ACTION_MAX;
-#if 0
-    if (fabs(current_E)>1) current_Jtheta = -CKERR_ACTION_MAX;
-#endif
-    EQL[1] *= current_Jtheta<J[1]? delta: 1./delta;
-    delta=sqrt(delta);
+
   }
 
+  for(i=0;i<CKERR_NBISECT_ITER;i++) {
+
+    current_E = CKerr_QLJr2E(EQL[1],J[2],J[0],M,astar,&current_Jtheta);
+
+    /* If the requested Jr does not exist at this Q, increase Q */
+    if (current_E>1) {
+      EQL[1] *= delta;
+      delta=sqrt(delta);
+      continue;
+    }
+
+    if (current_E<-1) current_Jtheta = -CKERR_ACTION_MAX;
+
+    #if 0
+    if (fabs(current_E)>1) current_Jtheta = -CKERR_ACTION_MAX;
+    #endif
+
+    /* Check if the current Q has converged */
+    if (fabs(current_Jtheta - J[1]) <= tol &&
+      fabs(current_E) <= 1.0) {
+        EQL[0] = current_E;
+        return 1;
+      }
+
+    EQL[1] *= current_Jtheta<J[1]? delta: 1./delta;
+    delta=sqrt(delta);
+
+    #if 0
+    printf("target Jtheta  = %.17e\n", J[1]);
+    printf("current Jtheta = %.17e\n", current_Jtheta);
+    printf("difference     = %.17e\n",
+          current_Jtheta - J[1]);
+    printf("Q before       = %.17e\n", EQL[1]);
+    #endif
+
+  }
+
+  /* Recompute E using the final Q */
+  current_E = CKerr_QLJr2E(EQL[1],J[2],J[0],M,astar,&current_Jtheta);
   EQL[0] = current_E;
   if (fabs(EQL[0])>1) return(0);
+
   return(1);
+
 }
 
 /* Computes the derivatives of the energy and Carter constant with respect to each
@@ -487,6 +663,12 @@ int CKerr_Minverse(double *J, double *Minv, double M, double astar) {
 
   /* Get ~E,Q,~L and ancillary data */
   flag = CKerr_J2EQL(J,EQL,M,astar);
+  #if 0
+  printf("Recovered EQL:\n");
+  printf("  E = %.17e\n", EQL[0]);
+  printf("  Q = %.17e\n", EQL[1]);
+  printf("  L = %.17e\n", EQL[2]);
+  #endif
   if (flag==0) return(0);
   CKerr_EQL2J(EQL,newJ,M,astar,ancillary);
   a = M*astar;
