@@ -655,7 +655,7 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
   // CKerr_Minv2Omega(Minv_inner, Omega_inner);
 
   // Outer body apocenter, pericenter, inclination -> EQL and Minv
-  // TODO: Clean up how to pass orbit data for circular, equatorial, inclined, and/or eccentric orbits
+  // TODO: If given a near circular orbit, make the apocenter and pericenter differ by 0.001 (may change depending on numerical accuracies)
   double circ_check = (ra_outer - rp_outer) / rp_outer; // Check this orbit is near circular
   if ((ra_outer < 1.e-12 && rp_outer < 1.e-12 && I_outer < 1.e-12) || (fabs(circ_check) < 1e-5)) {
     radius_outer = rp_outer; // Update outer radius if this system is nearly circular
