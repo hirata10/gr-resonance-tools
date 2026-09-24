@@ -472,12 +472,14 @@ int main(int argc, char **argv){
 int main(int argc, char **argv){
 	double J[3], EQL[3], anc[3];
 	double apo, peri, inc;
-	double mass = GLOBALPAR_M, spin = GLOBALPAR_astar;
+	double mass, spin;
 
-	/* Look for Jr, J_theta, and J_phi on command line */
+	/* Look for Jr, J_theta, and J_phi and mass and spin of SMBH on command line */
 	sscanf(argv[1], "%lg", &J[0]);
 	sscanf(argv[2], "%lg", &J[1]);
 	sscanf(argv[3], "%lg", &J[2]);
+	sscanf(argv[4], "%lg", &mass);
+	sscanf(argv[5], "%lg", &spin);
 
 	CKerr_J2EQL(J, EQL, mass, spin);
 	CKerr_EQL2J(EQL, J, mass, spin, anc);
@@ -489,9 +491,9 @@ int main(int argc, char **argv){
 
 	double eccen = (ra - rp) / (ra + rp);
 
-	printf("I, rp, ra, eccentricity: %lg %lg %lg %lg \n", I, rp, ra, eccen);
+	printf("I, rp, ra, eccentricity: %.15g %.15g %.15g %.15g \n", I, rp, ra, eccen);
 
-	printf("EQL: %lg %lg %lg \n", EQL[0], EQL[1], EQL[2]);
+	printf("EQL: %.15g %.15g %.15g \n", EQL[0], EQL[1], EQL[2]);
 
 	return(0);
 }
@@ -549,14 +551,13 @@ int main(int argc, char **argv){
 		printf("EQL: %.15g, %.15g, %.15g \n", EQL[0], EQL[1], EQL[2]);
 
 		// Convert EQL to J and check anc matches inputted orbit data (anc[0] = inclination, anc[1] = pericenter, anc[2] = apocenter)
-		CKerr_EQL2J(EQL, J, mass, spin, anc);
+		int flag_EQL2J = CKerr_EQL2J(EQL, J, mass, spin, anc);
+		printf("J_r, J_theta, J_phi, flag_EQL2J: %.15g %.15g %.15g %d \n", J[0], J[1], J[2], flag_EQL2J);
 		CKerr_Minverse(J, Minv, mass, spin);
 		// invertMatrix(Minv, M_res); // From kerrphase.c; computes the matrix of partial derivatives of EQL w.r.t Js
 		CKerr_Minv2Omega(Minv, Omega);
 
 		double eccen = (anc[2] - anc[1]) / (anc[2] + anc[1]);
-
-		printf("J_r, J_theta, J_phi: %.15g %.15g %.15g \n", J[0], J[1], J[2]);
 		printf("Omega_r, Omega_theta, Omega_phi: %.15g %.15g %.15g \n", Omega[0], Omega[1], Omega[2]);
 		printf("eccentricity: %.15g \n", eccen);
 
