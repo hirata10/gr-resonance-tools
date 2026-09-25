@@ -6,6 +6,7 @@
 #define CKERR_NBISECT_ITER2 32
 #define CKERR_RESOLUTION_J_INTEG 64
 #define CKERR_J_TOL 1e-9
+#define CKERR_ENERGY_BOUNDARY_TOL 1e-14
 #define CKERR_ACTION_MAX 1e49
 #define CKERR_NPOINT_DERIV 3
 #define CKERR_DACTION_DERIV 5e-4
@@ -263,9 +264,9 @@ double CKerr_Emax(double Q, double L, double M, double astar, double *Jrmax) {
 
   if (Jrmax!=NULL) {
     *Jrmax = EQL[0]<1? J[0]: CKERR_ACTION_MAX;
-    EQL[0] -= CKERR_J_TOL;
+    EQL[0] -= CKERR_ENERGY_BOUNDARY_TOL;
     if (CKerr_EQL2J(EQL,J,M,astar,NULL)==0) *Jrmax=0;
-    EQL[0] += CKERR_J_TOL;
+    EQL[0] += CKERR_ENERGY_BOUNDARY_TOL;
   }
   #if 0
   fprintf(stderr,
@@ -321,10 +322,10 @@ double CKerr_QLJr2E(double Q, double L, double Jr, double M, double astar, doubl
   if (Jtheta!=NULL) *Jtheta=J[1];
 
   /* Return a failure if we are below zero action. */
-  EQL[0] += CKERR_J_TOL;
+  EQL[0] += CKERR_ENERGY_BOUNDARY_TOL;
   flag=CKerr_EQL2J(EQL,J,M,astar,NULL);
   if (flag==0) return(-2);
-  EQL[0] -= CKERR_J_TOL;
+  EQL[0] -= CKERR_ENERGY_BOUNDARY_TOL;
   return(EQL[0]);
 }
 
@@ -1207,6 +1208,7 @@ double CKerr_FindISCO(double Ic, double M, double astar) {
 #undef CKERR_NBISECT_ITER2
 #undef CKERR_RESOLUTION_J_INTEG
 #undef CKERR_J_TOL
+#undef CKERR_ENERGY_BOUNDARY_TOL
 #undef CKERR_ACTION_MAX
 #undef CKERR_NPOINT_DERIV
 #undef CKERR_DACTION_DERIV
