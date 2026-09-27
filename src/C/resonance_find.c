@@ -120,10 +120,13 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 
 		/* Check that the values of R_geodesic evaluated
 		apo and peri with the temp EQL are zero within some tolerance of dra and drp */
-		double dra = 1e-10 * (M + ra);
+		double radial_width = ra - rp;
+		double drp = fmin(1e-2*radial_width, 1e-6*(M + rp)); // Uses first condition for when the two roots are close
+		double dra = fmin(1e-2*radial_width, 1e-6*(M + ra));
+		//double dra = 1e-10 * (M + ra);
 		double ra_plus = ra + dra;
 		double ra_minus = ra - dra;
-		double drp = 1e-10 * (M + rp);
+		//double drp = 1e-10 * (M + rp);
 		double rp_plus = rp + drp;
 		double rp_minus = rp - drp;
 		double R_geodesic_ra_plus = R_geodesic(ra_plus, temp_E, temp_Q, temp_L, a, M);
@@ -147,7 +150,7 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 		return;
 	}
 	if (isnan(EQL[0]) || isnan(EQL[1]) || isnan(EQL[2])) {
-		printf("Warning: No physical EQL found! \n");
+		printf("resonance_find.c: Warning: No physical EQL found! \n");
 	}
 }
 
