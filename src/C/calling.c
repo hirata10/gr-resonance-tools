@@ -232,7 +232,6 @@ int main(int argc, char **argv){
 	double J_dot_sf[3], J_dot_td[3], Delta_EQL_dot_tidal[3];
 	double J_inner[3], J_outer[3], EQL_inner[3], EQL_outer[3], anc_inner[3], anc_outer[3];
 	double angle_space, angle_step, L_dot[50], Jr_dot[50], Jtheta_dot[50], Kepler_torque[50];
-	// double L_dot, Jr_dot, Jtheta_dot;
 	double Minv_inner[9], Minv_outer[9], M_res[9], Ident[9], Omega_inner[3], Omega_outer[3];
 	int nl = GLOBALPAR_nl_res, nmax = GLOBALPAR_nmax, kmax = GLOBALPAR_kmax, mmax = GLOBALPAR_mmax, nl_self = GLOBALPAR_nl_self, N_res = GLOBALPAR_N_res;
 	int n_res_inner, k_res_inner, m_res_inner;
@@ -240,8 +239,10 @@ int main(int argc, char **argv){
 	double ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, radius_outer=0., guess1, guess2, angle_torus;
 	// double mass = GLOBALPAR_M, spin = GLOBALPAR_astar, mu_outer = GLOBALPAR_mu_outer;
 	double mass, spin, mu_outer;
+	int omp_threads;
+	int veclib_threads;
 
-	if (argc == 17) {
+	if (argc == 19) {
     // command-line mode
     sscanf(argv[1], "%lf", &J_inner[0]);
     sscanf(argv[2], "%lf", &J_inner[1]);
@@ -259,64 +260,38 @@ int main(int argc, char **argv){
 	sscanf(argv[14], "%lf", &mass);
     sscanf(argv[15], "%lf", &spin);
     sscanf(argv[16], "%lf", &mu_outer);
-
-
+	sscanf(argv[17], "%d", &omp_threads);
+    sscanf(argv[18], "%d", &veclib_threads);
 	} 
 	else {
     // stdin mode (works with < file)
-    	if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %d %lf %lf %lf %lf",
+    	if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %d %lf %lf %lf %lf %d %d",
               &J_inner[0], &J_inner[1], &J_inner[2],
               &J_outer[0], &J_outer[1], &J_outer[2],
               &n_res_inner, &k_res_inner, &m_res_inner,
               &n_res_outer, &k_res_outer, &m_res_outer,
-              &angle_torus, &mass, &spin, &mu_outer) != 16) {
+              &angle_torus, &mass, &spin, &mu_outer, &omp_threads, &veclib_threads) != 18) {
 
-        fprintf(stderr, "Error: expected 16 inputs\n");
+        fprintf(stderr, "Error: expected 18 inputs\n");
         return 1;
     	}
 	}
-	
-	// sscanf(argv[1], "%lg", &J_inner[0]);
-	// sscanf(argv[2], "%lg", &J_inner[1]);
-	// sscanf(argv[3], "%lg", &J_inner[2]);
-	// sscanf(argv[4], "%lg", &J_outer[0]);
-	// sscanf(argv[5], "%lg", &J_outer[1]);
-	// sscanf(argv[6], "%lg", &J_outer[2]);
-	// sscanf(argv[7], "%d", &n_res_inner);
-	// sscanf(argv[8], "%d", &k_res_inner);
-	// sscanf(argv[9], "%d", &m_res_inner);
-	// sscanf(argv[10], "%d", &n_res_outer);
-	// sscanf(argv[11], "%d", &k_res_outer);
-	// sscanf(argv[12], "%d", &m_res_outer);
-	// sscanf(argv[13], "%lg", &angle_torus);
+	/* Check thread inputs */
+	if (omp_threads < 1 || veclib_threads < 1) {
+    	fprintf(stderr,
+            	"Error: thread counts must be >= 1\n");
+    	return 1;
+	}
 
-	#if 0
-	// printf("Enter inner pericenter: ");
-	// scanf("%lf", &rp_inner);
-	// printf("Enter inner inlincation angle (radians): ");
-	// scanf("%lf", &I_inner);
-	// printf("Enter central mass: ");
-	// scanf("%lf", &mass);
-	// printf("Enter spin parameter of BH: ");
-	// scanf("%lf", &spin);
-	printf("Enter radius of outer orbit (if applicable): ");
-	scanf("%lf", &radius_outer);
-	// printf("Enter inner apocenter: ");
-	// scanf("%lf", &ra_inner);
+	/* Set OpenMP thread count */
+	omp_set_num_threads(omp_threads);
 
-	// printf("Enter outer pericenter: ");
-	// scanf("%lf", &rp_outer);
-	// printf("Enter outer inlincation angle (radians): ");
-	// scanf("%lf", &I_outer);
-	// printf("Enter outer apocenter: ");
-	// scanf("%lf", &ra_outer);
+	/* Set vecLib thread count */
+	#ifdef __APPLE__
+	char veclib_threads_str[16];
+	snprintf(veclib_threads_str, sizeof(veclib_threads_str), "%d", veclib_threads);
 
-	printf("Enter J_inner components: ");
-	scanf("%lg %lg %lg", &J_inner[0], &J_inner[1], &J_inner[2]);
-
-	printf("Enter J_outer components: ");
-	scanf("%lg %lg %lg", &J_outer[0], &J_outer[1], &J_outer[2]);
-
+	setenv("VECLIB_MAXIMUM_THREADS", veclib_threads_str, 1);
 	#endif
 
 	/* Inner Body data */
