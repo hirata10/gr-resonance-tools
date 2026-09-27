@@ -430,7 +430,7 @@ double tol;
   for(i=0;i<CKERR_NBISECT_ITER;i++) {
 
     current_E = CKerr_QLJr2E(EQL[1],J[2],J[0],M,astar,&current_Jtheta);
-    #if 1
+    #if 0
     printf("\nFIRST LOOP iteration %d\n", i);
     printf("Q                = %.17e\n", EQL[1]);
     printf("current_E RAW    = %.17e\n", current_E);
@@ -442,7 +442,7 @@ double tol;
     if (current_E>1) {
       EQL[1] *= delta;
       iu++;
-      #if 1
+      #if 0
       printf("current_E > 1: increasing Q\n");
       printf("Q after update   = %.17e\n", EQL[1]);
       #endif
@@ -450,7 +450,7 @@ double tol;
     }
 
     if (current_E<-1) current_Jtheta = -CKERR_ACTION_MAX;
-    #if 1
+    #if 0
     printf("difference RAW   = %.17e\n",
            current_Jtheta - J[1]);
     #endif
@@ -461,14 +461,14 @@ double tol;
       return 1;
     }
 
-    #if 1
+    #if 0
     printf("current Jtheta AFTER sentinel = %.17e\n",
            current_Jtheta);
     #endif
 
     EQL[1] *= current_Jtheta<J[1]? delta: 1./delta;
 
-    #if 1
+    #if 0
     printf("Q after update   = %.17e\n", EQL[1]);
     #endif
 
