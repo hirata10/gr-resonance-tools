@@ -650,21 +650,50 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
 
   // Inner body apocenter, pericenter, inclination -> EQL and Minv
   ra_rp_I2EQL(ra_inner, EQL_inner, rp_inner, I_inner, astar, M);
+  for (int i = 0; i < 3; i++) {
+    	if (!isfinite(EQL_inner[i])) {
+        printf("J_dot.c: No values of EQL_inner found, exiting...\n");
+        exit(1);
+		}
+	}
+
   CKerr_EQL2J(EQL_inner, J_inner, M, astar, NULL);
+  for (int i = 0; i < 3; i++) {
+    	if (!isfinite(J_inner[i])) {
+        printf("J_dot.c: No values of J_inner found, exiting...\n");
+        exit(1);
+		}
+	}
+
   CKerr_Minverse(J_inner, Minv_inner, M, astar);
   // CKerr_Minv2Omega(Minv_inner, Omega_inner);
 
   // Outer body apocenter, pericenter, inclination -> EQL and Minv
-  // TODO: If given a near circular orbit, make the apocenter and pericenter differ by 0.001 (may change depending on numerical accuracies)
-  double circ_check = (ra_outer - rp_outer) / rp_outer; // Check this orbit is near circular
-  if ((ra_outer < 1.e-12 && rp_outer < 1.e-12 && I_outer < 1.e-12) || (fabs(circ_check) < 1e-5)) {
-    radius_outer = rp_outer; // Update outer radius if this system is nearly circular
-    CKerr_FindEQL_IRCirc(0, radius_outer, EQL_outer, M, astar);
-  } else {
-    ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
-  }
+  // // TODO: If given a near circular orbit, make the apocenter and pericenter differ by 0.001 (may change depending on numerical accuracies)
+  // double circ_check = (ra_outer - rp_outer) / rp_outer; // Check this orbit is near circular
+  // if ((ra_outer < 1.e-12 && rp_outer < 1.e-12 && I_outer < 1.e-12) || (fabs(circ_check) < 1e-5)) {
+  //   radius_outer = rp_outer; // Update outer radius if this system is nearly circular
+  //   CKerr_FindEQL_IRCirc(0, radius_outer, EQL_outer, M, astar);
+  // } else {
+  //   ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
+  // }
+
+  ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
+  for (int i = 0; i < 3; i++) {
+    	  if (!isfinite(EQL_outer[i])) {
+          printf("J_dot.c: No values of EQL_outer found, exiting...\n");
+          exit(1);
+	    }
+	  }
 
   CKerr_EQL2J(EQL_outer, J_outer, M, astar, NULL);
+  for (int i = 0; i < 3; i++) {
+    	if (!isfinite(J_outer[i])) {
+        printf("J_dot.c: No values of J_outer found, exiting...\n");
+        exit(1);
+		}
+	}
+  
   CKerr_Minverse(J_outer, Minv_outer, M, astar);
 
   // Set up initial conditions to integrate on tori
