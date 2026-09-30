@@ -95,8 +95,8 @@ void J_dot_tidal_openmp(
     double I_outer,
     double M, double astar,
     double theta_res_F,
-    double mu_outer,
-    double *J_dot_td);
+    double mu_inner, double mu_outer,
+    double *J_dot_td_inner, double *J_dot_td_outer);
     
 // Compute Keplerian torque
 double J_dot_phi_Kepler(double mu_outer, double r_outer, double apo, double peri, double incline, double Theta_res);

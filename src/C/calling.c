@@ -229,20 +229,20 @@ int main(int argc, char **argv){
 	int j;
 	double J_dot_r, J_dot_theta, J_dot_phi;
 	double J_dot_r_tidal, J_dot_theta_tidal, J_dot_phi_tidal;
-	double J_dot_sf[3], J_dot_td[3], Delta_EQL_dot_tidal[3];
+	double J_dot_sf[3], J_dot_td_inner[3], J_dot_td_outer[3], EQL_dot_tidal_inner[3], EQL_dot_tidal_outer[3];
 	double J_inner[3], J_outer[3], EQL_inner[3], EQL_outer[3], anc_inner[3], anc_outer[3];
 	double angle_space, angle_step, L_dot[50], Jr_dot[50], Jtheta_dot[50], Kepler_torque[50];
-	double Minv_inner[9], Minv_outer[9], M_res[9], Ident[9], Omega_inner[3], Omega_outer[3];
+	double Minv_inner[9], Minv_outer[9], M_res_inner[9], M_res_outer[9], Ident_inner[9], Ident_outer[9], Omega_inner[3], Omega_outer[3];
 	int nl = GLOBALPAR_nl_res, nmax = GLOBALPAR_nmax, kmax = GLOBALPAR_kmax, mmax = GLOBALPAR_mmax, nl_self = GLOBALPAR_nl_self, N_res = GLOBALPAR_N_res;
 	int n_res_inner, k_res_inner, m_res_inner;
 	int n_res_outer, k_res_outer, m_res_outer;
 	double ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, radius_outer=0., guess1, guess2, angle_torus;
 	// double mass = GLOBALPAR_M, spin = GLOBALPAR_astar, mu_outer = GLOBALPAR_mu_outer;
-	double mass, spin, mu_outer;
+	double mass, spin, mu_outer, mu_inner;
 	int omp_threads;
 	int veclib_threads;
 
-	if (argc == 19) {
+	if (argc == 20) {
     // command-line mode
     sscanf(argv[1], "%lf", &J_inner[0]);
     sscanf(argv[2], "%lf", &J_inner[1]);
@@ -259,20 +259,21 @@ int main(int argc, char **argv){
     sscanf(argv[13], "%lf", &angle_torus);
 	sscanf(argv[14], "%lf", &mass);
     sscanf(argv[15], "%lf", &spin);
-    sscanf(argv[16], "%lf", &mu_outer);
-	sscanf(argv[17], "%d", &omp_threads);
-    sscanf(argv[18], "%d", &veclib_threads);
+	sscanf(argv[16], "%lf", &mu_inner);
+    sscanf(argv[17], "%lf", &mu_outer);
+	sscanf(argv[18], "%d", &omp_threads);
+    sscanf(argv[19], "%d", &veclib_threads);
 	} 
 	else {
     // stdin mode (works with < file)
-    	if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %d %lf %lf %lf %lf %d %d",
+    	if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %d %lf %lf %lf %lf %lf %d %d",
               &J_inner[0], &J_inner[1], &J_inner[2],
               &J_outer[0], &J_outer[1], &J_outer[2],
               &n_res_inner, &k_res_inner, &m_res_inner,
               &n_res_outer, &k_res_outer, &m_res_outer,
-              &angle_torus, &mass, &spin, &mu_outer, &omp_threads, &veclib_threads) != 18) {
+              &angle_torus, &mass, &spin, &mu_inner, &mu_outer, &omp_threads, &veclib_threads) != 19) {
 
-        fprintf(stderr, "Error: expected 18 inputs\n");
+        fprintf(stderr, "Error: expected 19 inputs\n");
         return 1;
     	}
 	}
@@ -298,12 +299,13 @@ int main(int argc, char **argv){
 	CKerr_J2EQL(J_inner, EQL_inner, mass, spin);
 	CKerr_EQL2J(EQL_inner, J_inner, mass, spin, anc_inner);
 	CKerr_Minverse(J_inner, Minv_inner, mass, spin);
-	invertMatrix(Minv_inner, M_res); // From kerrphase.c; computes the matrix of partial derivatives of EQL w.r.t Js
+	invertMatrix(Minv_inner, M_res_inner); // From kerrphase.c; computes the matrix of partial derivatives of EQL w.r.t Js
 	CKerr_Minv2Omega(Minv_inner, Omega_inner);
 
 	CKerr_J2EQL(J_outer, EQL_outer, mass, spin);
 	CKerr_EQL2J(EQL_outer, J_outer, mass, spin, anc_outer);
 	CKerr_Minverse(J_outer, Minv_outer, mass, spin);
+	invertMatrix(Minv_outer, M_res_outer); // From kerrphase.c; computes the matrix of partial derivatives of EQL w.r.t Js
 	CKerr_Minv2Omega(Minv_outer, Omega_outer);
 	
 	double Delta_omega = (n_res_outer * Omega_outer[0] + k_res_outer * Omega_outer[1] + m_res_outer * Omega_outer[2]) - (n_res_inner * Omega_inner[0] + k_res_inner * Omega_inner[1] + m_res_inner * Omega_inner[2]);
@@ -325,9 +327,11 @@ int main(int argc, char **argv){
 	/* Test that M and Minv are inverses */
 	for (int i = 0; i < 3; i++) {
     	for (int j = 0; j < 3; j++) {
-        	Ident[i * 3 + j] = 0.0;   // reset accumulator
+        	Ident_inner[i * 3 + j] = 0.0;
+			Ident_outer[i * 3 + j] = 0.0;   // reset accumulator
         	for (int k = 0; k < 3; k++) {
-            	Ident[i * 3 + j] += Minv_inner[i * 3 + k] * M_res[k * 3 + j];
+            	Ident_inner[i * 3 + j] += Minv_inner[i * 3 + k] * M_res_inner[k * 3 + j];
+				Ident_outer[i * 3 + j] += Minv_outer[i * 3 + k] * M_res_outer[k * 3 + j];
         	}
     	}
 	}
@@ -339,12 +343,27 @@ int main(int argc, char **argv){
 
 	for (int i = 0; i < 9; i++)
 	{
-		printf("M_res_inner[%d] = %12.5le \n", i, M_res[i]);
+		printf("M_res_inner[%d] = %12.5le \n", i, M_res_inner[i]);
 	}
 	
 	for (int i = 0; i < 9; i++)
 	{
-		printf("Minv.M = Ident[%d] = %12.5le \n", i, Ident[i]);
+		printf("Minv.M = Ident[%d] = %12.5le \n", i, Ident_inner[i]);
+	}
+
+	for (int i = 0; i < 9; i++)
+	{
+		printf("Minv_outer[%d] = %12.5le \n", i, Minv_outer[i]);
+	}
+
+	for (int i = 0; i < 9; i++)
+	{
+		printf("M_res_outer[%d] = %12.5le \n", i, M_res_outer[i]);
+	}
+	
+	for (int i = 0; i < 9; i++)
+	{
+		printf("Minv.M = Ident[%d] = %12.5le \n", i, Ident_outer[i]);
 	}
 	
 
@@ -364,24 +383,25 @@ int main(int argc, char **argv){
 	printf("Inner and Outer EQL: inner: (%lg, %lg, %lg) outer: (%lg, %lg, %lg) \n", EQL_inner[0], EQL_inner[1], EQL_inner[2], EQL_outer[0], EQL_outer[1], EQL_outer[2]);
 	
 	#ifdef SINGLEVALUE
+	printf("ONLY compute tidal J_dots and EQL_dots for INNER configs (EMRI interior to perturber)\n");
 	printf("About to compute tidal J_dots and EQL_dots \n");
 	clock_t start = clock();
-	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_outer, J_dot_td);
+	J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_outer, J_dot_td_inner);
 	clock_t end = clock();
 	double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
 
 	printf("Time = %.6f s\n", elapsed);
 
-	printf("J_dot_r_tidal = %.15g \n", J_dot_td[0]);
-	printf("J_dot_theta_tidal = %.15g \n", J_dot_td[1]);
-	printf("J_dot_phi_tidal = %.15g \n", J_dot_td[2]);
+	printf("J_dot_r_tidal = %.15g \n", J_dot_td_inner[0]);
+	printf("J_dot_theta_tidal = %.15g \n", J_dot_td_inner[1]);
+	printf("J_dot_phi_tidal = %.15g \n", J_dot_td_inner[2]);
 
 	/* Computes EQL_dot_tidal from J_dot_tidal */
-	Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
-	Delta_EQL_dot_tidal[1] = M_res[1] * J_dot_td[0] + M_res[4] * J_dot_td[1] + M_res[7] * J_dot_td[2];
-	Delta_EQL_dot_tidal[2] = M_res[2] * J_dot_td[0] + M_res[5] * J_dot_td[1] + M_res[8] * J_dot_td[2];
+	EQL_dot_tidal_inner[0] = M_res_inner[0] * J_dot_td_inner[0] + M_res_inner[3] * J_dot_td_inner[1] + M_res_inner[6] * J_dot_td_inner[2];
+	EQL_dot_tidal_inner[1] = M_res_inner[1] * J_dot_td_inner[0] + M_res_inner[4] * J_dot_td_inner[1] + M_res_inner[7] * J_dot_td_inner[2];
+	EQL_dot_tidal_inner[2] = M_res_inner[2] * J_dot_td_inner[0] + M_res_inner[5] * J_dot_td_inner[1] + M_res_inner[8] * J_dot_td_inner[2];
 
-	printf("Delta_EQL = %.15g %.15g %.15g \n", Delta_EQL_dot_tidal[0], Delta_EQL_dot_tidal[1], Delta_EQL_dot_tidal[2]);
+	printf("EQL_dot_tidal = %.15g %.15g %.15g \n", EQL_dot_tidal_inner[0], EQL_dot_tidal_inner[1], EQL_dot_tidal_inner[2]);
 
 	// printf("Keplerian J_dot_phi at resonance = %lg \n", J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline));
 	#endif
@@ -399,20 +419,31 @@ int main(int argc, char **argv){
 
 	printf("About to compute tidal J_dots and EQL_dots using OpenMP \n");
 	double t0 = omp_get_wtime();
-	J_dot_tidal_openmp(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_outer, J_dot_td);
+	J_dot_tidal_openmp(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_torus, mu_inner, mu_outer, J_dot_td_inner, J_dot_td_outer);
 	double t1 = omp_get_wtime();
 	printf("Time = %.6f s\n", t1 - t0);
 
-	printf("J_dot_r_tidal = %.15g \n", J_dot_td[0]);
-	printf("J_dot_theta_tidal = %.15g \n", J_dot_td[1]);
-	printf("J_dot_phi_tidal = %.15g \n", J_dot_td[2]);
-	
-	/* Computes EQL_dot_tidal from J_dot_tidal */
-	Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
-	Delta_EQL_dot_tidal[1] = M_res[1] * J_dot_td[0] + M_res[4] * J_dot_td[1] + M_res[7] * J_dot_td[2];
-	Delta_EQL_dot_tidal[2] = M_res[2] * J_dot_td[0] + M_res[5] * J_dot_td[1] + M_res[8] * J_dot_td[2];
+	printf("J_dot_r_tidal_inner = %.15g \n", J_dot_td_inner[0]);
+	printf("J_dot_theta_tidal_inner = %.15g \n", J_dot_td_inner[1]);
+	printf("J_dot_phi_tidal_inner = %.15g \n", J_dot_td_inner[2]);
 
-	printf("Delta_EQL = %.15g %.15g %.15g \n", Delta_EQL_dot_tidal[0], Delta_EQL_dot_tidal[1], Delta_EQL_dot_tidal[2]);
+	printf("J_dot_r_tidal_outer = %.15g \n", J_dot_td_outer[0]);
+	printf("J_dot_theta_tidal_outer = %.15g \n", J_dot_td_outer[1]);
+	printf("J_dot_phi_tidal_outer = %.15g \n", J_dot_td_outer[2]);
+	
+	/* Computes EQL_dot_tidal from J_dot_tidal_inner */
+	EQL_dot_tidal_inner[0] = M_res_inner[0] * J_dot_td_inner[0] + M_res_inner[3] * J_dot_td_inner[1] + M_res_inner[6] * J_dot_td_inner[2];
+	EQL_dot_tidal_inner[1] = M_res_inner[1] * J_dot_td_inner[0] + M_res_inner[4] * J_dot_td_inner[1] + M_res_inner[7] * J_dot_td_inner[2];
+	EQL_dot_tidal_inner[2] = M_res_inner[2] * J_dot_td_inner[0] + M_res_inner[5] * J_dot_td_inner[1] + M_res_inner[8] * J_dot_td_inner[2];
+
+	printf("EQL_dot_tidal_inner = %.15g %.15g %.15g \n", EQL_dot_tidal_inner[0], EQL_dot_tidal_inner[1], EQL_dot_tidal_inner[2]);
+
+	/* Computes EQL_dot_tidal from J_dot_tidal_outer */
+	EQL_dot_tidal_outer[0] = M_res_outer[0] * J_dot_td_outer[0] + M_res_outer[3] * J_dot_td_outer[1] + M_res_outer[6] * J_dot_td_outer[2];
+	EQL_dot_tidal_outer[1] = M_res_outer[1] * J_dot_td_outer[0] + M_res_outer[4] * J_dot_td_outer[1] + M_res_outer[7] * J_dot_td_outer[2];
+	EQL_dot_tidal_outer[2] = M_res_outer[2] * J_dot_td_outer[0] + M_res_outer[5] * J_dot_td_outer[1] + M_res_outer[8] * J_dot_td_outer[2];
+
+	printf("EQL_dot_tidal_outer = %.15g %.15g %.15g \n", EQL_dot_tidal_outer[0], EQL_dot_tidal_outer[1], EQL_dot_tidal_outer[2]);
 
 	// printf("Keplerian J_dot_phi at resonance = %lg \n", J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline));
 	#endif
@@ -424,18 +455,18 @@ int main(int argc, char **argv){
 		angle_space = 2 * M_PI / 50;
 		angle_step = j * angle_space;
 		// J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_res, peri, radius_outer, incline, mass, spin, angle_step, J_dot_td);
-		J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_step, mu_outer, J_dot_td);
+		J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_step, mu_outer, J_dot_td_inner);
 		// Jr_dot[j] = J_dot_td[0];
 		// Jtheta_dot[j] = J_dot_td[1];
 		// L_dot[j] = J_dot_td[2];
 
 		/* Computes EQL_dot_tidal from J_dot_tidal */
-		Delta_EQL_dot_tidal[0] = M_res[0] * J_dot_td[0] + M_res[3] * J_dot_td[1] + M_res[6] * J_dot_td[2];
-		Delta_EQL_dot_tidal[1] = M_res[1] * J_dot_td[0] + M_res[4] * J_dot_td[1] + M_res[7] * J_dot_td[2];
-		Delta_EQL_dot_tidal[2] = M_res[2] * J_dot_td[0] + M_res[5] * J_dot_td[1] + M_res[8] * J_dot_td[2];
+		EQL_dot_tidal_inner[0] = M_res_inner[0] * J_dot_td_inner[0] + M_res_inner[3] * J_dot_td_inner[1] + M_res_inner[6] * J_dot_td_inner[2];
+		EQL_dot_tidal_inner[1] = M_res_inner[1] * J_dot_td_inner[0] + M_res_inner[4] * J_dot_td_inner[1] + M_res_inner[7] * J_dot_td_inner[2];
+		EQL_dot_tidal_inner[2] = M_res_inner[2] * J_dot_td_inner[0] + M_res_inner[5] * J_dot_td_inner[1] + M_res_inner[8] * J_dot_td_inner[2];
 		// Kepler_torque[j] = J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline, angle_step);
 		// printf("%i \t %lg \t %12.5le \t %12.5le \t %12.5le \n", j, angle_step, Jr_dot[j], Jtheta_dot[j], L_dot[j]);
-		printf("%i \t %lg \t %12.5le \t %12.5le \t %12.5le \t %12.5le \t %12.5le \t %12.5le \n", j, angle_step, J_dot_td[0], J_dot_td[1], J_dot_td[2], Delta_EQL_dot_tidal[0], Delta_EQL_dot_tidal[1], Delta_EQL_dot_tidal[2]);
+		printf("%i \t %lg \t %12.5le \t %12.5le \t %12.5le \t %12.5le \t %12.5le \t %12.5le \n", j, angle_step, J_dot_td_inner[0], J_dot_td_inner[1], J_dot_td_inner[2], EQL_dot_tidal_inner[0], EQL_dot_tidal_inner[1], EQL_dot_tidal_inner[2]);
 	}
 	#endif
 	// for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}

@@ -629,6 +629,9 @@ void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer,
 Compute J_dot_tidal using OpenMP parallelization
 over independent resonance modes (i-loop)
 ------------------------------------------------------------
+This is the primary function to use!
+J_dot_inner -> EMRI is interior to perturber, scaled(J_dot_tidal_inner) ~ mu_outer
+J_dot_outer -> EMRI is exterior to perturber, scaled(J_dot_tidal_outer) ~ mu_inner
 */
 
 void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
@@ -636,18 +639,21 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
                         int m_res_outer, double ra_inner, double rp_inner,
                         double radius_outer, double I_inner, double ra_outer,
                         double rp_outer, double I_outer, double M, double astar,
-                        double theta_res_F, double mu_outer, double *J_dot_td) {
+                        double theta_res_F, double mu_inner, double mu_outer, 
+                        double *J_dot_td_inner, double *J_dot_td_outer) {
   // --------------------------------------------------------
   // Global accumulation (final result)
   // --------------------------------------------------------
-  double J_global[3] = {0.0, 0.0, 0.0};
+  double J_global_inner[3] = {0.0, 0.0, 0.0};
+  double J_global_outer[3] = {0.0, 0.0, 0.0};
 
   // --------------------------------------------------------
   // Precompute orbit quantities (NOT parallel region)
   // --------------------------------------------------------
   double EQL_inner[3], J_inner[3], Minv_inner[9], Omega_inner[3];
   double EQL_outer[3], J_outer[3], Minv_outer[9];
-  double JRe_global[3] = {0.0, 0.0, 0.0}, JIm_global[3] = {0.0, 0.0, 0.0};
+  double JRe_global_inner[3] = {0.0, 0.0, 0.0}, JIm_global_inner[3] = {0.0, 0.0, 0.0};
+  double JRe_global_outer[3] = {0.0, 0.0, 0.0}, JIm_global_outer[3] = {0.0, 0.0, 0.0};
 
   // Inner body apocenter, pericenter, inclination -> EQL and Minv
   ra_rp_I2EQL(ra_inner, EQL_inner, rp_inner, I_inner, astar, M);
@@ -668,16 +674,6 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
 
   CKerr_Minverse(J_inner, Minv_inner, M, astar);
   // CKerr_Minv2Omega(Minv_inner, Omega_inner);
-
-  // Outer body apocenter, pericenter, inclination -> EQL and Minv
-  // // TODO: If given a near circular orbit, make the apocenter and pericenter differ by 0.001 (may change depending on numerical accuracies)
-  // double circ_check = (ra_outer - rp_outer) / rp_outer; // Check this orbit is near circular
-  // if ((ra_outer < 1.e-12 && rp_outer < 1.e-12 && I_outer < 1.e-12) || (fabs(circ_check) < 1e-5)) {
-  //   radius_outer = rp_outer; // Update outer radius if this system is nearly circular
-  //   CKerr_FindEQL_IRCirc(0, radius_outer, EQL_outer, M, astar);
-  // } else {
-  //   ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
-  // }
 
   ra_rp_I2EQL(ra_outer, EQL_outer, rp_outer, I_outer, astar, M);
   for (int i = 0; i < 3; i++) {
@@ -731,9 +727,12 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
       printf("Memory allocation failed in thread %d\n", omp_get_thread_num());
       exit(1);
     }
-    double J_local[3] = {0.0, 0.0, 0.0};
-    double JRe_local[3] = {0.0, 0.0, 0.0};
-    double JIm_local[3] = {0.0, 0.0, 0.0};
+    double J_local_inner[3] = {0.0, 0.0, 0.0};
+    double J_local_outer[3] = {0.0, 0.0, 0.0};
+    // double JRe_local_inner[3] = {0.0, 0.0, 0.0};
+    // double JIm_local_inner[3] = {0.0, 0.0, 0.0};
+    double JRe_local_outer[3] = {0.0, 0.0, 0.0};
+    double JIm_local_outer[3] = {0.0, 0.0, 0.0};
 
 #pragma omp for schedule(dynamic, 1)
     for (int i = -N_res; i <= N_res; i++) {
@@ -866,8 +865,9 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
         double contrib = (term + another_term + alphankm * last_term) /
                          (omega_nkm * omega_nkm * omega_nkm);
         #endif
-            
-        double termR1 = 
+        
+        /* J_dot_tidal_inner */
+        double termR1_inner = 
               (C0_inner[4 * il + 2] * cscat[0] * C0_outer[4 * il] +
               C0_outer[4 * il] * cscat[1] * C0_inner[4 * il + 3] +
               C0_outer[4 * il + 1] * C0_inner[4 * il + 3] * cscat[0] -
@@ -875,7 +875,7 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
               alphankm * (C0_outer[4 * il] * C0_inner[4 * il] + 
                 C0_outer[4 * il + 1] * C0_inner[4 * il + 1]));
         
-        double termR2 = 
+        double termR2_inner = 
               (C0_outer[4 * il + 1] * cscat[0] * C0_inner[4 * il + 2] +
               C0_outer[4 * il + 1] * cscat[1] * C0_inner[4 * il + 3] -
               C0_outer[4 * il] * C0_inner[4 * il + 3] * cscat[0] +
@@ -883,31 +883,71 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
               alphankm * (C0_outer[4 * il + 1] * C0_inner[4 * il] -
               C0_outer[4 * il] * C0_inner[4 * il + 1]));
         
-        double contrib_Re = (termR1 * Rtheta + termR2 * Itheta) / (omega_nkm * omega_nkm * omega_nkm);
+        double contrib_Re_inner = (termR1_inner * Rtheta + termR2_inner * Itheta) / (omega_nkm * omega_nkm * omega_nkm);
         
         #if 0
-        double termIm1 = termR1 * Itheta;
-        double termIm2 = -termR2 * Rtheta;
-        double contrib_Im = (termIm1 + termIm2) / (omega_nkm * omega_nkm * omega_nkm);
+        double termIm1_inner = termR1_inner * Itheta;
+        double termIm2_inner = -termR2_inner * Rtheta;
+        double contrib_Im_inner = (termIm1_inner + termIm2_inner) / (omega_nkm * omega_nkm * omega_nkm);
+        #endif
+
+        /* TODO: J_dot_tidal_outer */
+        double termR1_outer = 
+        C0_inner[4 * il + 2] * C0_outer[4 * il + 2] +
+        C0_inner[4 * il + 3] * C0_outer[4 * il + 3] -
+        C0_inner[4 * il + 2] * cscat[0] * C0_outer[4 * il] +
+        C0_inner[4 * il + 2] * cscat[1] * C0_outer[4 * il + 1] -
+        C0_inner[4 * il + 3] * cscat[1] * C0_outer[4 * il] -
+        C0_outer[4 * il + 3] * cscat[0] * C0_inner[4 * il + 1];
+
+        double termR2_outer = 
+        C0_inner[4 * il + 2] * C0_outer[4 * il + 3] -
+        C0_inner[4 * il + 3] * C0_outer[4 * il + 2] +
+        C0_inner[4 * il + 3] * cscat[0] * C0_outer[4 * il] -
+        C0_inner[4 * il + 3] * cscat[1] * C0_outer[4 * il + 1] -
+        C0_outer[4 * il + 2] * cscat[1] * C0_outer[4 * il] -
+        C0_inner[4 * il + 2] * cscat[0] * C0_outer[4 * il + 1];
+
+        double contrib_Re_outer = (termR1_outer * Rtheta + termR2_outer * Itheta) / (omega_nkm * omega_nkm * omega_nkm);
+        
+        #if 1
+        double termIm1_outer = termR1_outer * Itheta;
+        double termIm2_outer = -termR2_outer * Rtheta;
+        double contrib_Im_outer = (termIm1_outer + termIm2_outer) / (omega_nkm * omega_nkm * omega_nkm);
         #endif
 
         // ------------------------------------------------
         // LOCAL accumulation (thread-safe)
         // ------------------------------------------------
-        J_local[0] += -i_n_inner * mu_outer * contrib_Re;
-        J_local[1] += -i_k_inner * mu_outer * contrib_Re;
-        J_local[2] += -i_m_inner * mu_outer * contrib_Re;
+        J_local_inner[0] += -i_n_inner * mu_outer * contrib_Re_inner;
+        J_local_inner[1] += -i_k_inner * mu_outer * contrib_Re_inner;
+        J_local_inner[2] += -i_m_inner * mu_outer * contrib_Re_inner;
+
+        J_local_outer[0] += -i_n_outer * mu_inner * contrib_Re_outer;
+        J_local_outer[1] += -i_k_outer * mu_inner * contrib_Re_outer;
+        J_local_outer[2] += -i_m_outer * mu_inner * contrib_Re_outer;
         
         #if 0
         /* Check that this real part agrees with previous result */
-        JRe_local[0] += -i_n_inner * mu_outer * contrib_Re;
-        JRe_local[1] += -i_k_inner * mu_outer * contrib_Re;
-        JRe_local[2] += -i_m_inner * mu_outer * contrib_Re;
+        JRe_local_inner[0] += -i_n_inner * mu_outer * contrib_Re_inner;
+        JRe_local_inner[1] += -i_k_inner * mu_outer * contrib_Re_inner;
+        JRe_local_inner[2] += -i_m_inner * mu_outer * contrib_Re_inner;
 
         /* Check that the imaginary part is zero due to selection rules */
-        JIm_local[0] += -i_n_inner * mu_outer * contrib_Im;
-        JIm_local[1] += -i_k_inner * mu_outer * contrib_Im;
-        JIm_local[2] += -i_m_inner * mu_outer * contrib_Im;
+        JIm_local_inner[0] += -i_n_inner * mu_outer * contrib_Im_inner;
+        JIm_local_inner[1] += -i_k_inner * mu_outer * contrib_Im_inner;
+        JIm_local_inner[2] += -i_m_inner * mu_outer * contrib_Im_inner;
+        #endif
+        #if 1
+        /* Check that this real part agrees with previous result */
+        JRe_local_outer[0] += -i_n_outer * mu_inner * contrib_Re_outer;
+        JRe_local_outer[1] += -i_k_outer * mu_inner * contrib_Re_outer;
+        JRe_local_outer[2] += -i_m_outer * mu_inner * contrib_Re_outer;
+
+        /* Check that the imaginary part is zero due to selection rules */
+        JIm_local_outer[0] += -i_n_outer * mu_inner * contrib_Im_outer;
+        JIm_local_outer[1] += -i_k_outer * mu_inner * contrib_Im_outer;
+        JIm_local_outer[2] += -i_m_outer * mu_inner * contrib_Im_outer;
         #endif
       }
     }
@@ -922,18 +962,31 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
       // printf("Thread %d total time = %.6f s\n", tid,
       //        thread_t1 - thread_t0); // Thread ID and how long calculation took
 
-      J_global[0] += J_local[0];
-      J_global[1] += J_local[1];
-      J_global[2] += J_local[2];
+      J_global_inner[0] += J_local_inner[0];
+      J_global_inner[1] += J_local_inner[1];
+      J_global_inner[2] += J_local_inner[2];
+
+      J_global_outer[0] += J_local_outer[0];
+      J_global_outer[1] += J_local_outer[1];
+      J_global_outer[2] += J_local_outer[2];
 
       #if 0
-      JRe_global[0] += JRe_local[0];
-      JRe_global[1] += JRe_local[1];
-      JRe_global[2] += JRe_local[2];
+      JRe_global_inner[0] += JRe_local_inner[0];
+      JRe_global_inner[1] += JRe_local_inner[1];
+      JRe_global_inner[2] += JRe_local_inner[2];
 
-      JIm_global[0] += JIm_local[0];
-      JIm_global[1] += JIm_local[1];
-      JIm_global[2] += JIm_local[2];
+      JIm_global_inner[0] += JIm_local_inner[0];
+      JIm_global_inner[1] += JIm_local_inner[1];
+      JIm_global_inner[2] += JIm_local_inner[2];
+      #endif
+      #if 1
+      JRe_global_outer[0] += JRe_local_outer[0];
+      JRe_global_outer[1] += JRe_local_outer[1];
+      JRe_global_outer[2] += JRe_local_outer[2];
+
+      JIm_global_outer[0] += JIm_local_outer[0];
+      JIm_global_outer[1] += JIm_local_outer[1];
+      JIm_global_outer[2] += JIm_local_outer[2];
       #endif
     }
 
@@ -944,15 +997,25 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
   // ------------------------------------------------------------
   // Final output
   // ------------------------------------------------------------
-  J_dot_td[0] = J_global[0];
-  J_dot_td[1] = J_global[1];
-  J_dot_td[2] = J_global[2];
+  J_dot_td_inner[0] = J_global_inner[0];
+  J_dot_td_inner[1] = J_global_inner[1];
+  J_dot_td_inner[2] = J_global_inner[2];
+
+  J_dot_td_outer[0] = J_global_outer[0];
+  J_dot_td_outer[1] = J_global_outer[1];
+  J_dot_td_outer[2] = J_global_outer[2];
 
   #if 0
-  printf("J_dot.c: Real part of Jr Jtheta Jphi: %.15e %.15e %.15e \n", JRe_global[0], JRe_global[1], JRe_global[2]);
-  printf("J_dot.c: Imag. part of Jr Jtheta Jphi: %.15e %.15e %.15e \n", JIm_global[0], JIm_global[1], JIm_global[2]);
-  printf("J_dot.c: (calc(J_dot_td) - J_dot_td_Re) / calc(J_dot_td): %.15e %.15e %.15e \n", 
-    (JRe_global[0] - J_global[0]) / J_global[0], (JRe_global[1] - J_global[1]) / J_global[1], (JRe_global[2] - J_global[2]) / J_global[2]);
+  printf("J_dot.c: Real part of tidal resonance (inner) \n Jdotr Jdottheta Jdotphi: %.15e %.15e %.15e \n", JRe_global_inner[0], JRe_global_inner[1], JRe_global_inner[2]);
+  printf("J_dot.c: Imag. part of tidal resonance (inner) \n Jdotr Jdottheta Jdotphi: %.15e %.15e %.15e \n", JIm_global_inner[0], JIm_global_inner[1], JIm_global_inner[2]);
+  printf("J_dot.c: (calc(J_dot_td_inner) - J_dot_td_Re_inner) / calc(J_dot_td_inner): %.15e %.15e %.15e \n", 
+    (JRe_global_inner[0] - J_global_inner[0]) / J_global_inner[0], (JRe_global_inner[1] - J_global_inner[1]) / J_global_inner[1], (JRe_global_inner[2] - J_global_inner[2]) / J_global_inner[2]);
+  #endif
+  #if 1
+  printf("J_dot.c: Real part of tidal resonance (outer) \n Jdotr Jdottheta Jdotphi: %.15e %.15e %.15e \n", JRe_global_outer[0], JRe_global_outer[1], JRe_global_outer[2]);
+  printf("J_dot.c: Imag. part of tidal resonance (outer) \n Jdotr Jdottheta Jdotphi: %.15e %.15e %.15e \n", JIm_global_outer[0], JIm_global_outer[1], JIm_global_outer[2]);
+  printf("J_dot.c: (calc(J_dot_td_outer) - J_dot_td_Re_outer) / calc(J_dot_td_outer): %.15e %.15e %.15e \n", 
+    (JRe_global_inner[0] - J_global_inner[0]) / J_global_inner[0], (JRe_global_inner[1] - J_global_inner[1]) / J_global_inner[1], (JRe_global_inner[2] - J_global_inner[2]) / J_global_inner[2]);
   #endif
 }
 
