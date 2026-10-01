@@ -868,22 +868,23 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
         
         /* J_dot_tidal_inner */
         double termR1_inner = 
-              (C0_inner[4 * il + 2] * cscat[0] * C0_outer[4 * il] +
+              C0_inner[4 * il + 2] * cscat[0] * C0_outer[4 * il] +
               C0_outer[4 * il] * cscat[1] * C0_inner[4 * il + 3] +
               C0_outer[4 * il + 1] * C0_inner[4 * il + 3] * cscat[0] -
               C0_outer[4 * il + 1] * cscat[1] * C0_inner[4 * il + 2] +
               alphankm * (C0_outer[4 * il] * C0_inner[4 * il] + 
-                C0_outer[4 * il + 1] * C0_inner[4 * il + 1]));
+                C0_outer[4 * il + 1] * C0_inner[4 * il + 1]);
         
         double termR2_inner = 
-              (C0_outer[4 * il + 1] * cscat[0] * C0_inner[4 * il + 2] +
+              C0_outer[4 * il + 1] * cscat[0] * C0_inner[4 * il + 2] +
               C0_outer[4 * il + 1] * cscat[1] * C0_inner[4 * il + 3] -
               C0_outer[4 * il] * C0_inner[4 * il + 3] * cscat[0] +
               C0_outer[4 * il] * cscat[1] * C0_inner[4 * il + 2] +
               alphankm * (C0_outer[4 * il + 1] * C0_inner[4 * il] -
-              C0_outer[4 * il] * C0_inner[4 * il + 1]));
+              C0_outer[4 * il] * C0_inner[4 * il + 1]);
         
         double contrib_Re_inner = (termR1_inner * Rtheta + termR2_inner * Itheta) / (omega_nkm * omega_nkm * omega_nkm);
+        printf("J_dot.c: contrib_Re_inner = %.15e \n", contrib_Re_inner);
         
         #if 0
         double termIm1_inner = termR1_inner * Itheta;
@@ -898,17 +899,18 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
         C0_inner[4 * il + 2] * cscat[0] * C0_outer[4 * il] +
         C0_inner[4 * il + 2] * cscat[1] * C0_outer[4 * il + 1] -
         C0_inner[4 * il + 3] * cscat[1] * C0_outer[4 * il] -
-        C0_outer[4 * il + 3] * cscat[0] * C0_inner[4 * il + 1];
+        C0_inner[4 * il + 3] * cscat[0] * C0_outer[4 * il + 1];
 
         double termR2_outer = 
         C0_inner[4 * il + 2] * C0_outer[4 * il + 3] -
         C0_inner[4 * il + 3] * C0_outer[4 * il + 2] +
         C0_inner[4 * il + 3] * cscat[0] * C0_outer[4 * il] -
         C0_inner[4 * il + 3] * cscat[1] * C0_outer[4 * il + 1] -
-        C0_outer[4 * il + 2] * cscat[1] * C0_outer[4 * il] -
+        C0_inner[4 * il + 2] * cscat[1] * C0_outer[4 * il] -
         C0_inner[4 * il + 2] * cscat[0] * C0_outer[4 * il + 1];
 
         double contrib_Re_outer = (termR1_outer * Rtheta + termR2_outer * Itheta) / (omega_nkm * omega_nkm * omega_nkm);
+        printf("J_dot.c: contrib_Re_outer = %.15e \n", contrib_Re_outer);
         
         #if 1
         double termIm1_outer = termR1_outer * Itheta;
@@ -1015,7 +1017,7 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
   printf("J_dot.c: Real part of tidal resonance (outer) \n Jdotr Jdottheta Jdotphi: %.15e %.15e %.15e \n", JRe_global_outer[0], JRe_global_outer[1], JRe_global_outer[2]);
   printf("J_dot.c: Imag. part of tidal resonance (outer) \n Jdotr Jdottheta Jdotphi: %.15e %.15e %.15e \n", JIm_global_outer[0], JIm_global_outer[1], JIm_global_outer[2]);
   printf("J_dot.c: (calc(J_dot_td_outer) - J_dot_td_Re_outer) / calc(J_dot_td_outer): %.15e %.15e %.15e \n", 
-    (JRe_global_inner[0] - J_global_inner[0]) / J_global_inner[0], (JRe_global_inner[1] - J_global_inner[1]) / J_global_inner[1], (JRe_global_inner[2] - J_global_inner[2]) / J_global_inner[2]);
+    (JRe_global_outer[0] - J_global_outer[0]) / J_global_outer[0], (JRe_global_outer[1] - J_global_outer[1]) / J_global_outer[1], (JRe_global_outer[2] - J_global_outer[2]) / J_global_outer[2]);
   #endif
 }
 
