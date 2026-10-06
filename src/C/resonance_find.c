@@ -74,6 +74,10 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 	linear_prefactor_ratio_LE = (Coeff_rp[1]*Coeff_ra[3] - Coeff_ra[1]*Coeff_rp[3]);
 	constant_prefactor_ratio_LE = Coeff_rp[0]*Coeff_ra[3] - Coeff_ra[0]*Coeff_rp[3];
 	discriminant = linear_prefactor_ratio_LE*linear_prefactor_ratio_LE - 4*squared_prefactor_ratio_LE*constant_prefactor_ratio_LE;
+	if (!isfinite(discriminant) || discriminant < 0.0) {
+    printf("resonance_find.c: Warning: No real L/E solutions found!\n");
+    return;
+}
 
 	// printf("squared coeff.: %E, linear coeff.: %E, constant coeff.: %E, discriminant: %E \n", squared_prefactor_ratio_LE, linear_prefactor_ratio_LE, constant_prefactor_ratio_LE, discriminant);
 
@@ -104,7 +108,7 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 	for (i=0; i<2; i++){
 		double temp_E = which_E[i];
 
-    	if (temp_E <= 0.0 || temp_E >= 1.0) // Only allow 0 < E < 1 (bound orbits)
+    	if (!isfinite(temp_E) ||temp_E <= 0.0 || temp_E >= 1.0) // Only allow 0 < E < 1 (bound orbits)
         	continue;
 
     	double temp_L = which_ratio[i] * temp_E;

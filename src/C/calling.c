@@ -542,9 +542,13 @@ int main(int argc, char **argv){
 		EQL[0] = info[1];
 		EQL[1] = 0.;
 		EQL[2] = info[0];
+		double EQL_test[3];
 		CKerr_EQL2J(EQL, J, mass, spin, anc);
+		CKerr_J2EQL(J, EQL_test, mass, spin);
 		double Omega_circ = 1 / (radius * sqrt(radius) + spin); // In units where M = 1
-		printf("J_r, J_theta, J_phi: %.15g %.15g %.15g \n", J[0], J[1], J[2]);
+		printf("calling.c: (EQL2J): J_r, J_theta, J_phi: %.15g %.15g %.15g \n", J[0], J[1], J[2]);
+		printf("calling.c: (J2EQL): EQL: %.15g %.15g %.15g \n", EQL_test[0], EQL_test[1], EQL_test[2]);
+		printf("calling.c: (getL_CircEq): L: %.15g \n", CKerr_getL_CircEq(mass, spin, radius));
 		printf("Omega_phi: %.15g \n", Omega_circ);
 		printf("inclination: %.15g, pericenter: %.15g, apocenter: %.15g \n", anc[0], anc[1], anc[2]);
 	}
