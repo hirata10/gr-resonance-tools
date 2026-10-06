@@ -110,22 +110,24 @@ int main(){
 	double apo_res, mass, spin, guess1, guess2;
 	double rp_inner, I_inner, ra_outer, rp_outer, I_outer;
 
-	printf("Enter inner pericenter: ");
+	printf("First Body Data (will solve for unknown apocenter): \n");
+	printf("Enter pericenter: ");
 	scanf("%lf", &rp_inner);
-	printf("Enter inner inlincation angle (radians): ");
+	printf("Enter inlincation angle (radians): ");
 	scanf("%lf", &I_inner);
-	printf("Enter outer apocenter: ");
+	printf("Second Body Data (full orbit data): \n");
+	printf("Enter apocenter: ");
 	scanf("%lf", &ra_outer);
-	printf("Enter outer pericenter: ");
+	printf("Enter pericenter: ");
 	scanf("%lf", &rp_outer);
-	printf("Enter outer inlincation angle (radians): ");
+	printf("Enter inlincation angle (radians): ");
 	scanf("%lf", &I_outer);
 	printf("Enter central mass: ");
 	scanf("%lf", &mass);
 	printf("Enter spin parameter of BH: ");
 	scanf("%lf", &spin);
 
-	printf("Enter inner and outer mode vector: ");
+	printf("Enter First and Second body mode vector (nkm)_First (nk)_Second: ");
 	scanf("%i %i %i %i %i", &n_inner, &k_inner, &m_inner, &n_outer, &k_outer);
 
 	/* Set up interval for bisection to find resonant apocenter */
