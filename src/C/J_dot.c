@@ -150,47 +150,68 @@ void J_dot_selfforce_openmp(int nl, int nmax, int kmax, int mmax, double apo,
 
   // double total_t0 = omp_get_wtime();
 
-  /* For CIRCULAR orbits */
-  if (apo == 0 && rp == 0 && I == 0) {
-    /* Orbital frequencies for circular equitorial orbits */
-    CKerr_FindEQL_IRCirc(0, radius_outer, EQL, M, astar);
-    CKerr_EQL2J(EQL, J, M, astar, NULL);
-    CKerr_Minverse(J, Minv, M, astar);
-    // CKerr_Minv2Omega(Minv, Omega);
-    // printf("Minv for circular equitorial case = \n %lg %lg %lg \n", Minv[0],
-    // Minv[1], Minv[2]); printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
-    // printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
-    // printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
-    // printf("Omega for circular equatorial is: %lg %lg %lg \n", Omega[0],
-    // Omega[1], Omega[2]);
+  // /* For CIRCULAR orbits */
+  // if (apo == 0 && rp == 0 && I == 0) {
+  //   /* Orbital frequencies for circular equitorial orbits */
+  //   CKerr_FindEQL_IRCirc(0, radius_outer, EQL, M, astar);
+  //   CKerr_EQL2J(EQL, J, M, astar, NULL);
+  //   CKerr_Minverse(J, Minv, M, astar);
+  //   // CKerr_Minv2Omega(Minv, Omega);
+  //   // printf("Minv for circular equitorial case = \n %lg %lg %lg \n", Minv[0],
+  //   // Minv[1], Minv[2]); printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]);
+  //   // printf(" %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]);
+  //   // printf("Js are: %lg %lg %lg \n", J[0], J[1], J[2]);
+  //   // printf("Omega for circular equatorial is: %lg %lg %lg \n", Omega[0],
+  //   // Omega[1], Omega[2]);
 
-    /* Torus Origin for circular equatorial orbits */
-    CKerr_TorusOrigin(J, xuorig, M, astar);
-  }
+  //   /* Torus Origin for circular equatorial orbits */
+  //   CKerr_TorusOrigin(J, xuorig, M, astar);
+  // }
 
-  /* For GENERIC orbits */
-  else {
-    /* Routine to find location of resonant apocenter */
-    // guess1 = rp + 3.;
-    // guess2 = radius_outer - 3.;
-    // apo = find_resonance_apo(n_res_inner, k_res_inner, m_res_inner,
-    // radius_outer, guess1, guess2, rp, I, astar, M);
+  // /* For GENERIC orbits */
+  // else {
+  //   /* Routine to find location of resonant apocenter */
+  //   // guess1 = rp + 3.;
+  //   // guess2 = radius_outer - 3.;
+  //   // apo = find_resonance_apo(n_res_inner, k_res_inner, m_res_inner,
+  //   // radius_outer, guess1, guess2, rp, I, astar, M);
 
-    /* Get orbital frequencies for inner generic orbit */
-    ra_rp_I2EQL(apo, EQL, rp, I, astar, M);
-    CKerr_EQL2J(EQL, J, M, astar, NULL);
-    CKerr_Minverse(J, Minv, M, astar);
-    // CKerr_Minv2Omega(Minv, Omega);
-    // printf("Minv for generic case = \n %lg %lg %lg \n", Minv[0], Minv[1],
-    // Minv[2]); printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]); printf("
-    // %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]); printf("Js are: %lg %lg %lg
-    // \n", J[0], J[1], J[2]); printf("Omega for generic is: %lg %lg %lg \n",
-    // Omega[0], Omega[1], Omega[2]);
+  //   /* Get orbital frequencies for inner generic orbit */
+  //   ra_rp_I2EQL(apo, EQL, rp, I, astar, M);
+  //   CKerr_EQL2J(EQL, J, M, astar, NULL);
+  //   CKerr_Minverse(J, Minv, M, astar);
+  //   // CKerr_Minv2Omega(Minv, Omega);
+  //   // printf("Minv for generic case = \n %lg %lg %lg \n", Minv[0], Minv[1],
+  //   // Minv[2]); printf(" %lg %lg %lg \n", Minv[3], Minv[4], Minv[5]); printf("
+  //   // %lg %lg %lg \n", Minv[6], Minv[7], Minv[8]); printf("Js are: %lg %lg %lg
+  //   // \n", J[0], J[1], J[2]); printf("Omega for generic is: %lg %lg %lg \n",
+  //   // Omega[0], Omega[1], Omega[2]);
 
-    /* Torus origin for inner body orbit */
-    CKerr_TorusOrigin(J, xuorig, M, astar);
-    // for(i=0;i<6;i++) printf("xuorig[%d] = %lg\n", i, xuorig[i]);
-  }
+  //   /* Torus origin for inner body orbit */
+  //   CKerr_TorusOrigin(J, xuorig, M, astar);
+  //   // for(i=0;i<6;i++) printf("xuorig[%d] = %lg\n", i, xuorig[i]);
+  // }
+
+    // Body apocenter, pericenter, inclination -> EQL and Minv
+  ra_rp_I2EQL(apo, EQL, rp, I, astar, M);
+  for (int i = 0; i < 3; i++) {
+    	if (!isfinite(EQL[i])) {
+        printf("J_dot.c: No values of EQL found, exiting...\n");
+        exit(1);
+		}
+	}
+
+  double anc[3];
+  CKerr_EQL2J(EQL, J, M, astar, anc);
+  for (int i = 0; i < 3; i++) {
+    	if (!isfinite(J[i])) {
+        printf("J_dot.c: No values of J found, exiting...\n");
+        exit(1);
+		}
+	}
+
+  CKerr_Minverse(J, Minv, M, astar);
+  CKerr_TorusOrigin(J, xuorig, M, astar);
 
   /* Compute outer Kerr horizon and function needed for scattering data
    * (epsilon) */

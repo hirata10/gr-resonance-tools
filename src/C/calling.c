@@ -149,28 +149,57 @@ int main(int argc, char **argv){
 	double J[3], EQL[3], anc[3];
 	double J_dot_sf[3];
 	double angle_space, angle_step, L_dot[50], Kepler_torque[50];
-	int nmax = GLOBALPAR_nmax, kmax = GLOBALPAR_kmax, mmax = GLOBALPAR_mmax, nl_self = GLOBALPAR_nl_self;
+	// int nmax = GLOBALPAR_nmax, kmax = GLOBALPAR_kmax, mmax = GLOBALPAR_mmax, nl_self = GLOBALPAR_nl_self;
+	int nmax, kmax, mmax, nl_self;
 	double mass, spin, radius_outer = 0.;
+	int omp_threads;
+	int veclib_threads;
 
 	/* Input Js on command line */
-	if (argc==6){
+	if (argc==12){
 		sscanf(argv[1], "%lg", &J[0]);
 		sscanf(argv[2], "%lg", &J[1]);
 		sscanf(argv[3], "%lg", &J[2]);
-		sscanf(argv[4], "%lg", &mass);
-		sscanf(argv[5], "%lg", &spin);
+		sscanf(argv[4], "%d", &nmax);
+		sscanf(argv[5], "%d", &kmax);
+		sscanf(argv[6], "%d", &mmax);
+		sscanf(argv[7], "%d", &nl_self);
+		sscanf(argv[8], "%lg", &mass);
+		sscanf(argv[9], "%lg", &spin);
+		sscanf(argv[10], "%d", &omp_threads);
+		sscanf(argv[11], "%d", &veclib_threads);
 	}
 
 	else {
     // stdin mode (works with < file)
-    	if (scanf("%lf %lf %lf %lf %lf",
+    	if (scanf("%lf %lf %lf %d %d %d %d %lf %lf %d %d",
               &J[0], &J[1], &J[2],
-			  &mass, &spin) != 5) {
+			  &nmax, &kmax, &mmax, &nl_self,
+			  &mass, &spin,
+			&omp_threads, &veclib_threads) != 11) {
 
-        fprintf(stderr, "Error: expected 5 inputs\n");
+        fprintf(stderr, "Error: expected 11 inputs\n");
         return 1;
     	}
 	}
+
+		/* Check thread inputs */
+	if (omp_threads < 1 || veclib_threads < 1) {
+    	fprintf(stderr,
+            	"Error: thread counts must be >= 1\n");
+    	return 1;
+	}
+
+	/* Set OpenMP thread count */
+	omp_set_num_threads(omp_threads);
+
+	/* Set vecLib thread count */
+	#ifdef __APPLE__
+	char veclib_threads_str[16];
+	snprintf(veclib_threads_str, sizeof(veclib_threads_str), "%d", veclib_threads);
+
+	setenv("VECLIB_MAXIMUM_THREADS", veclib_threads_str, 1);
+	#endif
 	
 	CKerr_J2EQL(J, EQL, mass, spin);
 	CKerr_EQL2J(EQL, J, mass, spin, anc);
