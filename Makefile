@@ -176,7 +176,7 @@ $(TEST_OUTDIR)/J2J_DOT_SF: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
 	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_SF -DSINGLEVALUE $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
-        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/kerrphase.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
 # Create executable to compute a set of J_dot_selfforce of a body using OpenMP
@@ -185,7 +185,7 @@ $(TEST_OUTDIR)/J2J_DOT_SF_OMP: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
                             $(SRC_C)/$(C_HEADER)
 	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_SF -DSINGLEVALUE_OMP $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
-        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/kerrphase.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
 # Create executable to convert orbit data (apo, peri, inclination) to Js

@@ -146,17 +146,17 @@ int main(){
 int main(int argc, char **argv){
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	int j;
-	double J[3], EQL[3], anc[3];
-	double J_dot_sf[3];
+	double J[3], EQL[3], anc[3], Omega[3], Minv[9], M_res[9], Ident[9];
+	double J_dot_sf[3], EQL_dot_sf[3];
 	double angle_space, angle_step, L_dot[50], Kepler_torque[50];
 	// int nmax = GLOBALPAR_nmax, kmax = GLOBALPAR_kmax, mmax = GLOBALPAR_mmax, nl_self = GLOBALPAR_nl_self;
-	int nmax, kmax, mmax, nl_self;
+	int nmax, kmax, mmax, nl_self, Nr, Nt;
 	double mass, spin, radius_outer = 0.;
 	int omp_threads;
 	int veclib_threads;
 
 	/* Input Js on command line */
-	if (argc==12){
+	if (argc==14){
 		sscanf(argv[1], "%lg", &J[0]);
 		sscanf(argv[2], "%lg", &J[1]);
 		sscanf(argv[3], "%lg", &J[2]);
@@ -168,17 +168,20 @@ int main(int argc, char **argv){
 		sscanf(argv[9], "%lg", &spin);
 		sscanf(argv[10], "%d", &omp_threads);
 		sscanf(argv[11], "%d", &veclib_threads);
+		sscanf(argv[12], "%d", &Nr);
+		sscanf(argv[13], "%d", &Nt);
 	}
 
 	else {
     // stdin mode (works with < file)
-    	if (scanf("%lf %lf %lf %d %d %d %d %lf %lf %d %d",
+    	if (scanf("%lf %lf %lf %d %d %d %d %lf %lf %d %d %d %d",
               &J[0], &J[1], &J[2],
 			  &nmax, &kmax, &mmax, &nl_self,
 			  &mass, &spin,
-			&omp_threads, &veclib_threads) != 11) {
+			&omp_threads, &veclib_threads,
+			&Nr, &Nt) != 13) {
 
-        fprintf(stderr, "Error: expected 11 inputs\n");
+        fprintf(stderr, "Error: expected 13 inputs\n");
         return 1;
     	}
 	}
@@ -211,8 +214,39 @@ int main(int argc, char **argv){
 	double eccen = (ra - rp) / (ra + rp);
 
 	printf("I, rp, ra, eccentricity: %.15g %.15g %.15g %.15g \n", I, rp, ra, eccen);
+	printf("Number of radial and theta integration steps: %i %i \n", Nr, Nt);
 
 	printf("EQL: %.15g %.15g %.15g \n", EQL[0], EQL[1], EQL[2]);
+	CKerr_Minverse(J, Minv, mass, spin);
+	invertMatrix(Minv, M_res); // From kerrphase.c; computes the matrix of partial derivatives of EQL w.r.t Js
+	CKerr_Minv2Omega(Minv, Omega);
+	printf("Omega[r, theta, phi]: %.15g %.15g %.15g \n", Omega[0], Omega[1], Omega[2]);
+
+
+		/* Test that M and Minv are inverses */
+	for (int i = 0; i < 3; i++) {
+    	for (int j = 0; j < 3; j++) {
+			Ident[i * 3 + j] = 0.0;   // reset accumulator
+        	for (int k = 0; k < 3; k++) {
+            	Ident[i * 3 + j] += Minv[i * 3 + k] * M_res[k * 3 + j];
+        	}
+    	}
+	}
+
+	for (int i = 0; i < 9; i++)
+	{
+		printf("Minv[%d] = %12.5le \n", i, Minv[i]);
+	}
+
+	for (int i = 0; i < 9; i++)
+	{
+		printf("M_res[%d] = %12.5le \n", i, M_res[i]);
+	}
+	
+	for (int i = 0; i < 9; i++)
+	{
+		printf("Minv.M = Ident[%d] = %12.5le \n", i, Ident[i]);
+	}
 
 	#ifdef SINGLEVALUE
 	printf("About to compute self-force J_dots in serial \n");
@@ -225,6 +259,13 @@ int main(int argc, char **argv){
 	printf("J_dot_r_sf = %.15g \n", J_dot_sf[0]);
 	printf("J_dot_theta_sf = %.15g \n", J_dot_sf[1]);
 	printf("J_dot_phi_sf = %.15g \n", J_dot_sf[2]);
+
+	/* Computes EQL_dot_sf from J_dot_sf */
+	EQL_dot_sf[0] = M_res[0] * J_dot_sf[0] + M_res[3] * J_dot_sf[1] + M_res[6] * J_dot_sf[2];
+	EQL_dot_sf[1] = M_res[1] * J_dot_sf[0] + M_res[4] * J_dot_sf[1] + M_res[7] * J_dot_sf[2];
+	EQL_dot_sf[2] = M_res[2] * J_dot_sf[0] + M_res[5] * J_dot_sf[1] + M_res[8] * J_dot_sf[2];
+
+	printf("EQL_dot_sf = %.15g %.15g %.15g \n", EQL_dot_sf[0], EQL_dot_sf[1], EQL_dot_sf[2]);
 	#endif
 
 	#ifdef SINGLEVALUE_OMP
@@ -241,13 +282,20 @@ int main(int argc, char **argv){
 	}
 
 	double t0 = omp_get_wtime();
-	J_dot_selfforce_openmp(nl_self, nmax, kmax, mmax, ra, rp, radius_outer, I, mass, spin, J_dot_sf);
+	J_dot_selfforce_openmp(nl_self, nmax, kmax, mmax, Nr, Nt, ra, rp, I, mass, spin, J_dot_sf);
 	double t1 = omp_get_wtime();
 	printf("Time = %.6f s\n", t1 - t0);
 
 	printf("J_dot_r_sf = %.15g \n", J_dot_sf[0]);
 	printf("J_dot_theta_sf = %.15g \n", J_dot_sf[1]);
 	printf("J_dot_phi_sf = %.15g \n", J_dot_sf[2]);
+
+	/* Computes EQL_dot_sf from J_dot_sf */
+	EQL_dot_sf[0] = M_res[0] * J_dot_sf[0] + M_res[3] * J_dot_sf[1] + M_res[6] * J_dot_sf[2];
+	EQL_dot_sf[1] = M_res[1] * J_dot_sf[0] + M_res[4] * J_dot_sf[1] + M_res[7] * J_dot_sf[2];
+	EQL_dot_sf[2] = M_res[2] * J_dot_sf[0] + M_res[5] * J_dot_sf[1] + M_res[8] * J_dot_sf[2];
+
+	printf("EQL_dot_sf = %.15g %.15g %.15g \n", EQL_dot_sf[0], EQL_dot_sf[1], EQL_dot_sf[2]);
 	#endif
 
 	return(0);
