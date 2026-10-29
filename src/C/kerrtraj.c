@@ -69,7 +69,7 @@ int CKerr_EQL2J(double *EQL, double *J, double M, double astar, double *ancillar
     dy = M_PI/2.*secharg*secharg/(double)CKERR_RESOLUTION_J_INTEG*log(2.);
     cosy = cos(y); siny = sin(y);
     denom = 1.-zminus*zminus*siny*siny;
-    if (denom>0) Jt_integ += dy*sqrt(1.-zmzp*siny*siny)*(1. - (1.-zminus*zminus)*siny*siny/denom);
+    if (denom>0) Jt_integ += dy*sqrt(1.-zmzp*siny*zmzp*siny)*(1. - (1.-zminus*zminus)*siny*siny/denom);
 #if 0
     Jt_integ += cosy*cosy*sqrt(1.-zmzp*siny*siny)/(1.-zminus*zminus*siny*siny)*dy;
 #endif
