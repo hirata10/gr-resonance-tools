@@ -10,7 +10,7 @@ c_dir = os.path.join(here, "..", "C")
 
 files = [
     "kerrgwem.c", "kerrmode.c", "kerrtraj.c",
-    "Gamma.c", "J_dot.c", "J2J_dot.c", "resonance_find.c"
+    "Gamma.c", "J_dot.c", "J2J_dot.c", "resonance_find.c", "kerrphase.c"
 ]
 
 # Use relative paths instead of absolute paths
