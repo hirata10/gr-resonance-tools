@@ -105,6 +105,12 @@ double J_dot_phi_Kepler(double mu_outer, double r_outer, double apo, double peri
 
 int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_res_outer, int k_res_outer, double ra_inner, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M, double radius_outer, double delta_t, double *Gamma);
 
+// Eq. (17) of arXiv:2207.07733 using dOmega/dJ from kerrphase.c, J_dots supplied
+int Gamma_dOmegadJ(int n_inner, int k_inner, int n_outer, int k_outer, int m_res, double *J_inner, double *J_outer, double *J_dot_inner, double *J_dot_outer, double mu_inner, double mu_outer, double M, double astar, double *Gamma);
+
+// Same as Gamma_dOmegadJ, with the J_dots computed by J_dot_selfforce_openmp
+int Gamma_dOmegadJ_selfforce(int nl, int nmax, int kmax, int mmax, int Nr, int Nt, int n_inner, int k_inner, int n_outer, int k_outer, int m_res, double *J_inner, double *J_outer, double mu_inner, double mu_outer, double M, double astar, double *J_dot_inner, double *J_dot_outer, double *Gamma);
+
 /* Delta_J.c computes the change in J due to external field (Eq. (12) in arXiv:1905.00030v2) */
 
 void Delta_J_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J_tidal);
@@ -127,3 +133,6 @@ void rk4_J2Jdot_restart_openmp(double t_start, double *t, int i_start, int n, do
 /* kerrphase.c computes changes in phase crossing a resonance */
 
 int invertMatrix(double *Minverse, double *M_matrix);
+
+// dOmega_dJ[3 * i + k] = dOmega_i/dJ_k from the contour integrals
+int J2dOmega_dJ(double *J, double M, double astar, double *dOmega_dJ);

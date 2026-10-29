@@ -1300,3 +1300,150 @@ int main(int argc, char **argv)
 
 }
 #endif
+
+#ifdef IS_GAMMA_EQ17
+/* Computes Gamma from Eq. (17) of arXiv:2207.07733 using dOmega/dJ from the contour integrals (kerrphase.c) */
+/* Mass ratios are set to 1 so Gamma is in the same units as gamma in potential_resonances_*.txt */
+/* Usage: J_inner(3) J_outer(3) n_inner k_inner n_outer k_outer m mass spin nl nmax kmax mmax Nr Nt omp_threads veclib_threads [J_dot_inner(3) J_dot_outer(3)] */
+/* If the 6 optional J_dots are given, the self-force calculation is skipped */
+/* The same inputs can come from stdin instead (no arguments), e.g. GAMMA_EQ17 < gamma.input > gamma.output */
+int main(int argc, char **argv){
+	setvbuf(stdout, NULL, _IOLBF, 0);
+	int i, k, b;
+	int n_inner, k_inner, n_outer, k_outer, m_res;
+	int nl_self, nmax, kmax, mmax, Nr, Nt, omp_threads, veclib_threads;
+	int have_J_dots = 0;
+	double J_inner[3], J_outer[3], J_dot_inner[3], J_dot_outer[3];
+	double mass, spin, mu_inner = 1., mu_outer = 1.;
+	double Gamma[3], dOmega_dJ_inner[9], dOmega_dJ_outer[9];
+	double t0, t1, t2;
+
+	if (argc == 22 || argc == 28){
+	// command-line mode
+	for (i = 0; i < 3; i++){
+		sscanf(argv[1 + i], "%lg", &J_inner[i]);
+		sscanf(argv[4 + i], "%lg", &J_outer[i]);
+	}
+	sscanf(argv[7], "%d", &n_inner);
+	sscanf(argv[8], "%d", &k_inner);
+	sscanf(argv[9], "%d", &n_outer);
+	sscanf(argv[10], "%d", &k_outer);
+	sscanf(argv[11], "%d", &m_res);
+	sscanf(argv[12], "%lg", &mass);
+	sscanf(argv[13], "%lg", &spin);
+	sscanf(argv[14], "%d", &nl_self);
+	sscanf(argv[15], "%d", &nmax);
+	sscanf(argv[16], "%d", &kmax);
+	sscanf(argv[17], "%d", &mmax);
+	sscanf(argv[18], "%d", &Nr);
+	sscanf(argv[19], "%d", &Nt);
+	sscanf(argv[20], "%d", &omp_threads);
+	sscanf(argv[21], "%d", &veclib_threads);
+	if (argc == 28){
+		have_J_dots = 1;
+		for (i = 0; i < 3; i++){
+			sscanf(argv[22 + i], "%lg", &J_dot_inner[i]);
+			sscanf(argv[25 + i], "%lg", &J_dot_outer[i]);
+		}
+	}
+	}
+	else if (argc == 1){
+	// stdin mode (works with < file)
+		if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %lf %lf %d %d %d %d %d %d %d %d",
+			&J_inner[0], &J_inner[1], &J_inner[2],
+			&J_outer[0], &J_outer[1], &J_outer[2],
+			&n_inner, &k_inner, &n_outer, &k_outer, &m_res,
+			&mass, &spin, &nl_self, &nmax, &kmax, &mmax, &Nr, &Nt,
+			&omp_threads, &veclib_threads) != 21) {
+
+		fprintf(stderr, "Error: expected 21 inputs (or 27 with J_dots)\n");
+		return 1;
+		}
+		/* Optional 6 J_dots after the 21 inputs; end of file means none were given */
+		int n_J_dots = scanf("%lf %lf %lf %lf %lf %lf",
+			&J_dot_inner[0], &J_dot_inner[1], &J_dot_inner[2],
+			&J_dot_outer[0], &J_dot_outer[1], &J_dot_outer[2]);
+		if (n_J_dots == 6) have_J_dots = 1;
+		else if (n_J_dots != EOF) {
+			fprintf(stderr, "Error: expected 6 J_dots after the 21 inputs, read %d\n", n_J_dots);
+			return 1;
+		}
+	}
+	else {
+		fprintf(stderr, "Error: expected 21 inputs (or 27 with J_dots), or none to read them from stdin\n");
+		return 1;
+	}
+
+	/* Check thread inputs */
+	if (omp_threads < 1 || veclib_threads < 1) {
+		fprintf(stderr, "Error: thread counts must be >= 1\n");
+		return 1;
+	}
+
+	/* Set OpenMP thread count */
+	omp_set_num_threads(omp_threads);
+
+	/* Set vecLib thread count */
+	#ifdef __APPLE__
+	char veclib_threads_str[16];
+	snprintf(veclib_threads_str, sizeof(veclib_threads_str), "%d", veclib_threads);
+	setenv("VECLIB_MAXIMUM_THREADS", veclib_threads_str, 1);
+	#endif
+
+	printf("Mode vector (n,k,m)_inner = (%d, %d, %d), (n,k,m)_outer = (%d, %d, %d) \n", n_inner, k_inner, m_res, n_outer, k_outer, m_res);
+
+	t0 = omp_get_wtime();
+	if (have_J_dots){
+		/* J_dots supplied: skip the self-force */
+		t1 = omp_get_wtime();
+		Gamma_dOmegadJ(n_inner, k_inner, n_outer, k_outer, m_res, J_inner, J_outer, J_dot_inner, J_dot_outer, mu_inner, mu_outer, mass, spin, Gamma);
+	}
+	else {
+		Gamma_dOmegadJ_selfforce(nl_self, nmax, kmax, mmax, Nr, Nt, n_inner, k_inner, n_outer, k_outer, m_res, J_inner, J_outer, mu_inner, mu_outer, mass, spin, J_dot_inner, J_dot_outer, Gamma);
+	}
+	t2 = omp_get_wtime();
+
+	J2dOmega_dJ(J_inner, mass, spin, dOmega_dJ_inner);
+	J2dOmega_dJ(J_outer, mass, spin, dOmega_dJ_outer);
+	printf("dOmega_dJ_inner (rows Omega_r, Omega_theta, Omega_phi; columns J_r, J_theta, J_phi): \n");
+	for (i = 0; i < 3; i++){printf("  %.10e %.10e %.10e \n", dOmega_dJ_inner[3 * i], dOmega_dJ_inner[3 * i + 1], dOmega_dJ_inner[3 * i + 2]);}
+	printf("dOmega_dJ_outer: \n");
+	for (i = 0; i < 3; i++){printf("  %.10e %.10e %.10e \n", dOmega_dJ_outer[3 * i], dOmega_dJ_outer[3 * i + 1], dOmega_dJ_outer[3 * i + 2]);}
+
+	printf("J_dot_inner_sf: %.15g %.15g %.15g \n", J_dot_inner[0], J_dot_inner[1], J_dot_inner[2]);
+	printf("J_dot_outer_sf: %.15g %.15g %.15g \n", J_dot_outer[0], J_dot_outer[1], J_dot_outer[2]);
+	if (have_J_dots){printf("Time: Eq. (17) = %.3f s (J_dots supplied) \n", t2 - t1);}
+	else {printf("Time: self-force + Eq. (17) = %.3f s \n", t2 - t0);}
+
+	printf("Gamma_inner (N_inner.Omega_dot_inner) = %.10e \n", Gamma[0]);
+	printf("Gamma_outer (N_outer.Omega_dot_outer) = %.10e \n", Gamma[1]);
+	printf("Gamma (outer - inner) = %.10e \n", Gamma[2]);
+
+	/* Diagnostic: same Gamma from finite differences of Omega(J) (CKerr_Minverse) along J +/- J_dot*dt, using the same J_dots */
+	double *J_body[2] = {J_inner, J_outer}, *J_dot_body[2] = {J_dot_inner, J_dot_outer};
+	int n_body[2] = {n_inner, n_outer}, k_body[2] = {k_inner, k_outer};
+	double Gamma_fd[2], dt, J_plus[3], J_minus[3], Minv_plus[9], Minv_minus[9], Omega_plus[3], Omega_minus[3];
+	for (b = 0; b < 2; b++){
+		/* dt chosen so the J steps are ~1e-4 J, well above the J2EQL tolerance */
+		dt = 0.;
+		for (k = 0; k < 3; k++){
+			if (J_dot_body[b][k] != 0. && J_body[b][k] != 0.){
+				double dt_k = 1e-4 * fabs(J_body[b][k] / J_dot_body[b][k]);
+				if (dt == 0. || dt_k < dt) dt = dt_k;
+			}
+		}
+		for (k = 0; k < 3; k++){
+			J_plus[k] = J_body[b][k] + J_dot_body[b][k] * dt;
+			J_minus[k] = J_body[b][k] - J_dot_body[b][k] * dt;
+		}
+		CKerr_Minverse(J_plus, Minv_plus, mass, spin);
+		CKerr_Minverse(J_minus, Minv_minus, mass, spin);
+		CKerr_Minv2Omega(Minv_plus, Omega_plus);
+		CKerr_Minv2Omega(Minv_minus, Omega_minus);
+		Gamma_fd[b] = (n_body[b] * (Omega_plus[0] - Omega_minus[0]) + k_body[b] * (Omega_plus[1] - Omega_minus[1]) + m_res * (Omega_plus[2] - Omega_minus[2])) / (2 * dt);
+	}
+	printf("Finite difference check (same J_dots): Gamma_inner = %.10e, Gamma_outer = %.10e, Gamma = %.10e \n", Gamma_fd[0], Gamma_fd[1], Gamma_fd[1] - Gamma_fd[0]);
+
+	return(0);
+}
+#endif
