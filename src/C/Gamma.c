@@ -123,3 +123,54 @@ int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_r
 	Gamma[1] = n_res_outer * omega_dot_outer[0] + k_res_outer * omega_dot_outer[1] + m_res_inner * omega_dot_outer[2];
 	return(0);
 }
+
+/* Eq. (17) of arXiv:2207.07733 with the analytic dOmega/dJ from the contour integrals (J2dOmega_dJ in kerrphase.c) */
+/* Gamma = \vec{N}_{outer} \cdot (dOmega_outer/dJ) \cdot \dot{J}_{outer} - \vec{N}_{inner} \cdot (dOmega_inner/dJ) \cdot \dot{J}_{inner} */
+/* Input: Js and J_dots (per unit mass ratio, as returned by J_dot_selfforce) of both bodies, mass ratios, mass and spin of BH */
+/* With mu_inner = mu_outer = 1, Gamma is in the same (per mass ratio) units as gamma in potential_resonances_*.txt */
+/* Output: Gamma[0] = N_inner.Omega_dot_inner, Gamma[1] = N_outer.Omega_dot_outer, Gamma[2] = Gamma[1] - Gamma[0] */
+/* m_res_inner = m_res_outer = m_res by selection rules */
+int Gamma_dOmegadJ(int n_inner, int k_inner, int n_outer, int k_outer, int m_res, double *J_inner, double *J_outer, double *J_dot_inner, double *J_dot_outer, double mu_inner, double mu_outer, double M, double astar, double *Gamma){
+	int i, k;
+	double dOmega_dJ_inner[9], dOmega_dJ_outer[9];
+	double Omega_dot_inner[3], Omega_dot_outer[3];
+
+	J2dOmega_dJ(J_inner, M, astar, dOmega_dJ_inner);
+	J2dOmega_dJ(J_outer, M, astar, dOmega_dJ_outer);
+
+	/* \dot{\Omega}_i = dOmega_i/dJ_k * mu * \dot{J}_k */
+	for (i = 0; i < 3; i++){
+		Omega_dot_inner[i] = 0.;
+		Omega_dot_outer[i] = 0.;
+		for (k = 0; k < 3; k++){
+			Omega_dot_inner[i] += dOmega_dJ_inner[3 * i + k] * mu_inner * J_dot_inner[k];
+			Omega_dot_outer[i] += dOmega_dJ_outer[3 * i + k] * mu_outer * J_dot_outer[k];
+		}
+	}
+
+	Gamma[0] = n_inner * Omega_dot_inner[0] + k_inner * Omega_dot_inner[1] + m_res * Omega_dot_inner[2];
+	Gamma[1] = n_outer * Omega_dot_outer[0] + k_outer * Omega_dot_outer[1] + m_res * Omega_dot_outer[2];
+	Gamma[2] = Gamma[1] - Gamma[0];
+	return(0);
+}
+
+/* Same as Gamma_dOmegadJ, but computes the J_dots from the Js with the OpenMP self-force (J_dot_selfforce_openmp) */
+/* Output: J_dot_inner[3], J_dot_outer[3] (so they can be reused), and Gamma[3] as in Gamma_dOmegadJ */
+int Gamma_dOmegadJ_selfforce(int nl, int nmax, int kmax, int mmax, int Nr, int Nt, int n_inner, int k_inner, int n_outer, int k_outer, int m_res, double *J_inner, double *J_outer, double mu_inner, double mu_outer, double M, double astar, double *J_dot_inner, double *J_dot_outer, double *Gamma){
+	double J_local[3], EQL[3], anc[3];
+	int i;
+
+	/* Inner body: J -> EQL -> (I, rp, ra) -> J_dot */
+	for (i = 0; i < 3; i++){J_local[i] = J_inner[i];}
+	CKerr_J2EQL(J_local, EQL, M, astar);
+	CKerr_EQL2J(EQL, J_local, M, astar, anc);
+	J_dot_selfforce_openmp(nl, nmax, kmax, mmax, Nr, Nt, anc[2], anc[1], anc[0], M, astar, J_dot_inner);
+
+	/* Outer body */
+	for (i = 0; i < 3; i++){J_local[i] = J_outer[i];}
+	CKerr_J2EQL(J_local, EQL, M, astar);
+	CKerr_EQL2J(EQL, J_local, M, astar, anc);
+	J_dot_selfforce_openmp(nl, nmax, kmax, mmax, Nr, Nt, anc[2], anc[1], anc[0], M, astar, J_dot_outer);
+
+	return(Gamma_dOmegadJ(n_inner, k_inner, n_outer, k_outer, m_res, J_inner, J_outer, J_dot_inner, J_dot_outer, mu_inner, mu_outer, M, astar, Gamma));
+}

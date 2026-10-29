@@ -27,7 +27,7 @@
 
 // Function to calculate chi //
 double calculate_chi(double a, double E, double L, double Q) {
-    return (a * a * (1 - E * E)) / (L * L + Q * Q);
+    return (a * a * (1 - E * E)) / (L * L + Q);
 }
 
 // Function to calculate r // 
@@ -47,7 +47,7 @@ void calculate_z_roots(double chi, double r, complex double *z_minus, complex do
 
 // Polynomial input to the integrals (equation A13 in the paper.) //
 complex double P(complex double z, double a, double E, double L, double Q) {
-    return (Q * (1 - z * z)) - (a * a * (1 - E * E) * z * z * (1 - z * z) * (1 - z * z)) - (L * L * z * z);
+    return (Q * (1 - z * z)) - (a * a * (1 - E * E) * z * z * (1 - z * z)) - (L * L * z * z);
 }
 
 // Square root of polynomial function above //
@@ -102,7 +102,7 @@ complex double d2J_zdEQ(complex double z, complex double z_minus, complex double
 
 // Function to evaluate equation A12 in the paper //
 complex double d2J_zdLQ(complex double z, complex double z_minus, complex double z_plus, double a, double E, double L, double Q) {
-    complex double numerator = L * z;
+    complex double numerator = L * z * z;
     complex double denominator = 4 * M_PI * sqrt_P(z, z_minus, z_plus, a, E, L, Q) * P(z, a, E, L, Q);
 
     return numerator / denominator;
@@ -271,7 +271,7 @@ complex double sqrt_P_r(complex double z, complex double r_root1, complex double
 // Function to evaluate equation A14 in the paper //
 complex double d2J_rdE2(complex double z, complex double r_root1, complex double r_root2, complex double r_root3, complex double r_root4, double a, double M, double E, double Q, double L) {
     complex double numerator = ((z*z + a*a) * (z*z + a*a) - a*a * (z*z - 2*M*z +a*a)) * P_r(z, a, M, E, Q, L) - (((z*z + a*a) * E - a * L) * (z*z + a*a) + a * (z*z - 2*M*z + a*a) * (L - a * E)) * (((z*z + a*a) * E - a * L) * (z*z + a*a) + a * (z*z - 2*M*z + a*a) * (L - a * E));
-    complex double denominator = 2 * M_PI * (z*z - 2*M*z + a*a) * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, L, Q);
+    complex double denominator = 2 * M_PI * (z*z - 2*M*z + a*a) * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, Q, L);
 
     return numerator / denominator;
 }
@@ -279,7 +279,7 @@ complex double d2J_rdE2(complex double z, complex double r_root1, complex double
 // Function to evaluate equation A15 in the paper //
 complex double d2J_rdL2(complex double z, complex double r_root1, complex double r_root2, complex double r_root3, complex double r_root4, double a, double M, double E, double Q, double L) {
     complex double numerator = (a*a - (z*z - 2*M*z + a*a)) * P_r(z, a, M, E, Q, L) - (((z*z + a*a) * E - a * L) * a + (z*z - 2*M*z + a*a) * (L - a * E)) * (((z*z + a*a) * E - a * L) * a + (z*z - 2*M*z + a*a) * (L - a * E));
-    complex double denominator = 2 * M_PI * (z*z - 2*M*z + a*a) * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, L, Q);
+    complex double denominator = 2 * M_PI * (z*z - 2*M*z + a*a) * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, Q, L);
 
     return numerator / denominator;
 }
@@ -287,7 +287,7 @@ complex double d2J_rdL2(complex double z, complex double r_root1, complex double
 // Function to evaluate equation A16 in the paper //
 complex double d2J_rdQ2(complex double z, complex double r_root1, complex double r_root2, complex double r_root3, complex double r_root4, double a, double M, double E, double Q, double L) {
     complex double numerator = - (z*z - 2*M*z + a*a);
-    complex double denominator = 8 * M_PI * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, L, Q);
+    complex double denominator = 8 * M_PI * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, Q, L);
 
     return numerator / denominator;
 }
@@ -295,7 +295,7 @@ complex double d2J_rdQ2(complex double z, complex double r_root1, complex double
 // Function to evaluate equation A17 in the paper //
 complex double d2J_rdEL(complex double z, complex double r_root1, complex double r_root2, complex double r_root3, complex double r_root4, double a, double M, double E, double Q, double L) {
     complex double numerator = (a * (z*z - 2*M*z + a*a) - a * (z*z + a*a)) * P_r(z, a, M, E, Q, L) + (((z*z + a*a) * E - a * L) * (z*z + a*a) + a * (z*z - 2*M*z + a*a) * (L - a * E)) * (((z*z + a*a) * E - a * L) * a + (z*z - 2*M*z + a*a) * (L - a * E));
-    complex double denominator = 2 * M_PI * (z*z - 2*M*z + a*a) * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, L, Q);
+    complex double denominator = 2 * M_PI * (z*z - 2*M*z + a*a) * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, Q, L);
 
     return numerator / denominator;
 }
@@ -303,7 +303,7 @@ complex double d2J_rdEL(complex double z, complex double r_root1, complex double
 // Function to evaluate equation A18 in the paper //
 complex double d2J_rdEQ(complex double z, complex double r_root1, complex double r_root2, complex double r_root3, complex double r_root4, double a, double M, double E, double Q, double L) {
     complex double numerator = (((z*z + a*a) * E - a * L) * (z*z + a*a) + a * (z*z - 2*M*z + a*a) * (L - a * E));
-    complex double denominator = 4 * M_PI * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, L, Q);
+    complex double denominator = 4 * M_PI * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, Q, L);
 
     return numerator / denominator;
 }
@@ -311,7 +311,7 @@ complex double d2J_rdEQ(complex double z, complex double r_root1, complex double
 // Function to evaluate equation A19 in the paper //
 complex double d2J_rdLQ(complex double z, complex double r_root1, complex double r_root2, complex double r_root3, complex double r_root4, double a, double M, double E, double Q, double L) {
     complex double numerator =  - (((z*z + a*a) * E - a * L) * a + (z*z - 2*M*z + a*a) * (L - a * E));
-    complex double denominator = 4 * M_PI * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, L, Q);
+    complex double denominator = 4 * M_PI * sqrt_P_r(z, r_root1, r_root2, r_root3, r_root4, a, E) * P_r(z, a, M, E, Q, L);
 
     return numerator / denominator;
 }
@@ -432,9 +432,9 @@ int dM_dJ(double M[TOTAL_ELEMENTS], double partial_derivatives[3 * TOTAL_ELEMENT
                     for (int B = 0; B < 3; B++) {
                         for (int D = 0; D < 3; D++) {
                             // Access M elements based on flattened index
-                            double M_Aj = M[A * 3 + j]; // M_Aj for specific A and j
-                            double M_Di = M[D * 3 + i]; // M_Di for specific D and i
-                            double M_Bk = M[B * 3 + k]; // M_Bk for specific B and k
+                            double M_Aj = M[j * 3 + A]; // M_Aj for specific A and j
+                            double M_Di = M[i * 3 + D]; // M_Di for specific D and i
+                            double M_Bk = M[k * 3 + B]; // M_Bk for specific B and k
 
                             // Update result tensor
                             result[A * 3 + i + 3 * 3 * k] += - M_Aj * M_Di * M_Bk * partial_derivatives[j * 3 * 3 + B * 3 + D];
@@ -506,6 +506,86 @@ int Delta_Phi(double E, double Q, double L, double Delta_J_td_r, double Delta_J_
   }
 
 return (0);
+}
+
+/* Computes dOmega_i/dJ_k from the polar and radial contour integrals (same steps as main below) */
+/* Input: action variables J (not modified), mass and spin of BH */
+/* Output: dOmega_dJ[3 * i + k] = dOmega_i/dJ_k, i,k = {r, theta, phi} */
+int J2dOmega_dJ(double *J, double M, double astar, double *dOmega_dJ){
+    double J_local[3], EQL[3], ancillary[3], r_roots[4];
+    double Minv[9], M_matrix[9];
+    double input_array[12], partial_derivatives[27], dM_dJ_result[27];
+    double a = astar, E, Q, L;
+    int num_points = 1000;  // number of points on each contour
+
+    J_local[0] = J[0];
+    J_local[1] = J[1];
+    J_local[2] = J[2];
+
+    CKerr_J2EQL(J_local, EQL, M, a);
+    CKerr_Minverse(J_local, Minv, M, a);
+    invertMatrix(Minv, M_matrix);
+
+    E = EQL[0];
+    Q = EQL[1];
+    L = EQL[2];
+
+    /* Polar contour integrals */
+    double chi = calculate_chi(a, E, L, Q);
+    double r = calculate_r(L, Q);
+
+    complex double z_minus, z_plus;
+    calculate_z_roots(chi, r, &z_minus, &z_plus);
+
+    double radius = 2 * ((1 / z_minus) + (1 / z_plus));  // (harmonic mean) radius of the contour
+    complex double z_start = radius + 0.0 * complex_I;  // starting point on the contour
+
+    complex double integral_d2JdE2 = contour_integral_z(d2J_zdE2, z_start, radius, num_points, a, E, L, Q, z_minus, z_plus);
+    complex double integral_d2JdEdL = contour_integral_z(d2J_zdEdL, z_start, radius, num_points, a, E, L, Q, z_minus, z_plus);
+    complex double integral_d2JdL2 = contour_integral_z(d2J_zdL2, z_start, radius, num_points, a, E, L, Q, z_minus, z_plus);
+    complex double integral_d2JdEQ = contour_integral_z(d2J_zdEQ, z_start, radius, num_points, a, E, L, Q, z_minus, z_plus);
+    complex double integral_d2JdQ2 = contour_integral_z(d2J_zdQ2, z_start, radius, num_points, a, E, L, Q, z_minus, z_plus);
+    complex double integral_d2JdLQ = contour_integral_z(d2J_zdLQ, z_start, radius, num_points, a, E, L, Q, z_minus, z_plus);
+
+    /* Radial contour integrals (radial_roots overwrites J_local[2] with L, which is J_phi anyway) */
+    radial_roots(EQL, J_local, M, a, ancillary, r_roots);
+
+    double radius_r = (r_roots[3] - r_roots[1])/2.0; //radius of circular contour
+    double center = (r_roots[2] + r_roots[3])/2.0; //center of circular contour
+    complex double r_start = radius_r + 0.0 * complex_I; //starting point on contour
+
+    complex double integral_d2J_r_dE2 = contour_integral_r(d2J_rdE2, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
+    complex double integral_d2J_r_dL2 = contour_integral_r(d2J_rdL2, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
+    complex double integral_d2J_r_dQ2 = contour_integral_r(d2J_rdQ2, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
+    complex double integral_d2J_r_dEL = contour_integral_r(d2J_rdEL, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
+    complex double integral_d2J_r_dEQ = contour_integral_r(d2J_rdEQ, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
+    complex double integral_d2J_r_dLQ = contour_integral_r(d2J_rdLQ, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
+
+    /* Real parts only; the imaginary parts are roundoff (checked with KERRPHASE_CHECK_IMAG) */
+    input_array[0] = creal(integral_d2J_r_dE2);
+    input_array[1] = creal(integral_d2J_r_dL2);
+    input_array[2] = creal(integral_d2J_r_dQ2);
+    input_array[3] = creal(integral_d2J_r_dEL);
+    input_array[4] = creal(integral_d2J_r_dEQ);
+    input_array[5] = creal(integral_d2J_r_dLQ);
+    input_array[6] = creal(integral_d2JdE2);
+    input_array[7] = creal(integral_d2JdL2);
+    input_array[8] = creal(integral_d2JdQ2);
+    input_array[9] = creal(integral_d2JdEdL);
+    input_array[10] = creal(integral_d2JdEQ);
+    input_array[11] = creal(integral_d2JdLQ);
+
+    partial_J_derivatives(input_array, partial_derivatives);
+    dM_dJ(M_matrix, partial_derivatives, dM_dJ_result);
+
+    /* dOmega_i/dJ_k = dM_dJ_result[i + 9 * k] (same indexing as Delta_Phi) */
+    for (int i = 0; i < 3; i++){
+      for (int k = 0; k < 3; k++){
+        dOmega_dJ[3 * i + k] = dM_dJ_result[i + 9 * k];
+      }
+    }
+
+    return (0);
 }
 
 
@@ -592,13 +672,13 @@ int main(int argc, char **argv) {
     complex double integral_d2JdQ2 = contour_integral_z(d2J_zdQ2, z_start, radius, num_points, a, E, L, Q, z_minus, z_plus);
     complex double integral_d2JdLQ = contour_integral_z(d2J_zdLQ, z_start, radius, num_points, a, E, L, Q, z_minus, z_plus);
      
-    #if 0
-    printf("d2JdE2 contour integral: %e + %e I\n", creal(integral_d2JdE2), cimag(integral_d2JdE2));
-    printf("d2JdEdL contour integral: %e + %e I\n", creal(integral_d2JdEdL), cimag(integral_d2JdEdL));
-    printf("d2JdL2 contour integral: %e + %e I\n", creal(integral_d2JdL2), cimag(integral_d2JdL2));
-    printf("d2JdQ2 contour integral: %e + %e I\n", creal(integral_d2JdQ2), cimag(integral_d2JdQ2));
-    printf("d2JdEQ contour integral: %e + %e I\n", creal(integral_d2JdEQ), cimag(integral_d2JdEQ));
-    printf("d2JdLQ contour integral: %e + %e I\n", creal(integral_d2JdLQ), cimag(integral_d2JdLQ));
+    #ifdef KERRPHASE_CHECK_IMAG
+    printf("d2JdE2 contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2JdE2), cimag(integral_d2JdE2), fabs(cimag(integral_d2JdE2) / creal(integral_d2JdE2)));
+    printf("d2JdEdL contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2JdEdL), cimag(integral_d2JdEdL), fabs(cimag(integral_d2JdEdL) / creal(integral_d2JdEdL)));
+    printf("d2JdL2 contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2JdL2), cimag(integral_d2JdL2), fabs(cimag(integral_d2JdL2) / creal(integral_d2JdL2)));
+    printf("d2JdQ2 contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2JdQ2), cimag(integral_d2JdQ2), fabs(cimag(integral_d2JdQ2) / creal(integral_d2JdQ2)));
+    printf("d2JdEQ contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2JdEQ), cimag(integral_d2JdEQ), fabs(cimag(integral_d2JdEQ) / creal(integral_d2JdEQ)));
+    printf("d2JdLQ contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2JdLQ), cimag(integral_d2JdLQ), fabs(cimag(integral_d2JdLQ) / creal(integral_d2JdLQ)));
     #endif
 
     /* For radial integral */
@@ -627,13 +707,13 @@ int main(int argc, char **argv) {
     complex double integral_d2J_r_dEQ = contour_integral_r(d2J_rdEQ, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
     complex double integral_d2J_r_dLQ = contour_integral_r(d2J_rdLQ, r_start, radius_r, num_points, center, a, M, E, Q, L, r_roots[0], r_roots[1], r_roots[2], r_roots[3]);
 
-    #if 0
-    printf("d2J_rdE2 contour integral: %e + %e I\n", creal(integral_d2J_r_dE2), cimag(integral_d2J_r_dE2));
-    printf("d2J_rdL2 contour integral: %e + %e I\n", creal(integral_d2J_r_dL2), cimag(integral_d2J_r_dL2));
-    printf("d2J_rdQ2 contour integral: %e + %e I\n", creal(integral_d2J_r_dQ2), cimag(integral_d2J_r_dQ2));
-    printf("d2J_rdEL contour integral: %e + %e I\n", creal(integral_d2J_r_dEL), cimag(integral_d2J_r_dEL));
-    printf("d2J_rdEQ contour integral: %e + %e I\n", creal(integral_d2J_r_dEQ), cimag(integral_d2J_r_dEQ));
-    printf("d2J_rdLQ contour integral: %e + %e I\n", creal(integral_d2J_r_dLQ), cimag(integral_d2J_r_dLQ));
+    #ifdef KERRPHASE_CHECK_IMAG
+    printf("d2J_rdE2 contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2J_r_dE2), cimag(integral_d2J_r_dE2), fabs(cimag(integral_d2J_r_dE2) / creal(integral_d2J_r_dE2)));
+    printf("d2J_rdL2 contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2J_r_dL2), cimag(integral_d2J_r_dL2), fabs(cimag(integral_d2J_r_dL2) / creal(integral_d2J_r_dL2)));
+    printf("d2J_rdQ2 contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2J_r_dQ2), cimag(integral_d2J_r_dQ2), fabs(cimag(integral_d2J_r_dQ2) / creal(integral_d2J_r_dQ2)));
+    printf("d2J_rdEL contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2J_r_dEL), cimag(integral_d2J_r_dEL), fabs(cimag(integral_d2J_r_dEL) / creal(integral_d2J_r_dEL)));
+    printf("d2J_rdEQ contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2J_r_dEQ), cimag(integral_d2J_r_dEQ), fabs(cimag(integral_d2J_r_dEQ) / creal(integral_d2J_r_dEQ)));
+    printf("d2J_rdLQ contour integral: %e + %e I \t |Im/Re| = %e\n", creal(integral_d2J_r_dLQ), cimag(integral_d2J_r_dLQ), fabs(cimag(integral_d2J_r_dLQ) / creal(integral_d2J_r_dLQ)));
     #endif
 
     /* Define input array for partial derivatives of J array */
@@ -655,7 +735,7 @@ int main(int argc, char **argv) {
 
     dM_dJ(M_matrix, partial_derivatives, dM_dJ_result); // Compute dM_dJ
 
-    #if 0
+    #ifdef KERRPHASE_CHECK_IMAG
 
     printf("dJ_dBD components: \n");
     for (i = 0; i < 27; i++){
@@ -673,6 +753,7 @@ int main(int argc, char **argv) {
         printf("%e\n", dM_dJ_result[i + 9 * j]);
       }
     }
+    return 0; // Skip Delta_Phi (slow J_dot_selfforce) when only checking the integrals and matrices
     #endif
 
     Delta_Phi(E, Q, L, Delta_J_td_r, Delta_J_td_theta, Delta_J_td_phi, dM_dJ_result, Delta_Phi_components, &t_scale, a, M); // Compute Delta Phi for each direction

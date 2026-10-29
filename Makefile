@@ -79,11 +79,11 @@ $(OUTDIR)/J_evolve_single_restart: $(SRC_C)/calling.c $(SRC_C)/resonance_find.c 
 $(OUTDIR)/Delta_J_single: $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
                           $(SRC_C)/kerrgwem.c $(SRC_C)/resonance_find.c \
                           $(SRC_C)/Gamma.c $(SRC_C)/Delta_J.c $(SRC_C)/J_dot.c \
-                          $(SRC_C)/$(C_HEADER)
+                          $(SRC_C)/kerrphase.c $(SRC_C)/$(C_HEADER)
 	$(CC) $(CFLAGS) $(OMPFLAGS) $(SRC_C)/calling.c -DIS_DELTA_J_SINGLE \
         $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c $(SRC_C)/kerrgwem.c \
         $(SRC_C)/resonance_find.c $(SRC_C)/Gamma.c $(SRC_C)/Delta_J.c \
-        $(SRC_C)/J_dot.c -I$(SRC_C) -o $@ $(LIBS)
+        $(SRC_C)/J_dot.c $(SRC_C)/kerrphase.c -I$(SRC_C) -o $@ $(LIBS)
 
 # Delta_Phi_single
 $(OUTDIR)/Delta_Phi_single: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
@@ -116,7 +116,9 @@ TEST_EXES = $(TEST_OUTDIR)/J2EQL \
             $(TEST_OUTDIR)/ORBIT2J \
             $(TEST_OUTDIR)/CHECK_RES_COND \
             $(TEST_OUTDIR)/RESFIND_APO \
-            $(TEST_OUTDIR)/RESFIND_APO_GENERIC
+            $(TEST_OUTDIR)/RESFIND_APO_GENERIC \
+            $(TEST_OUTDIR)/DELTA_PHI_IMAG \
+            $(TEST_OUTDIR)/GAMMA_EQ17
 
 # Running "make test" builds all test executables
 test: $(TEST_OUTDIR) $(TEST_EXES)
@@ -222,6 +224,26 @@ $(TEST_OUTDIR)/RESFIND_APO_GENERIC: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
                             $(SRC_C)/$(C_HEADER)
 	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_RESFIND_APO_GENERIC $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Create Delta_Phi_single that prints the contour integrals (with |Im/Re|), dJ/dEQL, dM/dJ, and dOmega/dJ, then exits before Delta_Phi
+$(TEST_OUTDIR)/DELTA_PHI_IMAG: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DKERRPHASE_STANDALONE -DKERRPHASE_CHECK_IMAG $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+        $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Create executable to compute Gamma from Eq. (17) of arXiv:2207.07733 with dOmega/dJ from the contour integrals
+$(TEST_OUTDIR)/GAMMA_EQ17: $(SRC_C)/calling.c $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/Gamma.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_GAMMA_EQ17 $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c \
+        $(SRC_C)/kerrphase.c $(SRC_C)/Gamma.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
 
