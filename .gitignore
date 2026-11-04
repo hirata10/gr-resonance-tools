@@ -7,8 +7,11 @@ dumps/
 dump/
 .DS_Store
 build/
-gr_wrapper.cpython-311-darwin.so
+*.so
+*.pyd
+gr_wrapper.html
 gr_wrapper.c
 __pycache__/
 .vscode
 CLAUDE.md
+*.icloud
