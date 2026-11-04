@@ -220,6 +220,10 @@ void J_dot_selfforce_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt
           if (astar == 0 && i_n == 0 && i_k == -i_m) // Schwarzschild case a ==
                                                      // 0
             continue;
+          /* (-n,-k,-m) has omega -> -omega and Z -> (-1)^l conj(Z), so its term equals the (n,k,m) term:
+           * keep the half whose first nonzero index is positive and count it twice */
+          if (i_n < 0 || (i_n == 0 && (i_k < 0 || (i_k == 0 && i_m < 0))))
+            continue;
           double omegagw;
 
           // double radial_t0 = omp_get_wtime();
@@ -270,13 +274,14 @@ void J_dot_selfforce_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt
             // \t %lg\n", i_n, i_k, i_m, il, C0[4*il], C0[4*il+1], C0[4*il+2],
             // C0[4*il+3], Z_down_square, Z_out_square);
 
-            J_dot_sf_local[0] += -i_n *
+            /* Factor 2 counts the (-n,-k,-m) mode skipped above */
+            J_dot_sf_local[0] += 2. * -i_n *
                                  (Z_out_square + alphankm * Z_down_square) /
                                  (2. * omega_nkm * omega_nkm * omega_nkm);
-            J_dot_sf_local[1] += -i_k *
+            J_dot_sf_local[1] += 2. * -i_k *
                                  (Z_out_square + alphankm * Z_down_square) /
                                  (2. * omega_nkm * omega_nkm * omega_nkm);
-            J_dot_sf_local[2] += -i_m *
+            J_dot_sf_local[2] += 2. * -i_m *
                                  (Z_out_square + alphankm * Z_down_square) /
                                  (2. * omega_nkm * omega_nkm * omega_nkm);
           }
@@ -606,10 +611,21 @@ void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer,
 Compute J_dot_tidal using OpenMP parallelization
 over independent resonance modes (i-loop)
 ------------------------------------------------------------
-This is the primary function to use!
+This is the primary function to use
 J_dot_inner -> EMRI is interior to perturber, scaled(J_dot_tidal_inner) ~ mu_outer
 J_dot_outer -> EMRI is exterior to perturber, scaled(J_dot_tidal_outer) ~ mu_inner
 */
+
+/* Modes skipped in J_dot_tidal_openmp: zero modes, or |n|, |k| > 20 for either body */
+static int tidal_mode_skipped(int i, int n_res_inner, int k_res_inner, int m_res_inner,
+                              int n_res_outer, int k_res_outer, int m_res_outer) {
+  int i_n_inner = i * n_res_inner, i_k_inner = i * k_res_inner, i_m_inner = i * m_res_inner;
+  int i_n_outer = i * n_res_outer, i_k_outer = i * k_res_outer, i_m_outer = i * m_res_outer;
+  return (i_n_outer == 0 && i_k_outer == 0 && i_m_outer == 0) ||
+         (i_n_inner == 0 && i_k_inner == 0 && i_m_inner == 0) ||
+         abs(i_n_outer) > 20 || abs(i_k_outer) > 20 || abs(i_n_inner) > 20 ||
+         abs(i_k_inner) > 20;
+}
 
 void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
                         int k_res_inner, int k_res_outer, int m_res_inner,
@@ -681,6 +697,9 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
 // --------------------------------------------------------
 // Main OpenMP region
 // --------------------------------------------------------
+#if 0
+  /* Original version: one task per i = -N_res..N_res, each calling CKerr_RadialFunc for both bodies in sequence.
+   * Replaced by the two-step version below (modes i > 0 counted twice, one task per RadialFunc call). */
 #pragma omp parallel
   {
     // --------------------------------------------------------
@@ -972,6 +991,184 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
     free((char *)E0_inner);
     free((char *)E0_outer);
   }
+#endif
+
+  /* Modes i and -i give the same real contribution (omega -> -omega, Z -> (-1)^l conj(Z), cos(i theta) even,
+   * sin(i theta) odd), so only i = 1..N_res is computed and counted twice. Their imaginary parts cancel
+   * exactly, so the imaginary-part check is not accumulated here. */
+  /* Step 1: every CKerr_RadialFunc call is its own task, t = 2*(i-1) + body (body 0 = inner, 1 = outer).
+   * Each task keeps the E0/E1/C0 layout of the original per-thread buffer (10*nl doubles). */
+  int n_tasks = 2 * N_res;
+  double *mode_buf = (double *)malloc((size_t)(n_tasks * nl * 10) * sizeof(double));
+  double *omegagw_buf = (double *)malloc((size_t)n_tasks * sizeof(double));
+  if (!mode_buf || !omegagw_buf) {
+    printf("Memory allocation failed in J_dot_tidal_openmp\n");
+    exit(1);
+  }
+
+#pragma omp parallel for schedule(dynamic, 1)
+  for (int t = 0; t < n_tasks; t++) {
+    int i = t / 2 + 1, body = t % 2;
+    if (tidal_mode_skipped(i, n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, m_res_outer)) continue;
+
+    double *E0 = mode_buf + (size_t)t * nl * 10;
+    double *C0 = E0 + 2 * nl;
+    if (body == 0)
+      CKerr_RadialFunc(Minv_inner, xuorig_inner, M, astar, i * n_res_inner, i * k_res_inner,
+                       i * m_res_inner, 42, 42, nl, C0, &omegagw_buf[t], E0);
+    else
+      CKerr_RadialFunc(Minv_outer, xuorig_outer, M, astar, i * n_res_outer, i * k_res_outer,
+                       i * m_res_outer, 42, 42, nl, C0, &omegagw_buf[t], E0);
+  }
+
+  /* Step 2: sum over (i, l) pairs */
+#pragma omp parallel
+  {
+    double J_local_inner[3] = {0.0, 0.0, 0.0};
+    double J_local_outer[3] = {0.0, 0.0, 0.0};
+    double JRe_local_outer[3] = {0.0, 0.0, 0.0};
+
+#pragma omp for schedule(dynamic, 1)
+    for (int p = 0; p < N_res * nl; p++) {
+      int i = p / nl + 1, il = p % nl;
+      if (tidal_mode_skipped(i, n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, m_res_outer)) continue;
+
+      int i_n_inner = i * n_res_inner;
+      int i_k_inner = i * k_res_inner;
+      int i_m_inner = i * m_res_inner;
+
+      int i_n_outer = i * n_res_outer;
+      int i_k_outer = i * k_res_outer;
+      int i_m_outer = i * m_res_outer;
+
+      double Rtheta = cos(i * theta_res_F);
+      double Itheta = sin(i * theta_res_F);
+
+      double *E0_inner = mode_buf + (size_t)(2 * (i - 1)) * nl * 10, *C0_inner = E0_inner + 2 * nl;
+      double *E0_outer = mode_buf + (size_t)(2 * (i - 1) + 1) * nl * 10, *C0_outer = E0_outer + 2 * nl;
+      double omegagw_inner = omegagw_buf[2 * (i - 1)], omegagw_outer = omegagw_buf[2 * (i - 1) + 1];
+      double cscat[16], aux[4];
+
+      // Set the frequency to the inner body value,
+      // but either body is fine since the system is in resonance
+      double omega_nkm = omegagw_inner;
+
+      /* Frequency check, once per mode */
+      if (il == 0) {
+        double denom = fabs(omegagw_inner) + fabs(omegagw_outer);
+        double rel_diff = denom > 0.0 ? 2.0 * fabs(omegagw_inner - omegagw_outer) / denom : 0.0;
+        double delta_omega_tol = 1.0e-4; // 0.01%
+        if (rel_diff > delta_omega_tol) {
+          printf("WARNING: GW frequencies for inner and outer bodies differ by "
+                 "%.6e (tol %.6e)\n",
+                 rel_diff, delta_omega_tol);
+        }
+      }
+
+      CKerr_GWScatMatrix(M, astar, omega_nkm, i_m_inner, E0_outer[il], cscat,
+                         aux);
+
+      double lambda = E0_inner[il] - 2 * astar * M * i_m_inner * omega_nkm +
+                      astar * astar * M * M * omega_nkm * omega_nkm - 2;
+
+      double P =
+          omega_nkm - i_m_inner * astar * M /
+                          (2 * M * (M + sqrt(M * M - astar * astar * M * M)));
+
+      double numer = 256 * pow(2 * M * rH, 5) * P *
+                     (P * P + 4 * epsilon * epsilon) *
+                     (P * P + 16 * epsilon * epsilon) * omega_nkm *
+                     omega_nkm * omega_nkm;
+
+      double C2 =
+          ((lambda + 2) * (lambda + 2) +
+           4 * i_m_inner * astar * M * omega_nkm -
+           4 * astar * astar * M * M * omega_nkm * omega_nkm) *
+              (lambda * lambda + 36 * i_m_inner * astar * M * omega_nkm -
+               36 * astar * astar * M * M * omega_nkm * omega_nkm) +
+          (2 * lambda + 3) *
+              (96 * astar * astar * M * M * omega_nkm * omega_nkm -
+               48 * i_m_inner * astar * M * omega_nkm) +
+          144 * omega_nkm * omega_nkm * (M * M - astar * astar * M * M);
+
+      double alphankm = numer / C2;
+
+      /* J_dot_tidal_inner */
+      double termR1_inner =
+            C0_inner[4 * il + 2] * cscat[0] * C0_outer[4 * il] +
+            C0_outer[4 * il] * cscat[1] * C0_inner[4 * il + 3] +
+            C0_outer[4 * il + 1] * C0_inner[4 * il + 3] * cscat[0] -
+            C0_outer[4 * il + 1] * cscat[1] * C0_inner[4 * il + 2] +
+            alphankm * (C0_outer[4 * il] * C0_inner[4 * il] +
+              C0_outer[4 * il + 1] * C0_inner[4 * il + 1]);
+
+      double termR2_inner =
+            C0_outer[4 * il + 1] * cscat[0] * C0_inner[4 * il + 2] +
+            C0_outer[4 * il + 1] * cscat[1] * C0_inner[4 * il + 3] -
+            C0_outer[4 * il] * C0_inner[4 * il + 3] * cscat[0] +
+            C0_outer[4 * il] * cscat[1] * C0_inner[4 * il + 2] +
+            alphankm * (C0_outer[4 * il + 1] * C0_inner[4 * il] -
+            C0_outer[4 * il] * C0_inner[4 * il + 1]);
+
+      double contrib_Re_inner = (termR1_inner * Rtheta + termR2_inner * Itheta) / (omega_nkm * omega_nkm * omega_nkm);
+
+      /* J_dot_tidal_outer */
+      double termR1_outer =
+      C0_inner[4 * il + 2] * C0_outer[4 * il + 2] +
+      C0_inner[4 * il + 3] * C0_outer[4 * il + 3] -
+      C0_inner[4 * il + 2] * cscat[0] * C0_outer[4 * il] +
+      C0_inner[4 * il + 2] * cscat[1] * C0_outer[4 * il + 1] -
+      C0_inner[4 * il + 3] * cscat[1] * C0_outer[4 * il] -
+      C0_inner[4 * il + 3] * cscat[0] * C0_outer[4 * il + 1];
+
+      double termR2_outer =
+      C0_inner[4 * il + 2] * C0_outer[4 * il + 3] -
+      C0_inner[4 * il + 3] * C0_outer[4 * il + 2] +
+      C0_inner[4 * il + 3] * cscat[0] * C0_outer[4 * il] -
+      C0_inner[4 * il + 3] * cscat[1] * C0_outer[4 * il + 1] -
+      C0_inner[4 * il + 2] * cscat[1] * C0_outer[4 * il] -
+      C0_inner[4 * il + 2] * cscat[0] * C0_outer[4 * il + 1];
+
+      double contrib_Re_outer = (termR1_outer * Rtheta + termR2_outer * Itheta) / (omega_nkm * omega_nkm * omega_nkm);
+
+      // ------------------------------------------------
+      // LOCAL accumulation (thread-safe); factor 2 counts mode -i
+      // ------------------------------------------------
+      J_local_inner[0] += 2. * -i_n_inner * mu_outer * contrib_Re_inner;
+      J_local_inner[1] += 2. * -i_k_inner * mu_outer * contrib_Re_inner;
+      J_local_inner[2] += 2. * -i_m_inner * mu_outer * contrib_Re_inner;
+
+      J_local_outer[0] += 2. * -i_n_outer * mu_inner * contrib_Re_outer;
+      J_local_outer[1] += 2. * -i_k_outer * mu_inner * contrib_Re_outer;
+      J_local_outer[2] += 2. * -i_m_outer * mu_inner * contrib_Re_outer;
+
+      /* Check that this real part agrees with previous result */
+      JRe_local_outer[0] += 2. * -i_n_outer * mu_inner * contrib_Re_outer;
+      JRe_local_outer[1] += 2. * -i_k_outer * mu_inner * contrib_Re_outer;
+      JRe_local_outer[2] += 2. * -i_m_outer * mu_inner * contrib_Re_outer;
+    }
+
+// --------------------------------------------------------
+// Merge thread-local results
+// --------------------------------------------------------
+#pragma omp critical
+    {
+      J_global_inner[0] += J_local_inner[0];
+      J_global_inner[1] += J_local_inner[1];
+      J_global_inner[2] += J_local_inner[2];
+
+      J_global_outer[0] += J_local_outer[0];
+      J_global_outer[1] += J_local_outer[1];
+      J_global_outer[2] += J_local_outer[2];
+
+      JRe_global_outer[0] += JRe_local_outer[0];
+      JRe_global_outer[1] += JRe_local_outer[1];
+      JRe_global_outer[2] += JRe_local_outer[2];
+    }
+  }
+
+  free(mode_buf);
+  free(omegagw_buf);
 
   // ------------------------------------------------------------
   // Final output
@@ -992,7 +1189,7 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
   #endif
   #if 1
   printf("J_dot.c: Real part of tidal resonance (outer) \n Jdotr Jdottheta Jdotphi: %.15e %.15e %.15e \n", JRe_global_outer[0], JRe_global_outer[1], JRe_global_outer[2]);
-  printf("J_dot.c: Imag. part of tidal resonance (outer) \n Jdotr Jdottheta Jdotphi: %.15e %.15e %.15e \n", JIm_global_outer[0], JIm_global_outer[1], JIm_global_outer[2]);
+  printf("J_dot.c: Imag. part of tidal resonance (outer): not computed, it cancels exactly between modes i and -i \n");
   printf("J_dot.c: (calc(J_dot_td_outer) - J_dot_td_Re_outer) / calc(J_dot_td_outer): %.15e %.15e %.15e \n", 
     (JRe_global_outer[0] - J_global_outer[0]) / J_global_outer[0], (JRe_global_outer[1] - J_global_outer[1]) / J_global_outer[1], (JRe_global_outer[2] - J_global_outer[2]) / J_global_outer[2]);
   #endif
