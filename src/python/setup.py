@@ -33,7 +33,7 @@ extensions = [
         "gr_wrapper",
         sourcefiles,
         include_dirs=[c_dir],
-        extra_compile_args=["-fopenmp"],
+        extra_compile_args=["-fopenmp", "-O2", "-ffp-contract=off"],  # same optimization flags as the Makefile
         extra_link_args=["-fopenmp"],
     )
 ]

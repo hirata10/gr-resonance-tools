@@ -5,7 +5,9 @@
 # Compiler and flags
 # CC = gcc # For HPC compiler flag
 CC     = gcc-15
-CFLAGS = -w
+# -O2 without FMA contraction (-ffp-contract=off) gives the same results as -O0, bit for bit; use OPTFLAGS=-O0 to step through code in a debugger
+OPTFLAGS = -O2 -ffp-contract=off
+CFLAGS = -w $(OPTFLAGS)
 OMPFLAGS = -fopenmp
 LIBS   = -lm
 
@@ -100,7 +102,7 @@ $(OUTDIR)/Delta_Phi_single: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
 # ==================================================
 
 # You can change these compiler options:
-TEST_CFLAGS = -Wall -g # include -g for degugging output
+TEST_CFLAGS = -Wall -g $(OPTFLAGS) # include -g for degugging output
 TEST_LIBS   = -lm
 TEST_OMPFLAGS = -fopenmp
 TEST_OPENMPLIBS = -fopenmp -lgomp -pthread
