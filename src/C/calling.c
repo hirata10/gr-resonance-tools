@@ -1110,7 +1110,7 @@ int main(int argc, char **argv)
 
 
 	// rk4_J2Jdot_restart(t0, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
-	rk4_J2Jdot_restart_openmp(t0, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
+	rk4_J2Jdot_restart_openmp(t0, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, GLOBALPAR_Nr_self, GLOBALPAR_Nt_self, M, astar);
 	
 		 
  
@@ -1173,7 +1173,7 @@ int main(int argc, char **argv)
 
 	// printf("\n");
 	// rk4_J2Jdot_restart(t_start, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
-	rk4_J2Jdot_restart_openmp(t_start, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, M, astar);
+	rk4_J2Jdot_restart_openmp(t_start, t, i_start, n, J_r_ini, J_theta_ini, J_phi_ini, J_r_final, J_theta_final, J_phi_final, RESTART, mu_body, GLOBALPAR_Nr_self, GLOBALPAR_Nt_self, M, astar);
 		 
  
 	//printf("t \t J_r \t J_theta \t J_phi \n------------\n");

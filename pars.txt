@@ -19,10 +19,10 @@ i_start_inner 1
 i_start_outer 1
 
 #Number of time steps in evolution for inner body
-n_time_inner 3
+n_time_inner 10
 
 #Number of time steps in evolution for outer body
-n_time_outer 2
+n_time_outer 3
 
 #Semi-major axis of inner body wrt BH
 sm_axis_inner 50
@@ -34,7 +34,7 @@ sm_axis_outer 200
 N_sys 2
 
 #Number of resonance modes
-N_res 2
+N_res 5
 
 #Number of \ell modes for resonance calculation
 nl_res 4
@@ -47,13 +47,17 @@ N_max_Fourier 5
 
 #For the case of the self-force calculation
 #Initial time for J_selfforce evolution
-t0 1.0
+t0 0.0
 
-#Max integer range for n k m and \ell
+#Max integer range for n k m and \ell for J_dot_self-force
 nl_self 2
 nmax 2
 kmax 2
 mmax 2
+
+#Radial and polar grid sizes (Nr, Nt) for CKerr_RadialFunc in the self-force J_evolve
+Nr_self 28
+Nt_self 14
 
 #Number of parallel runs per job
 chunk_size 5
@@ -62,4 +66,4 @@ chunk_size 5
 tgrid_resfinder 100
 
 #System Label
-system_label "50_200-0.5"
+system_label "50_200-0.9"
