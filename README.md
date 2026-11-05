@@ -174,10 +174,12 @@ The code uses geometric units, G = c = 1, with lengths and times in units of the
 | Inclination | `I` | radians |
 | Frequencies | `Omega_r`, `Omega_theta`, `Omega_phi` | 1/M, with respect to Boyer–Lindquist coordinate time |
 | Times | `t`, `dt`, `t0`, `t_res`, `t_scale` | M, in code time (see the next section) |
-| Rate of change of a resonant frequency | `omega_dot_*`, `gamma` (Γ) | 1/M², in code time |
+| **Rate of change of a resonant frequency | `omega_dot_*`, `gamma` (Γ) | 1/M², in code time |
 | Resonant angle | `theta_res` | radians |
-| Jumps in the actions | `Delta_J_r`, `Delta_J_theta`, `Delta_J_phi` | like the actions, per unit mass of the inner body |
-| Phase shifts | `Delta_Phi_*` | radians |
+| **Jumps in the actions | `Delta_J_r`, `Delta_J_theta`, `Delta_J_phi` | like the actions, per unit mass of the inner body |
+| **Phase shifts | `Delta_Phi_*` | radians |
+
+- Note: **() See [Code time](#code-time-versus-physical-time
 
 In the Newtonian limit, J_r + J_θ + |J_φ| = √(Ma), where a is the semi-major axis. `action_angle_generator.py` uses this relation to set the orbit sizes.
 
@@ -220,7 +222,7 @@ The code moves between three descriptions of a bound Kerr geodesic:
 
 | Description | Array layout | Converted by |
 |---|---|---|
-| Actions J = (J_r, J_θ, J_φ) | `J[0..2]` | `CKerr_J2EQL` (J to EQL) and `CKerr_EQL2J` (EQL to J), in `kerrtraj.c` |
+| Actions J = (J_r, J_θ, J_φ) | `J[0] = J_r`, `J[1] = J_θ`, `J[2] = J_φ` | `CKerr_J2EQL` (J to EQL) and `CKerr_EQL2J` (EQL to J), in `kerrtraj.c` |
 | Constants of motion (E, Q, L) | `EQL[0] = E`, `EQL[1] = Q`, `EQL[2] = L` | as above |
 | Orbit shape (r_a, r_p, I) | `ancillary[0] = I`, `ancillary[1] = r_p`, `ancillary[2] = r_a`, as filled in by `CKerr_EQL2J` | `ra_rp_I2EQL`, in `resonance_find.c` |
 
@@ -228,7 +230,7 @@ The frequencies come from `CKerr_Minverse(J)`, which returns the 3×3 matrix M�
 
 - **Inclination:** I = π/2 − θ_min, where θ_min is the smallest polar angle the orbit reaches. For retrograde orbits (L < 0), I is replaced by π − I (line 203 of `kerrtraj.c`). So I = 0 is prograde equatorial, I = π/2 is polar, and I = π is retrograde equatorial.
 - **Eccentricity:** e = (r_a − r_p)/(r_a + r_p).
-- **Inner and outer:** the newer prompts in `calling.c` say "First body" and "Second body", but variable and file names still say inner and outer.
+- **Inner and outer:** the newer prompts in `calling.c` say "First body" and "Second body" for `RESFIND_APO_GENERIC` (since its function is to find the apocenter of one orbit given the full data (apocenter, pericenter, and inclination) of the other orbit), but variable and file names still say inner and outer.
 
 ### Mode vectors and resonances
 
