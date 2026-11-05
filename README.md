@@ -179,7 +179,7 @@ The code uses geometric units, G = c = 1, with lengths and times in units of the
 | **Jumps in the actions | `Delta_J_r`, `Delta_J_theta`, `Delta_J_phi` | like the actions, per unit mass of the inner body |
 | **Phase shifts | `Delta_Phi_*` | radians |
 
-- Note: **() See [Code time](#code-time-versus-physical-time
+- Note: **() See [Code time](#code-time-versus-physical-time)
 
 In the Newtonian limit, J_r + J_θ + |J_φ| = √(Ma), where a is the semi-major axis. `action_angle_generator.py` uses this relation to set the orbit sizes.
 
