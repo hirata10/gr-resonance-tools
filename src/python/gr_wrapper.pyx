@@ -1081,6 +1081,7 @@ def find_resonance_apo_outercirc(n, k, m, radius, guess1, guess2, rp, I, astar, 
 #Inputs: an int (nl), an int (nmax), an int (kmax), an int (m), a double (apo), a double (rp), a double (radius_outer), a double (I), a double (M), a double from 0 to 1 (astar)
 #Outputs: an array of 3 doubles (J_dot_sf)
 #void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_sf)
+#LEGACY (outdated; not used by the pipeline): wraps the serial J_dot_selfforce, which returns the rate for a unit mass ratio on a fixed 28 x 14 grid (see J_dot.c)
 def j_dot_selfforce(nl, nmax, kmax, mmax, apo, rp, radius_outer, I, M, astar):
 
     cdef double *J_dot_sf = <double *> malloc (3 * sizeof(double))
@@ -1143,6 +1144,7 @@ def j_dot_phi_kepler(mu_outer, r_outer, apo, peri, incline, Theta_res):
 #Inputs: an int (nl), an int (n_res_inner), an int (k_res_inner), an int (m_res_inner), an int (n_res_outer), an int (k_res_outer), a double (ra_inner), a double (rp_inner), a double (I_inner), a double (ra_outer), a double (rp_outer), a double (I_outer), a double (astar), a double (M), a double (radius_outer), a double (delta_t)
 #Outputs: an array of 2 doubles (Gamma)
 #int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_res_outer, int k_res_outer, double ra_inner, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M, double radius_outer, double delta_t, double *Gamma)
+#LEGACY (outdated; not used by the pipeline): wraps omega_dot, which has no mass ratios and a mode sum fixed at nmax = kmax = mmax = 1 (see Gamma.c)
 def omegadot(nl, n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, astar, M, radius_outer, delta_t):
 
     cdef double *Gamma = <double *> malloc (2 * sizeof(double))
@@ -1197,6 +1199,7 @@ def omegadot(nl, n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer
 #Inputs: an int (nl), an int (nmax), an int (kmax), an int (mmax), a list of 3 doubles (arrJint), a double (M), a double (astar)
 #Outputs: 0 (result), an array of 3 doubles (J_dot_sf)
 #int J2Jdot(int nl, int nmax, int kmax, int mmax, double *J_initial, double *J_dot_sf, double M, double astar)
+#LEGACY (outdated; not used by the pipeline): wraps J2Jdot, built on the serial J_dot_selfforce (rate for a unit mass ratio; see J2J_dot.c)
 def j2jdot(nl, nmax, kmax, mmax, arrJint, M, astar):
 
     cdef double *arrJint_cpy = <double *> malloc(len(arrJint)*sizeof(double))
@@ -1218,6 +1221,7 @@ def j2jdot(nl, nmax, kmax, mmax, arrJint, M, astar):
 #Inputs: an int (nl), an int (nmax), an int (kmax), an int (mmax), a double (J_r_ini), a double (J_theta_ini), a double (J_phi_ini), a double (M), a double (astar)
 #Outputs: 0 (result), an array of 1 double (J_dot_r), an array of 1 double (J_dot_theta), an array of 1 double (J_dot_phi)
 #int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_dot_r, double *J_dot_theta, double *J_dot_phi, double M, double astar)
+#LEGACY (outdated; not used by the pipeline): wraps J2Jdot_component, built on the serial J_dot_selfforce (rate for a unit mass ratio; see J2J_dot.c)
 def j2jdot_component(nl, nmax, kmax, mmax, J_r_ini, J_theta_ini, J_phi_ini, M, astar):
 
     cdef double *J_dot_r = <double *> malloc (1 * sizeof(double))

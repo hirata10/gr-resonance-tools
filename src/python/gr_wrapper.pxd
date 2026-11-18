@@ -60,6 +60,7 @@ cdef extern from "CKerr.h":
 
     # J_dot.c: finds the time derivative of the J components for the self-force and tidal field 
 
+    # LEGACY (outdated; not used by the pipeline): serial self-force for a unit mass ratio, see J_dot.c
     void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_sf)
     #int J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_td)
     void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double mu_outer, double *J_dot_td)
@@ -67,6 +68,7 @@ cdef extern from "CKerr.h":
     
     # Gamma.c: Computes the change in omega for orbits 
 
+    # LEGACY (outdated; not used by the pipeline): unit mass ratios, mode sum fixed at nmax = kmax = mmax = 1, see Gamma.c
     int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_res_outer, int k_res_outer, double ra_inner, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M, double radius_outer, double delta_t, double *Gamma)
 
     # Delta_J.c computes the change in J due to external field (Eq. (12) in arXiv:1905.00030v2) 
@@ -75,6 +77,7 @@ cdef extern from "CKerr.h":
 
     # J2J_dot.c
 
+    # LEGACY (outdated; not used by the pipeline): the three routines below are built on the serial J_dot_selfforce, see J2J_dot.c
     int J2Jdot(int nl, int nmax, int kmax, int mmax, double *J_initial, double *J_dot_sf, double M, double astar)
     int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_dot_r, double *J_dot_theta, double *J_dot_phi, double M, double astar)
     void rk4_J2Jdot(double dt, double t0, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, double mu_body, double M, double astar)
