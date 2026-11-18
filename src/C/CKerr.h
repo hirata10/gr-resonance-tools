@@ -55,6 +55,19 @@ void CKerr_GWScatMatrix(double M, double astar, double omega, long mm, double ei
 void CKerr_xu2intT(double *xu, double *T, double M, double astar);
 int CKerr_RadialFunc(double *Minv, double *xuorig, double M, double astar, long qr, long qt, long mm,
   long Nr, long Nt, long nl, double *Coef, double *omega, double *E);
+
+/* Orbit cache for the self-force mode sum (radialfunc_cached.c): torus samples and Y^{-2}_{lm}, l = 2..lc,
+ * computed once per J_dot; CKerr_RadialFunc_cached reuses them for every (n,k,m) and takes both radial
+ * functions from one stored 4096-step sweep per direction. Agrees with CKerr_RadialFunc to ~1e-10 relative. */
+typedef struct {
+  long Nr, Nt, Ns, lc, B;
+  double r_in, r_out;
+  double *XU, *Y, *dY;
+} CKerr_OrbitCache;
+void CKerr_OrbitCacheBuild(double *Minv, double *xuorig, double M, double astar, long Nr, long Nt, long lc, CKerr_OrbitCache *o);
+void CKerr_OrbitCacheFree(CKerr_OrbitCache *o);
+int CKerr_RadialFunc_cached(double *Minv, const CKerr_OrbitCache *o, double M, double astar, long qr, long qt, long mm,
+  long nl, double *Coef, double *omega, double *E);
 double CKerr_HorizonFluxNorm(double M, double astar, double omega, long mm, double eigenlm);
 void CKerr_QuantaEmitted(double M, double astar, long qr, long qt, long mm, long nl,
   double *E, double *Coef, double omega, double *QuantaInf, double *QuantaHor);
@@ -75,9 +88,13 @@ double find_resonance_apo_OuterGeneric(int n_inner, int k_inner, int m_inner, in
 
 /* J_dot.c: finds the time derivative of the J components for the self-force and tidal field */
 
+/* LEGACY (outdated; not used by the pipeline): serial self-force for a unit mass ratio on a fixed 28 x 14 grid. See J_dot.c */
 void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo, double rp, double radius_outer, double I, double M, double astar, double *J_dot_sf);
 
-void J_dot_selfforce_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt, double apo, double rp, double I, double M, double astar, double *J_dot_sf);
+/* Returns d(J/mu_body)/dt in physical time (units of M): the rate for unit mass ratio times mu_body = (body mass)/M,
+ * like mu_inner and mu_outer in pars.txt. The serial J_dot_selfforce above has no mu_body and always returns the
+ * rate per unit mass ratio. */
+void J_dot_selfforce_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt, double apo, double rp, double I, double mu_body, double M, double astar, double *J_dot_sf);
 
 // void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double apo, double rp, double radius_outer, double I, double M, double astar, double theta_res_F, double *J_dot_td);
 void J_dot_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double mu_outer, double *J_dot_td);
@@ -103,27 +120,33 @@ double J_dot_phi_Kepler(double mu_outer, double r_outer, double apo, double peri
 
 /* Gamma.c: Computes the change in omega for orbits */
 
+/* LEGACY (outdated; not used by the pipeline or the test tools): unit mass ratios, mode sum fixed at nmax = kmax = mmax = 1. See Gamma.c */
 int omega_dot(int nl, int n_res_inner, int k_res_inner, int m_res_inner, int n_res_outer, int k_res_outer, double ra_inner, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double astar, double M, double radius_outer, double delta_t, double *Gamma);
 
 // Eq. (17) of arXiv:2207.07733 using dOmega/dJ from kerrphase.c, J_dots supplied
-int Gamma_dOmegadJ(int n_inner, int k_inner, int n_outer, int k_outer, int m_res, double *J_inner, double *J_outer, double *J_dot_inner, double *J_dot_outer, double mu_inner, double mu_outer, double M, double astar, double *Gamma);
+// The J_dots are d(J/mu_body)/dt in physical time with the mass ratios already in them (as J_dot_selfforce_openmp returns them); nothing is rescaled here
+int Gamma_dOmegadJ(int n_inner, int k_inner, int n_outer, int k_outer, int m_res, double *J_inner, double *J_outer, double *J_dot_inner, double *J_dot_outer, double M, double astar, double *Gamma);
 
-// Same as Gamma_dOmegadJ, with the J_dots computed by J_dot_selfforce_openmp
+// Same as Gamma_dOmegadJ, with the J_dots computed by J_dot_selfforce_openmp for the mass ratios mu_inner, mu_outer
 int Gamma_dOmegadJ_selfforce(int nl, int nmax, int kmax, int mmax, int Nr, int Nt, int n_inner, int k_inner, int n_outer, int k_outer, int m_res, double *J_inner, double *J_outer, double mu_inner, double mu_outer, double M, double astar, double *J_dot_inner, double *J_dot_outer, double *Gamma);
 
 /* Delta_J.c computes the change in J due to external field (Eq. (12) in arXiv:1905.00030v2) */
 
+/* LEGACY (outdated; nothing calls it): uses the legacy omega_dot with unit mass ratios. The pipeline uses Delta_J_tidal2. See Delta_J.c */
 void Delta_J_tidal(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double *Delta_J_tidal);
 
 void Delta_J_tidal2(int nl, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double radius_outer, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double ang_accel, double mu_outer, double *Delta_J);
 
 /* J2J_dot.c computes the evolution of the J_{i}'s for a specific orbiting body over a some time interval */
+/* LEGACY (outdated; not used by the pipeline or the test tools): J2Jdot, J2Jdot_component, rk4_J2Jdot and rk4_J2Jdot_restart
+ * are built on the serial J_dot_selfforce (no mass ratio; the RK4 time is mu_body * t). The pipeline uses the two
+ * _openmp routines. See J2J_dot.c */
 
 int J2Jdot(int nl, int nmax, int kmax, int mmax, double *J_initial, double *J_dot_sf, double M, double astar);
 
 int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_dot_r, double *J_dot_theta, double *J_dot_phi, double M, double astar);
 
-int J2Jdot_component_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_dot_r, double *J_dot_theta, double *J_dot_phi, double M, double astar);
+int J2Jdot_component_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_dot_r, double *J_dot_theta, double *J_dot_phi, double mu_body, double M, double astar);
 
 void rk4_J2Jdot(double *t, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, FILE *fptr, double mu_body, double M, double astar);
 

@@ -7,6 +7,14 @@
 
 /* Computing the J_dot due to self-force from arXiv:1905.00030v2 Eq. (12) */
 
+/* LEGACY CODE (outdated; kept for reference): J_dot_selfforce, the serial self-force.
+ * The pipeline does not use it: steps 4 and 7 call J_dot_selfforce_openmp (below). Differences from that routine:
+ *   - no mass ratio: it returns the rate for a unit mass ratio, not d(J/mu_body)/dt in physical time;
+ *   - the radial and polar grid is fixed at 28 x 14;
+ *   - serial, no orbit cache, and no use of the (n,k,m) -> (-n,-k,-m) symmetry of the mode sum.
+ * Still called by other legacy code only: J2Jdot and J2Jdot_component (J2J_dot.c), omega_dot (Gamma.c),
+ * the Python wrapper j_dot_selfforce, and the serial debug tool J2J_DOT_SF (calling.c, -DIS_J_DOT_SF -DSINGLEVALUE).
+ * For tests use the OpenMP tool J2J_DOT_SF_OMP. */
 void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo,
                      double rp, double radius_outer, double I, double M,
                      double astar, double *J_dot_sf) {
@@ -139,7 +147,7 @@ void J_dot_selfforce(int nl, int nmax, int kmax, int mmax, double apo,
 }
 
 void J_dot_selfforce_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt, double apo,
-                            double rp, double I, double M,
+                            double rp, double I, double mu_body, double M,
                             double astar, double *J_dot_sf) {
 
   double EQL[3], J[3], Minv[9], Omega[3], info[6], info_outer[6], xuorig[6];
@@ -173,6 +181,13 @@ void J_dot_selfforce_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt
    * (epsilon) */
   double rH = M + sqrt(M * M - astar * M * astar * M);
   double epsilon = sqrt(M * M - astar * M * astar * M) / (4 * M * rH);
+
+#ifndef JDOT_SF_ORIGINAL
+  /* Orbit cache (radialfunc_cached.c): torus samples and Y^{-2}_{lm} once per J_dot, l up to max(2,mmax)+nl-1.
+   * Build with -DJDOT_SF_ORIGINAL (make JDOT_SF=original) to call CKerr_RadialFunc for every mode instead. */
+  CKerr_OrbitCache orbit_cache;
+  CKerr_OrbitCacheBuild(Minv, xuorig, M, astar, Nr, Nt, (mmax < 2 ? 2 : mmax) + nl - 1, &orbit_cache);
+#endif
 
   /* This takes the M_inv, the origin in phase space, mass and spin of BH,
   {n,k,m}, number of steps in r and theta, number of modes (nl), and the angular
@@ -227,8 +242,13 @@ void J_dot_selfforce_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt
           double omegagw;
 
           // double radial_t0 = omp_get_wtime();
+#ifdef JDOT_SF_ORIGINAL
           CKerr_RadialFunc(Minv, xuorig, M, astar, i_n, i_k, i_m, Nr, Nt, nl,
                            C0, &omegagw, E0);
+#else
+          CKerr_RadialFunc_cached(Minv, &orbit_cache, M, astar, i_n, i_k, i_m, nl,
+                                  C0, &omegagw, E0);
+#endif
           // double radial_t1 = omp_get_wtime();
           // radial_time_local +=
           //     (radial_t1 - radial_t0); // Time CKerrRadialFunc per thread
@@ -275,13 +295,13 @@ void J_dot_selfforce_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt
             // C0[4*il+3], Z_down_square, Z_out_square);
 
             /* Factor 2 counts the (-n,-k,-m) mode skipped above */
-            J_dot_sf_local[0] += 2. * -i_n *
+            J_dot_sf_local[0] += 2. * mu_body * -i_n *
                                  (Z_out_square + alphankm * Z_down_square) /
                                  (2. * omega_nkm * omega_nkm * omega_nkm);
-            J_dot_sf_local[1] += 2. * -i_k *
+            J_dot_sf_local[1] += 2. * mu_body * -i_k *
                                  (Z_out_square + alphankm * Z_down_square) /
                                  (2. * omega_nkm * omega_nkm * omega_nkm);
-            J_dot_sf_local[2] += 2. * -i_m *
+            J_dot_sf_local[2] += 2. * mu_body * -i_m *
                                  (Z_out_square + alphankm * Z_down_square) /
                                  (2. * omega_nkm * omega_nkm * omega_nkm);
           }
@@ -319,6 +339,9 @@ void J_dot_selfforce_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt
     }
     free((char *)E0);
   }
+#ifndef JDOT_SF_ORIGINAL
+  CKerr_OrbitCacheFree(&orbit_cache);
+#endif
   // ------------------------------------------------------------
   // Final output
   // ------------------------------------------------------------
@@ -1187,7 +1210,7 @@ void J_dot_tidal_openmp(int nl, int N_res, int n_res_inner, int n_res_outer,
   printf("J_dot.c: (calc(J_dot_td_inner) - J_dot_td_Re_inner) / calc(J_dot_td_inner): %.15e %.15e %.15e \n", 
     (JRe_global_inner[0] - J_global_inner[0]) / J_global_inner[0], (JRe_global_inner[1] - J_global_inner[1]) / J_global_inner[1], (JRe_global_inner[2] - J_global_inner[2]) / J_global_inner[2]);
   #endif
-  #if 1
+  #if 0
   printf("J_dot.c: Real part of tidal resonance (outer) \n Jdotr Jdottheta Jdotphi: %.15e %.15e %.15e \n", JRe_global_outer[0], JRe_global_outer[1], JRe_global_outer[2]);
   printf("J_dot.c: Imag. part of tidal resonance (outer): not computed, it cancels exactly between modes i and -i \n");
   printf("J_dot.c: (calc(J_dot_td_outer) - J_dot_td_Re_outer) / calc(J_dot_td_outer): %.15e %.15e %.15e \n", 

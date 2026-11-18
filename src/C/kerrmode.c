@@ -76,7 +76,9 @@ void CKerr_Yslm(double theta, long l, long s, double *Y, double *dYdtheta) {
 
   /* Colatitude derivatives */
   if (dYdtheta!=NULL) for(j1=0;j1<N;j1++) {
-    dYdtheta[j1] = ( sqrt((l-s+1)*(l+s))*R1[N*(l-s+1)+j1] - sqrt((l-s)*(l+s+1))*R1[N*(l-s-1)+j1] ) / 2. * sqrt(N/4./M_PI);
+    /* Rows l-s+1 and l-s-1 of R1 exist only for l+s>0 and l-s>0. Their coefficients vanish otherwise, so skip the read
+     * (for l=|s| the old line read one row outside the N x N block and multiplied it by zero). */
+    dYdtheta[j1] = ( (l+s>0? sqrt((l-s+1)*(l+s))*R1[N*(l-s+1)+j1]: 0.) - (l-s>0? sqrt((l-s)*(l+s+1))*R1[N*(l-s-1)+j1]: 0.) ) / 2. * sqrt(N/4./M_PI);
     if ((j1+l)%2==1) dYdtheta[j1]=-dYdtheta[j1];
   }
 
@@ -361,7 +363,11 @@ double CKerr_rstar2r(double rstar, double M, double astar, double *Delta) {
    * the true u unless it hits the bound.
    */
   u = rstar<M? M: rstar;
+  /* Early exit (TEST/JDOT_SF_COST, 2026-11): the update depends only on u, so once the iteration reaches a
+   * fixed point or a 2-cycle it repeats until the last iteration; exiting there is bitwise identical. */
+  double u_prev1 = -1., u_prev2 = -1.;
   for(i=0;i<CKERR_NSTEP_TORTOISE;i++) {
+    u_prev2 = u_prev1; u_prev1 = u;
     r = rp+u;
     rstar_trial = r + ratio*rp*log(u/(2.*M)) - ratio*rm*log((r-rm)/(2.*M)) - rstar;
     D = u*(r-rm);
@@ -375,6 +381,8 @@ double CKerr_rstar2r(double rstar, double M, double astar, double *Delta) {
       if (Delta!=NULL) *Delta = 2.*M*exp(rstar - rp + ratio*rm*log((rp-rm)/(2.*M)))/ratio/rp;
       return(rp);
     }
+    if (u == u_prev1) break;
+    if (u == u_prev2) { if ((CKERR_NSTEP_TORTOISE-1-i)%2) u = u_prev1; break; }
   }
 
   /* Outputs: Delta, if requested, and r.  Note Delta is computed directly using u. */
