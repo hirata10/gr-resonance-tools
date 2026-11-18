@@ -9,6 +9,8 @@
 #define N_LINES_MAX 30000
 
 #ifdef IS_GAMMA
+/* LEGACY (outdated; no Makefile target): calls the legacy omega_dot (Gamma.c), which has no mass ratios and a mode sum */
+/* fixed at nmax = kmax = mmax = 1. Use IS_GAMMA_EQ17 (debug tool GAMMA_EQ17) instead. */
 int main(){
 	double jstep[3];
 	int  n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, nl;
@@ -143,6 +145,10 @@ int main(){
 #endif
 
 #ifdef IS_J_DOT_SF
+/* Self-force J_dot and (E,Q,L)_dot of one orbit: d(J/mu_body)/dt in physical time (units of M), with the body's mass ratio in it */
+/* Usage: J_r J_theta J_phi nmax kmax mmax nl_self mass spin mu_body omp_threads veclib_threads Nr Nt */
+/* mu_body = (body mass)/M, like mu_inner and mu_outer in pars.txt */
+/* The same 14 inputs can come from stdin instead (no arguments), e.g. J2J_DOT_SF_OMP < sf.input > sf.output */
 int main(int argc, char **argv){
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	int j;
@@ -151,12 +157,12 @@ int main(int argc, char **argv){
 	double angle_space, angle_step, L_dot[50], Kepler_torque[50];
 	// int nmax = GLOBALPAR_nmax, kmax = GLOBALPAR_kmax, mmax = GLOBALPAR_mmax, nl_self = GLOBALPAR_nl_self;
 	int nmax, kmax, mmax, nl_self, Nr, Nt;
-	double mass, spin, radius_outer = 0.;
+	double mass, spin, mu_body, radius_outer = 0.;
 	int omp_threads;
 	int veclib_threads;
 
 	/* Input Js on command line */
-	if (argc==14){
+	if (argc==15){
 		sscanf(argv[1], "%lg", &J[0]);
 		sscanf(argv[2], "%lg", &J[1]);
 		sscanf(argv[3], "%lg", &J[2]);
@@ -166,24 +172,31 @@ int main(int argc, char **argv){
 		sscanf(argv[7], "%d", &nl_self);
 		sscanf(argv[8], "%lg", &mass);
 		sscanf(argv[9], "%lg", &spin);
-		sscanf(argv[10], "%d", &omp_threads);
-		sscanf(argv[11], "%d", &veclib_threads);
-		sscanf(argv[12], "%d", &Nr);
-		sscanf(argv[13], "%d", &Nt);
+		sscanf(argv[10], "%lg", &mu_body);
+		sscanf(argv[11], "%d", &omp_threads);
+		sscanf(argv[12], "%d", &veclib_threads);
+		sscanf(argv[13], "%d", &Nr);
+		sscanf(argv[14], "%d", &Nt);
+	}
+
+	else if (argc==1){
+    // stdin mode (works with < file)
+    	if (scanf("%lf %lf %lf %d %d %d %d %lf %lf %lf %d %d %d %d",
+              &J[0], &J[1], &J[2],
+			  &nmax, &kmax, &mmax, &nl_self,
+			  &mass, &spin, &mu_body,
+			&omp_threads, &veclib_threads,
+			&Nr, &Nt) != 14) {
+
+        fprintf(stderr, "Error: expected 14 inputs: J_r J_theta J_phi nmax kmax mmax nl_self mass spin mu_body omp_threads veclib_threads Nr Nt\n");
+        return 1;
+    	}
 	}
 
 	else {
-    // stdin mode (works with < file)
-    	if (scanf("%lf %lf %lf %d %d %d %d %lf %lf %d %d %d %d",
-              &J[0], &J[1], &J[2],
-			  &nmax, &kmax, &mmax, &nl_self,
-			  &mass, &spin,
-			&omp_threads, &veclib_threads,
-			&Nr, &Nt) != 13) {
-
-        fprintf(stderr, "Error: expected 13 inputs\n");
-        return 1;
-    	}
+		/* Any other number of arguments (for example the 13 of the argument list without mu_body) is an error, not a silent wait on stdin */
+		fprintf(stderr, "Error: expected 14 inputs (J_r J_theta J_phi nmax kmax mmax nl_self mass spin mu_body omp_threads veclib_threads Nr Nt), or none to read them from stdin\n");
+		return 1;
 	}
 
 		/* Check thread inputs */
@@ -191,6 +204,12 @@ int main(int argc, char **argv){
     	fprintf(stderr,
             	"Error: thread counts must be >= 1\n");
     	return 1;
+	}
+
+	/* Check the mass ratio */
+	if (!(mu_body > 0.)) {
+		fprintf(stderr, "Error: mu_body must be > 0\n");
+		return 1;
 	}
 
 	/* Set OpenMP thread count */
@@ -215,6 +234,7 @@ int main(int argc, char **argv){
 
 	printf("I, rp, ra, eccentricity: %.15g %.15g %.15g %.15g \n", I, rp, ra, eccen);
 	printf("Number of radial and theta integration steps: %i %i \n", Nr, Nt);
+	printf("Mass ratio of the body (mu_body): %.15g \n", mu_body);
 
 	printf("EQL: %.15g %.15g %.15g \n", EQL[0], EQL[1], EQL[2]);
 	CKerr_Minverse(J, Minv, mass, spin);
@@ -256,6 +276,11 @@ int main(int argc, char **argv){
 	double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
 	printf("Time = %.6f s\n", elapsed);
 
+	/* The serial J_dot_selfforce is legacy code (see J_dot.c): it has no mass-ratio argument, returns the rate for a unit */
+	/* mass ratio, and uses a fixed 28 x 14 grid whatever Nr and Nt are. */
+	/* Apply mu_body here, so that this build prints the same d(J/mu_body)/dt in physical time as the OpenMP build */
+	for (j = 0; j < 3; j++){J_dot_sf[j] *= mu_body;}
+
 	printf("J_dot_r_sf = %.15g \n", J_dot_sf[0]);
 	printf("J_dot_theta_sf = %.15g \n", J_dot_sf[1]);
 	printf("J_dot_phi_sf = %.15g \n", J_dot_sf[2]);
@@ -282,7 +307,8 @@ int main(int argc, char **argv){
 	}
 
 	double t0 = omp_get_wtime();
-	J_dot_selfforce_openmp(nl_self, nmax, kmax, mmax, Nr, Nt, ra, rp, I, mass, spin, J_dot_sf);
+	/* mu_body from the input: J_dot_sf is d(J/mu_body)/dt in physical time (units of M), as in the J evolution (step 4) */
+	J_dot_selfforce_openmp(nl_self, nmax, kmax, mmax, Nr, Nt, ra, rp, I, mu_body, mass, spin, J_dot_sf);
 	double t1 = omp_get_wtime();
 	printf("Time = %.6f s\n", t1 - t0);
 
@@ -529,26 +555,30 @@ int main(int argc, char **argv){
 	
 	#ifdef LOOPANGLE
 	printf("About to start angle for loop for tidal J_dots \n");
-	printf("i \t angle_step \t Jr_dot \t Jtheta_dot \t L_dot \t E_dot \t Q_dot \t L_dot \n------------\n");
+	printf("i \t angle_step \t Jr_dot_inner \t Jtheta_dot_inner \t L_dot_inner \t E_dot_inner \t Q_dot_inner \t Jr_dot_outer \t Jtheta_dot_outer \t L_dot_outer \t E_dot_outer \t Q_dot_outer \n------------\n");
+	double t0 = omp_get_wtime();
 	for (j = 0; j < 50; j++){
 		angle_space = 2 * M_PI / 50;
 		angle_step = j * angle_space;
-		// J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, apo_res, peri, radius_outer, incline, mass, spin, angle_step, J_dot_td);
-		J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_step, mu_outer, J_dot_td_inner);
-		// Jr_dot[j] = J_dot_td[0];
-		// Jtheta_dot[j] = J_dot_td[1];
-		// L_dot[j] = J_dot_td[2];
+		// J_dot_tidal(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_step, mu_outer, J_dot_td_inner);
+		J_dot_tidal_openmp(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, mass, spin, angle_step, mu_inner, mu_outer, J_dot_td_inner, J_dot_td_outer);
 
-		/* Computes EQL_dot_tidal from J_dot_tidal */
+		/* Computes EQL_dot_tidal from J_dot_tidal_inner */
 		EQL_dot_tidal_inner[0] = M_res_inner[0] * J_dot_td_inner[0] + M_res_inner[3] * J_dot_td_inner[1] + M_res_inner[6] * J_dot_td_inner[2];
 		EQL_dot_tidal_inner[1] = M_res_inner[1] * J_dot_td_inner[0] + M_res_inner[4] * J_dot_td_inner[1] + M_res_inner[7] * J_dot_td_inner[2];
 		EQL_dot_tidal_inner[2] = M_res_inner[2] * J_dot_td_inner[0] + M_res_inner[5] * J_dot_td_inner[1] + M_res_inner[8] * J_dot_td_inner[2];
+
+		/* Computes EQL_dot_tidal from J_dot_tidal_outer */
+		EQL_dot_tidal_outer[0] = M_res_outer[0] * J_dot_td_outer[0] + M_res_outer[3] * J_dot_td_outer[1] + M_res_outer[6] * J_dot_td_outer[2];
+		EQL_dot_tidal_outer[1] = M_res_outer[1] * J_dot_td_outer[0] + M_res_outer[4] * J_dot_td_outer[1] + M_res_outer[7] * J_dot_td_outer[2];
+		EQL_dot_tidal_outer[2] = M_res_outer[2] * J_dot_td_outer[0] + M_res_outer[5] * J_dot_td_outer[1] + M_res_outer[8] * J_dot_td_outer[2];
 		// Kepler_torque[j] = J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline, angle_step);
 		// printf("%i \t %lg \t %12.5le \t %12.5le \t %12.5le \n", j, angle_step, Jr_dot[j], Jtheta_dot[j], L_dot[j]);
-		printf("%i \t %lg \t %12.5le \t %12.5le \t %12.5le \t %12.5le \t %12.5le \t %12.5le \n", j, angle_step, J_dot_td_inner[0], J_dot_td_inner[1], J_dot_td_inner[2], EQL_dot_tidal_inner[0], EQL_dot_tidal_inner[1], EQL_dot_tidal_inner[2]);
+		printf("%i \t %.9g \t %.15g \t %.15g \t %.15g \t %.15g \t %.15g \t %.15g \t %.15g \t %.15g \t %.15g \t %.15g \n", j, angle_step, J_dot_td_inner[0], J_dot_td_inner[1], J_dot_td_inner[2], EQL_dot_tidal_inner[0], EQL_dot_tidal_inner[1], J_dot_td_outer[0], J_dot_td_outer[1], J_dot_td_outer[2], EQL_dot_tidal_outer[0], EQL_dot_tidal_outer[1]);
 	}
+	double t1 = omp_get_wtime();
+	printf("Time = %.6f s\n", t1 - t0);
 	#endif
-	// for (j=0;j<nl*nmax*kmax*mmax;j++){printf("%2d \t\t %19.12lE \n", j, J_dot_r[j]);}
 	return(0);
 }
 #endif
@@ -991,6 +1021,9 @@ int main(){
 #endif
 
 #if IS_RK4_J_DOT
+/* LEGACY (outdated; no Makefile target): serial RK4 (rk4_J2Jdot in J2J_dot.c) built on the serial J_dot_selfforce. */
+/* It reads mu_body but does not use it, so its time is mu_body * t. The pipeline uses IS_RK4_J_DOT_start and */
+/* IS_RK4_J_DOT_restart (below), which advance physical time. */
 int main(int argc, char **argv)
 {
 	//double h=100, t, t0 = 1.; //Steps and initial start time
@@ -1303,9 +1336,12 @@ int main(int argc, char **argv)
 
 #ifdef IS_GAMMA_EQ17
 /* Computes Gamma from Eq. (17) of arXiv:2207.07733 using dOmega/dJ from the contour integrals (kerrphase.c) */
-/* Mass ratios are set to 1 so Gamma is in the same units as gamma in potential_resonances_*.txt */
-/* Usage: J_inner(3) J_outer(3) n_inner k_inner n_outer k_outer m mass spin nl nmax kmax mmax Nr Nt omp_threads veclib_threads [J_dot_inner(3) J_dot_outer(3)] */
-/* If the 6 optional J_dots are given, the self-force calculation is skipped */
+/* mu_inner, mu_outer = (body mass)/M, like the entries of pars.txt. They go into the self-force of each body, so the J_dots printed here */
+/* are d(J/mu_body)/dt and the Gammas are in physical time (units of 1/M^2), like gamma in potential_resonances_*.txt: */
+/* gamma = Gamma_outer - Gamma_inner, with Gamma_inner proportional to mu_inner and Gamma_outer to mu_outer */
+/* Usage: J_inner(3) J_outer(3) n_inner k_inner n_outer k_outer m mass spin mu_inner mu_outer nl nmax kmax mmax Nr Nt omp_threads veclib_threads [J_dot_inner(3) J_dot_outer(3)] */
+/* If the 6 optional J_dots are given, the self-force calculation is skipped and they are used as given: they must already include the */
+/* mass ratios (as this tool and J2J_DOT_SF_OMP print them), and mu_inner, mu_outer are then not used */
 /* The same inputs can come from stdin instead (no arguments), e.g. GAMMA_EQ17 < gamma.input > gamma.output */
 int main(int argc, char **argv){
 	setvbuf(stdout, NULL, _IOLBF, 0);
@@ -1314,11 +1350,11 @@ int main(int argc, char **argv){
 	int nl_self, nmax, kmax, mmax, Nr, Nt, omp_threads, veclib_threads;
 	int have_J_dots = 0;
 	double J_inner[3], J_outer[3], J_dot_inner[3], J_dot_outer[3];
-	double mass, spin, mu_inner = 1., mu_outer = 1.;
+	double mass, spin, mu_inner, mu_outer;
 	double Gamma[3], dOmega_dJ_inner[9], dOmega_dJ_outer[9];
 	double t0, t1, t2;
 
-	if (argc == 22 || argc == 28){
+	if (argc == 24 || argc == 30){
 	// command-line mode
 	for (i = 0; i < 3; i++){
 		sscanf(argv[1 + i], "%lg", &J_inner[i]);
@@ -1331,52 +1367,61 @@ int main(int argc, char **argv){
 	sscanf(argv[11], "%d", &m_res);
 	sscanf(argv[12], "%lg", &mass);
 	sscanf(argv[13], "%lg", &spin);
-	sscanf(argv[14], "%d", &nl_self);
-	sscanf(argv[15], "%d", &nmax);
-	sscanf(argv[16], "%d", &kmax);
-	sscanf(argv[17], "%d", &mmax);
-	sscanf(argv[18], "%d", &Nr);
-	sscanf(argv[19], "%d", &Nt);
-	sscanf(argv[20], "%d", &omp_threads);
-	sscanf(argv[21], "%d", &veclib_threads);
-	if (argc == 28){
+	sscanf(argv[14], "%lg", &mu_inner);
+	sscanf(argv[15], "%lg", &mu_outer);
+	sscanf(argv[16], "%d", &nl_self);
+	sscanf(argv[17], "%d", &nmax);
+	sscanf(argv[18], "%d", &kmax);
+	sscanf(argv[19], "%d", &mmax);
+	sscanf(argv[20], "%d", &Nr);
+	sscanf(argv[21], "%d", &Nt);
+	sscanf(argv[22], "%d", &omp_threads);
+	sscanf(argv[23], "%d", &veclib_threads);
+	if (argc == 30){
 		have_J_dots = 1;
 		for (i = 0; i < 3; i++){
-			sscanf(argv[22 + i], "%lg", &J_dot_inner[i]);
-			sscanf(argv[25 + i], "%lg", &J_dot_outer[i]);
+			sscanf(argv[24 + i], "%lg", &J_dot_inner[i]);
+			sscanf(argv[27 + i], "%lg", &J_dot_outer[i]);
 		}
 	}
 	}
 	else if (argc == 1){
 	// stdin mode (works with < file)
-		if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %lf %lf %d %d %d %d %d %d %d %d",
+		if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %lf %lf %lf %lf %d %d %d %d %d %d %d %d",
 			&J_inner[0], &J_inner[1], &J_inner[2],
 			&J_outer[0], &J_outer[1], &J_outer[2],
 			&n_inner, &k_inner, &n_outer, &k_outer, &m_res,
-			&mass, &spin, &nl_self, &nmax, &kmax, &mmax, &Nr, &Nt,
-			&omp_threads, &veclib_threads) != 21) {
+			&mass, &spin, &mu_inner, &mu_outer,
+			&nl_self, &nmax, &kmax, &mmax, &Nr, &Nt,
+			&omp_threads, &veclib_threads) != 23) {
 
-		fprintf(stderr, "Error: expected 21 inputs (or 27 with J_dots)\n");
+		fprintf(stderr, "Error: expected 23 inputs (or 29 with J_dots)\n");
 		return 1;
 		}
-		/* Optional 6 J_dots after the 21 inputs; end of file means none were given */
+		/* Optional 6 J_dots after the 23 inputs; end of file means none were given */
 		int n_J_dots = scanf("%lf %lf %lf %lf %lf %lf",
 			&J_dot_inner[0], &J_dot_inner[1], &J_dot_inner[2],
 			&J_dot_outer[0], &J_dot_outer[1], &J_dot_outer[2]);
 		if (n_J_dots == 6) have_J_dots = 1;
 		else if (n_J_dots != EOF) {
-			fprintf(stderr, "Error: expected 6 J_dots after the 21 inputs, read %d\n", n_J_dots);
+			fprintf(stderr, "Error: expected 6 J_dots after the 23 inputs, read %d\n", n_J_dots);
 			return 1;
 		}
 	}
 	else {
-		fprintf(stderr, "Error: expected 21 inputs (or 27 with J_dots), or none to read them from stdin\n");
+		fprintf(stderr, "Error: expected 23 inputs (or 29 with J_dots), or none to read them from stdin\n");
 		return 1;
 	}
 
 	/* Check thread inputs */
 	if (omp_threads < 1 || veclib_threads < 1) {
 		fprintf(stderr, "Error: thread counts must be >= 1\n");
+		return 1;
+	}
+
+	/* Check the mass ratios */
+	if (!(mu_inner > 0.) || !(mu_outer > 0.)) {
+		fprintf(stderr, "Error: mu_inner and mu_outer must be > 0\n");
 		return 1;
 	}
 
@@ -1391,14 +1436,17 @@ int main(int argc, char **argv){
 	#endif
 
 	printf("Mode vector (n,k,m)_inner = (%d, %d, %d), (n,k,m)_outer = (%d, %d, %d) \n", n_inner, k_inner, m_res, n_outer, k_outer, m_res);
+	if (have_J_dots){printf("J_dots supplied: used as given, they must already include the mass ratios (mu_inner, mu_outer are not applied) \n");}
+	else {printf("Mass ratios (applied in the self-force): mu_inner = %.15g, mu_outer = %.15g \n", mu_inner, mu_outer);}
 
 	t0 = omp_get_wtime();
 	if (have_J_dots){
-		/* J_dots supplied: skip the self-force */
+		/* J_dots supplied: skip the self-force. They are d(J/mu_body)/dt as given, so the mass ratios are not applied again */
 		t1 = omp_get_wtime();
-		Gamma_dOmegadJ(n_inner, k_inner, n_outer, k_outer, m_res, J_inner, J_outer, J_dot_inner, J_dot_outer, mu_inner, mu_outer, mass, spin, Gamma);
+		Gamma_dOmegadJ(n_inner, k_inner, n_outer, k_outer, m_res, J_inner, J_outer, J_dot_inner, J_dot_outer, mass, spin, Gamma);
 	}
 	else {
+		/* The mass ratios go into the self-force of each body: J_dot_inner ~ mu_inner, J_dot_outer ~ mu_outer */
 		Gamma_dOmegadJ_selfforce(nl_self, nmax, kmax, mmax, Nr, Nt, n_inner, k_inner, n_outer, k_outer, m_res, J_inner, J_outer, mu_inner, mu_outer, mass, spin, J_dot_inner, J_dot_outer, Gamma);
 	}
 	t2 = omp_get_wtime();
