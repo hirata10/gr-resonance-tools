@@ -5,6 +5,13 @@
 #include "CKerr.h"
 #include "globalpars_c.h"
 
+/* LEGACY CODE (outdated; kept for reference): J2Jdot, J2Jdot_component, rk4_J2Jdot and rk4_J2Jdot_restart.
+ * They are built on the serial J_dot_selfforce (J_dot.c), which has no mass ratio. The two RK4 routines take mu_body
+ * but do not use it, so their time variable is mu_body * t, not physical time.
+ * Neither the pipeline nor the Makefile's test tools use them: step 4 uses J2Jdot_component_openmp and
+ * rk4_J2Jdot_restart_openmp (both in this file), which take mu_body and advance physical time. */
+
+/* LEGACY (see the note above) */
 /* This will take a set of Js (pointer) for an orbit and return the time derivative, J_dot (pointer) */
 /* J_initial[0] = J_r_inital, J_initial[1] = J_theta_inital, J_initial[2] = J_phi_initial */
 int J2Jdot(int nl, int nmax, int kmax, int mmax, double *J_initial, double *J_dot_sf, double M, double astar){
@@ -17,6 +24,7 @@ int J2Jdot(int nl, int nmax, int kmax, int mmax, double *J_initial, double *J_do
     return(0);
 }
 
+/* LEGACY (see the note at the top of this file) */
 /* Component version of J2Jdot function: takes in individual components to J_inital and returns individual components to J_dot */
 int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_dot_r, double *J_dot_theta, double *J_dot_phi, double M, double astar){
     double EQL[3], J[3], ancillary[3];
@@ -42,7 +50,8 @@ int J2Jdot_component(int nl, int nmax, int kmax, int mmax, double J_r_ini, doubl
 }
 
 /* Component version of J2Jdot function: takes in individual components to J_inital and returns individual components to J_dot_sf using openmp functions */
-int J2Jdot_component_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_dot_r, double *J_dot_theta, double *J_dot_phi, double M, double astar){
+/* mu_body = (body mass)/M: J_dot is d(J/mu_body)/dt in physical time, so the RK4 that calls this advances physical time */
+int J2Jdot_component_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_dot_r, double *J_dot_theta, double *J_dot_phi, double mu_body, double M, double astar){
     double EQL[3], J[3], ancillary[3];
     double J_inital[3], J_dot_sf[3];
     int flag;
@@ -57,13 +66,14 @@ int J2Jdot_component_openmp(int nl, int nmax, int kmax, int mmax, int Nr, int Nt
     }
     
     CKerr_EQL2J(EQL, J, M, astar, ancillary);
-    J_dot_selfforce_openmp(nl, nmax, kmax, mmax, Nr, Nt, ancillary[2], ancillary[1], ancillary[0], M, astar, J_dot_sf);
+    J_dot_selfforce_openmp(nl, nmax, kmax, mmax, Nr, Nt, ancillary[2], ancillary[1], ancillary[0], mu_body, M, astar, J_dot_sf);
     *J_dot_r = J_dot_sf[0];
     *J_dot_theta = J_dot_sf[1];
     *J_dot_phi = J_dot_sf[2];
     return(0);
 }
 
+/* LEGACY (see the note at the top of this file): serial RK4, its time is mu_body * t */
 /* This takes a step size (dt), an inital J_inital components, and return arrays of size n for each J components at each time step */
 void rk4_J2Jdot(double *t, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, FILE *fptr, double mu_body, double M, double astar){
     int i, j;
@@ -291,6 +301,7 @@ void rk4_J2Jdot(double *t, int n, double J_r_ini, double J_theta_ini, double J_p
     #endif
 }
 
+/* LEGACY (see the note at the top of this file): serial RK4 with restart, its time is mu_body * t */
 /* This is for restarting the RK4, an inital J_inital components, and return arrays of size n for each J components at each time step */
 void rk4_J2Jdot_restart(double t_start, double *t, int i_start, int n, double J_r_ini, double J_theta_ini, double J_phi_ini, double *J_r_final, double *J_theta_final, double *J_phi_final, int RESTART, double mu_body, double M, double astar){
     int i, j;
@@ -609,7 +620,7 @@ void rk4_J2Jdot_restart_openmp(double t_start, double *t, int i_start, int n, do
         #endif
         
         /* k1_{r,theta,phi} will come from the same call of J2Jdot_component since no changes start yet */
-        Totflag += J2Jdot_component_openmp(nl, nmax, kmax, mmax, Nr, Nt, J_r_final[i-1], J_theta_final[i-1], J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
+        Totflag += J2Jdot_component_openmp(nl, nmax, kmax, mmax, Nr, Nt, J_r_final[i-1], J_theta_final[i-1], J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, mu_body, M, astar);
         a[0] = inspiral_scale * fabs(J_r_final[i-1]/J_dot_r);
         a[1] = inspiral_scale * fabs(J_theta_final[i-1]/J_dot_theta);
         a[2] = inspiral_scale * fabs(J_phi_final[i-1]/J_dot_phi);
@@ -631,7 +642,7 @@ void rk4_J2Jdot_restart_openmp(double t_start, double *t, int i_start, int n, do
         fflush(stdout);
         #endif
 
-        Totflag += J2Jdot_component_openmp(nl, nmax, kmax, mmax, Nr, Nt, J_r_final[i-1] + k1r/2., J_theta_final[i-1] + k1theta/2., J_phi_final[i-1] + k1phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
+        Totflag += J2Jdot_component_openmp(nl, nmax, kmax, mmax, Nr, Nt, J_r_final[i-1] + k1r/2., J_theta_final[i-1] + k1theta/2., J_phi_final[i-1] + k1phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, mu_body, M, astar);
         k2r= dt * (J_dot_r);
        //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1] + k1theta/2., J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k2theta = dt * (J_dot_theta);
@@ -643,7 +654,7 @@ void rk4_J2Jdot_restart_openmp(double t_start, double *t, int i_start, int n, do
         fflush(stdout);
         #endif
 
-        Totflag += J2Jdot_component_openmp(nl, nmax, kmax, mmax, Nr, Nt, J_r_final[i-1] + k2r/2., J_theta_final[i-1] + k2theta/2., J_phi_final[i-1] + k2phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
+        Totflag += J2Jdot_component_openmp(nl, nmax, kmax, mmax, Nr, Nt, J_r_final[i-1] + k2r/2., J_theta_final[i-1] + k2theta/2., J_phi_final[i-1] + k2phi/2., &J_dot_r, &J_dot_theta, &J_dot_phi, mu_body, M, astar);
         k3r = dt * (J_dot_r);
         //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1] + k2theta/2., J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k3theta = dt * (J_dot_theta);
@@ -655,7 +666,7 @@ void rk4_J2Jdot_restart_openmp(double t_start, double *t, int i_start, int n, do
         fflush(stdout);
         #endif
 
-        Totflag += J2Jdot_component_openmp(nl, nmax, kmax, mmax, Nr, Nt, J_r_final[i-1] + k3r, J_theta_final[i-1] + k3theta, J_phi_final[i-1] + k3phi, &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
+        Totflag += J2Jdot_component_openmp(nl, nmax, kmax, mmax, Nr, Nt, J_r_final[i-1] + k3r, J_theta_final[i-1] + k3theta, J_phi_final[i-1] + k3phi, &J_dot_r, &J_dot_theta, &J_dot_phi, mu_body, M, astar);
         k4r = dt * (J_dot_r);
         //J2Jdot_component(nl, nmax, kmax, mmax, J_r_final[i-1], J_theta_final[i-1] + k3theta, J_phi_final[i-1], &J_dot_r, &J_dot_theta, &J_dot_phi, M, astar);
         k4theta = dt * (J_dot_theta);

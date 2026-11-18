@@ -4,6 +4,11 @@
 
 #include "CKerr.h"
 
+/* LEGACY CODE (outdated; kept for reference): Delta_J_tidal.
+ * Nothing calls it. It takes the angular acceleration from the legacy omega_dot (Gamma.c) with mu_inner = mu_outer = 1,
+ * and it has no mu_outer factor. The pipeline (step 6) uses Delta_J_tidal2 (below), which takes Gamma and mu_outer
+ * as inputs. */
+
 /* Computing the Delta J_tidal,i */
 /* Input: resonance mode vector for inner and outer body, number of modes to sum over (nl), orbital data (apo, peri, incline), mass and spin of BH, and resonance angle */
 /* Output: Delta_J_tidal_{r, \theta, \phi}/(mass_inner * mass_outer) */
