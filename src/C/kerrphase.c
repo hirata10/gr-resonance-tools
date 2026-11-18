@@ -476,7 +476,11 @@ int Delta_Phi(double E, double Q, double L, double Delta_J_td_r, double Delta_J_
 
   CKerr_EQL2J(EQL, J, M, astar, ancillary); // Convert EQL to J
 
-  J_dot_selfforce(GLOBALPAR_nl_self, GLOBALPAR_nmax, GLOBALPAR_kmax, GLOBALPAR_mmax, ancillary[2], ancillary[1], 0, ancillary[0], M, astar, J_dot_sf); // Compute J_dot_selfforce for time scale
+  /* Self-force J_dot for the inspiral time scale: the OpenMP, cached-orbit version with the Nr/Nt from pars.txt
+   * (2026-11-09; was the serial J_dot_selfforce, which has Nr = 28, Nt = 14 hard-coded and no cache).
+   * This is the inner body's inspiral, so the mass ratio is mu_inner from pars.txt: J_dot_sf is then d(J/mu_inner)/dt
+   * and t_scale below is in physical time (units of M), like the Gamma that Delta J was computed with. */
+  J_dot_selfforce_openmp(GLOBALPAR_nl_self, GLOBALPAR_nmax, GLOBALPAR_kmax, GLOBALPAR_mmax, GLOBALPAR_Nr_self, GLOBALPAR_Nt_self, ancillary[2], ancillary[1], ancillary[0], GLOBALPAR_mu_inner, M, astar, J_dot_sf);
 
   // for (int i = 0; i < 3; i++){
   //   // printf("%d: %lg \n", i, J[i] / J_dot_sf[i]);
