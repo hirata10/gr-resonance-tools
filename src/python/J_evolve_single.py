@@ -68,7 +68,7 @@ n_inner = globalpars.GLOBALPAR_n_time_inner
 n_outer = globalpars.GLOBALPAR_n_time_outer
 i_start_inner = globalpars.GLOBALPAR_i_start_inner
 i_start_outer = globalpars.GLOBALPAR_i_start_outer
-J_data = numpy.loadtxt("action_angle_pairs.txt", delimiter = " ")
+J_data = numpy.loadtxt("action_angle_pairs.txt", delimiter = " ", ndmin = 2)  # ndmin: a one-system file must still be 2-D
 print(len(J_data))
 
 #Directory to executables
@@ -131,7 +131,8 @@ for chunk in range(0,len(J_data),chunk_size):
                         label_inner = int(row[0])
                         print(f"The inputs from the restart for inner_{int(row[0])} are: J_r_inner = {J_r_inner}, J_theta_inner = {J_theta_inner}, J_phi_inner = {J_phi_inner}, t_inner = {t_inner}, steps remaining = {remaining_steps}, next step = {which_step}", flush=True)
                         cmd_inner = f"{exe_dir}/J_evolve_single_restart {J_r_inner} {J_theta_inner} {J_phi_inner} {t_inner} {step_inner} {globalpars.GLOBALPAR_mu_inner} {label_inner} {'inner'} {which_step} >> outputs_data/J_evolve_inner_{label_inner}.txt"
-                        if (t_inner < 1.0e6 and which_step < int(n_inner)): # If the number of steps remaining on the restart is less than the total number of steps OR a time value less than 1.0e6, then re-run the command
+                        # t is physical time (units of M) now that the self-force J_dot includes the mass ratio, so the old cap of 1.0e6 in mu*t is 1.0e6/mu
+                        if (t_inner < 1.0e6 / globalpars.GLOBALPAR_mu_inner and which_step < int(n_inner)): # If the number of steps remaining on the restart is less than the total number of steps OR a time value less than 1.0e6/mu, then re-run the command
                             processes_inner.append(Popen(cmd_inner, shell = True))
                         else:
                             print(f"End of the requested time steps for inner_{int(row[0])}", flush=True)
@@ -175,7 +176,7 @@ for chunk in range(0,len(J_data),chunk_size):
                         label_outer = int(row[0])
                         print(f"The inputs from the restart for outer_{int(row[0])} are: J_r_outer = {J_r_outer}, J_theta_outer = {J_theta_outer}, J_phi_outer = {J_phi_outer}, t_outer = {t_outer}, steps remaining = {remaining_steps}, next step = {which_step}", flush=True)
                         cmd_outer = f"{exe_dir}/J_evolve_single_restart {J_r_outer} {J_theta_outer} {J_phi_outer} {t_outer} {step_outer} {globalpars.GLOBALPAR_mu_outer} {label_outer} {'outer'} {which_step} >> outputs_data/J_evolve_outer_{label_outer}.txt"
-                        if (t_outer < 1.0e6 and which_step < int(n_outer)):
+                        if (t_outer < 1.0e6 / globalpars.GLOBALPAR_mu_outer and which_step < int(n_outer)):
                             processes_outer.append(Popen(cmd_outer, shell = True))
                         else:
                             print(f"End of the requested time steps for outer_{int(row[0])}", flush=True)

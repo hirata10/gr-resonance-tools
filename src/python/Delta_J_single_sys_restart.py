@@ -58,7 +58,7 @@ walltime_limit_sec = 15 * 3600 + 55 * 60  # 57300 seconds
 
 # Input system label
 system_label = sys.argv[1]
-res_data = numpy.loadtxt(f"potential_resonances_{system_label}.txt", delimiter=" ")
+res_data = numpy.loadtxt(f"potential_resonances_{system_label}.txt", delimiter=" ", ndmin=2)  # ndmin: a one-resonance file must still be 2-D
 
 # Ensure 2D array
 if res_data.ndim == 1:

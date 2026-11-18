@@ -1,3 +1,5 @@
+# LEGACY (outdated; not used by the pipeline): this script uses the legacy self-force wrappers of gr_wrapper
+# (j2jdot_component: rate for a unit mass ratio) and imports rk4_j2jdot, which gr_wrapper no longer provides.
 from cmath import sqrt
 from json.tool import main
 import random

@@ -55,7 +55,7 @@ signal.signal(signal.SIGTERM, terminate_processes)
 start_time = time.time()
 walltime_limit_sec = 15 * 3600 + 55 * 60  # 57300 seconds
 
-Delta_J_data = numpy.loadtxt(f"Output_Delta_J_{system_label}/tot_Delta_J_{system_label}.txt", delimiter = " ")
+Delta_J_data = numpy.loadtxt(f"Output_Delta_J_{system_label}/tot_Delta_J_{system_label}.txt", delimiter = " ", ndmin = 2)  # ndmin: a one-resonance file must still be 2-D
 
 # Check if data has only one row
 if Delta_J_data.ndim == 1:  # If it's a 1D array
