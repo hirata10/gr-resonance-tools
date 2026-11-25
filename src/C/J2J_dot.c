@@ -730,3 +730,86 @@ void rk4_J2Jdot_restart_openmp(double t_start, double *t, int i_start, int n, do
 
     }
 }
+
+/*
+------------------------------------------------------------
+Actions and angles of both bodies: one RK4 step (resonance-aware evolution, src/python/J_evolve_resonant.py)
+------------------------------------------------------------
+Equations, for each body, in physical (Boyer-Lindquist) time:
+    d(J_i)/dt   = J_dot_sf,i(J)     self-force rate, J2Jdot_component_openmp (the right-hand side of step 4)
+    d(psi_i)/dt = Omega_i(J)        fundamental frequencies, CKerr_Minverse + CKerr_Minv2Omega
+The angles psi = (psi_r, psi_theta, psi_phi) are measured from the torus origin of CKerr_TorusOrigin (kerrtraj.c):
+psi = 0 is the point of the orbit at pericentre (u_r = 0), crossing the equator with u_theta > 0, at phi = 0.
+The resonant angle of a mode pair is Theta = N_outer.psi_outer - N_inner.psi_inner (Eq. (5) of arXiv:2207.07733);
+its value at a resonance crossing is the theta_res_F of Delta_J_from_amplitudes (Delta_J.c).
+Only the frequencies drive the angles: the order-mu corrections of each body's own self-force to d(psi)/dt are not included.
+*/
+
+/* Right-hand side for one body at actions J[3]: J_dot[3] = d(J/mu_body)/dt from the self-force, Omega[3] = d(psi)/dt. */
+/* Self-force sum and grid as in rk4_J2Jdot_restart_openmp. Returns 0, or 1 if J is not a bound orbit ("plunge"). */
+int J_psi_rhs_openmp(const double *J, double mu_body, int Nr, int Nt, double M, double astar, double *J_dot, double *Omega){
+    double J_copy[3], Minv[9];
+    int j;
+
+    if (J2Jdot_component_openmp(GLOBALPAR_nl_self, GLOBALPAR_nmax, GLOBALPAR_kmax, GLOBALPAR_mmax, Nr, Nt, J[0], J[1], J[2], &J_dot[0], &J_dot[1], &J_dot[2], mu_body, M, astar) != 0) return(1);
+    for (j = 0; j < 3; j++){J_copy[j] = J[j];}
+    if (CKerr_Minverse(J_copy, Minv, M, astar) == 0) return(1);
+    CKerr_Minv2Omega(Minv, Omega);
+    return(0);
+}
+
+/* One classical RK4 step of y[12] = (J_inner[3], psi_inner[3], J_outer[3], psi_outer[3]). */
+/* Time step: dt = inspiral_scale * min |J_j / J_dot_j| over the actions of both bodies, with J_dot at the start of the step */
+/* (the rule and the inspiral_scale of rk4_J2Jdot_restart_openmp), but not longer than dt_max when dt_max > 0. An action with */
+/* J_j = 0 or J_dot_j = 0 is left out of the minimum. */
+/* The stages and the sum of the J part are written as in rk4_J2Jdot_restart_openmp (k = dt * J_dot), so with dt_max <= 0 the */
+/* inner body's J follows step 4; the angles do not feed back into J. */
+/* Outputs: y_new[12]; *dt = the step taken; Omega_new[6] = frequencies of the inner, then the outer body at y_new. */
+/* Returns 0, or 1 if a stage or the new state is not a bound orbit for either body ("plunge"); the outputs are then not valid. */
+int rk4_J_psi_step_openmp(const double *y, double dt_max, double mu_inner, double mu_outer, int Nr, int Nt, double M, double astar, double *y_new, double *dt, double *Omega_new){
+    double inspiral_scale = 0.01;
+    double rate[12], k[4][12], y_stage[12], J_copy[3], Minv[9];
+    double stage_weight[4] = {0., 0.5, 0.5, 1.}; /* stage s is evaluated at y + stage_weight[s] * k[s-1] */
+    double mu[2], h = 0., a;
+    int s, b, j;
+
+    mu[0] = mu_inner; mu[1] = mu_outer;
+
+    for (s = 0; s < 4; s++){
+        for (j = 0; j < 12; j++){y_stage[j] = s == 0 ? y[j] : y[j] + stage_weight[s] * k[s-1][j];}
+
+        /* d(y)/dt at this stage: (J_dot, Omega) of the inner body, then of the outer body */
+        for (b = 0; b < 2; b++){
+            if (J_psi_rhs_openmp(y_stage + 6*b, mu[b], Nr, Nt, M, astar, rate + 6*b, rate + 6*b + 3) != 0) return(1);
+        }
+
+        if (s == 0){
+            /* variable time step based on J/\dot{J} at the start of the step */
+            for (b = 0; b < 2; b++){
+                for (j = 0; j < 3; j++){
+                    if (y[6*b + j] != 0. && rate[6*b + j] != 0.){
+                        a = inspiral_scale * fabs(y[6*b + j] / rate[6*b + j]);
+                        if (h == 0. || a < h) h = a;
+                    }
+                }
+            }
+            if (dt_max > 0. && dt_max < h) h = dt_max;
+            if (!(h > 0.) || !isfinite(h)) return(1);
+        }
+
+        for (j = 0; j < 12; j++){k[s][j] = h * rate[j];}
+    }
+
+    for (j = 0; j < 12; j++){y_new[j] = y[j] + (k[0][j] + 2. * k[1][j] + 2. * k[2][j] + k[3][j]) / 6.;}
+
+    /* Frequencies at the new state. CKerr_Minverse returns 0 if the new J is not a bound orbit (the plunge test of step 4) */
+    for (b = 0; b < 2; b++){
+        for (j = 0; j < 3; j++){J_copy[j] = y_new[6*b + j];}
+        if (!isfinite(J_copy[0]) || !isfinite(J_copy[1]) || !isfinite(J_copy[2])) return(1);
+        if (CKerr_Minverse(J_copy, Minv, M, astar) == 0) return(1);
+        CKerr_Minv2Omega(Minv, Omega_new + 3*b);
+    }
+
+    *dt = h;
+    return(0);
+}

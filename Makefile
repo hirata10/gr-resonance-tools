@@ -14,6 +14,21 @@ JDOT_SF ?= cached
 ifeq ($(JDOT_SF),original)
 CFLAGS += -DJDOT_SF_ORIGINAL
 endif
+# Delta J in step 6 (Delta_J_single): DELTA_J=openmp (default) uses the tidal resonance amplitudes (OpenMP, harmonics
+# s = 1..N_res counted twice, both bodies, Gamma chosen by Gamma_source in pars.txt); DELTA_J=original calls the serial
+# Delta_J_tidal2 (full sum, inner body only, 27 output columns). Run "make clean-td_res" before changing it.
+DELTA_J ?= openmp
+ifeq ($(DELTA_J),original)
+CFLAGS += -DDELTA_J_ORIGINAL
+endif
+# Tidal resonance amplitudes (step 6 and the DELTA_J_TIDAL_* tools): TIDAL_AMP=cached (default) builds one orbit cache per
+# body and reuses it for every harmonic (src/C/radialfunc_cached.c); TIDAL_AMP=original calls CKerr_RadialFunc for every
+# harmonic as before (same numbers to ~1e-13, about ten times the CPU). It also applies to the test tools (below).
+# Run "make clean-td_res" and "make clean-test" before changing it.
+TIDAL_AMP ?= cached
+ifeq ($(TIDAL_AMP),original)
+CFLAGS += -DTIDAL_AMP_ORIGINAL
+endif
 OMPFLAGS = -fopenmp
 LIBS   = -lm
 
@@ -34,6 +49,7 @@ DUMP_DIR := dump/dump-$(TIMESTAMP)
 # Executables
 EXES = $(OUTDIR)/J_evolve_single_start \
        $(OUTDIR)/J_evolve_single_restart \
+       $(OUTDIR)/J_psi_step \
        $(OUTDIR)/Delta_J_single \
        $(OUTDIR)/Delta_Phi_single
 
@@ -83,6 +99,17 @@ $(OUTDIR)/J_evolve_single_restart: $(SRC_C)/calling.c $(SRC_C)/resonance_find.c 
         $(SRC_C)/kerrgwem.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c $(SRC_C)/J2J_dot.c \
         -I$(SRC_C) -o $@ $(LIBS)
 
+# J_psi_step: one RK4 step of the actions and angles of both bodies (resonance-aware evolution, J_evolve_resonant.py)
+$(OUTDIR)/J_psi_step: $(SRC_C)/calling.c $(SRC_C)/resonance_find.c \
+                      $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
+                      $(SRC_C)/kerrgwem.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c \
+                      $(SRC_C)/J2J_dot.c $(SRC_C)/$(C_HEADER)
+	$(CC) $(CFLAGS) $(OMPFLAGS) -DIS_RK4_J_PSI_STEP \
+        $(SRC_C)/calling.c $(SRC_C)/resonance_find.c \
+        $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c $(SRC_C)/J2J_dot.c \
+        -I$(SRC_C) -o $@ $(LIBS)
+
 # Delta_J_single
 $(OUTDIR)/Delta_J_single: $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c $(SRC_C)/kerrmode.c \
                           $(SRC_C)/kerrgwem.c $(SRC_C)/resonance_find.c \
@@ -109,6 +136,9 @@ $(OUTDIR)/Delta_Phi_single: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
 
 # You can change these compiler options:
 TEST_CFLAGS = -Wall -g $(OPTFLAGS) # include -g for degugging output
+ifeq ($(TIDAL_AMP),original)
+TEST_CFLAGS += -DTIDAL_AMP_ORIGINAL
+endif
 TEST_LIBS   = -lm
 TEST_OMPFLAGS = -fopenmp
 TEST_OPENMPLIBS = -fopenmp -lgomp -pthread
@@ -117,6 +147,7 @@ TEST_OPENMPLIBS = -fopenmp -lgomp -pthread
 TEST_EXES = $(TEST_OUTDIR)/J2EQL \
             $(TEST_OUTDIR)/J2J_DOT_TIDAL_SINGLE \
             $(TEST_OUTDIR)/J2J_DOT_TIDAL_SINGLE_OMP \
+            $(TEST_OUTDIR)/J2J_DOT_TIDAL_FROM_AMP \
             $(TEST_OUTDIR)/J2J_DOT_TIDAL_LOOP \
             $(TEST_OUTDIR)/J2J_DOT_SF \
             $(TEST_OUTDIR)/J2J_DOT_SF_OMP \
@@ -126,7 +157,9 @@ TEST_EXES = $(TEST_OUTDIR)/J2EQL \
             $(TEST_OUTDIR)/RESFIND_APO \
             $(TEST_OUTDIR)/RESFIND_APO_GENERIC \
             $(TEST_OUTDIR)/DELTA_PHI_IMAG \
-            $(TEST_OUTDIR)/GAMMA_EQ17
+            $(TEST_OUTDIR)/GAMMA_EQ17 \
+            $(TEST_OUTDIR)/DELTA_J_TIDAL_OMP \
+            $(TEST_OUTDIR)/DELTA_J_TIDAL_AB
 
 # Running "make test" builds all test executables
 test: $(TEST_OUTDIR) $(TEST_EXES)
@@ -168,6 +201,16 @@ $(TEST_OUTDIR)/J2J_DOT_TIDAL_SINGLE_OMP: $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.
                             $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c \
                             $(SRC_C)/$(C_HEADER)
 	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_TIDAL -DSINGLEVALUE_OMP $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c $(SRC_C)/kerrphase.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Same output as J2J_DOT_TIDAL_SINGLE_OMP, computed from the tidal resonance amplitudes that step 6 uses
+# (J_dot_tidal_amplitudes_openmp + J_dot_tidal_from_amplitudes; l range and grid from nl_res_extend, Nr_res, Nt_res of pars.txt)
+$(TEST_OUTDIR)/J2J_DOT_TIDAL_FROM_AMP: $(SRC_C)/calling.c $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c \
+                            $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_J_DOT_TIDAL -DFROM_AMP $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c $(SRC_C)/kerrphase.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
@@ -252,6 +295,26 @@ $(TEST_OUTDIR)/GAMMA_EQ17: $(SRC_C)/calling.c $(SRC_C)/kerrphase.c $(SRC_C)/kerr
 	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_GAMMA_EQ17 $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
         $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c \
         $(SRC_C)/kerrphase.c $(SRC_C)/Gamma.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Create executable to compute Delta_J of both bodies at one resonance (OpenMP, harmonics s = 1..N_res counted twice); Gamma supplied or from Eq. (17) of arXiv:2207.07733
+$(TEST_OUTDIR)/DELTA_J_TIDAL_OMP: $(SRC_C)/calling.c $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c $(SRC_C)/Gamma.c \
+                            $(SRC_C)/Delta_J.c $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_DELTA_J_TIDAL_OMP $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c \
+        $(SRC_C)/kerrphase.c $(SRC_C)/Gamma.c $(SRC_C)/Delta_J.c \
+        -I$(SRC_C) -o $@ $(TEST_LIBS)
+
+# Same as DELTA_J_TIDAL_OMP, and also runs the unmodified Delta_J_tidal2 on the same inputs and prints the differences (needs Nr = Nt = 42)
+$(TEST_OUTDIR)/DELTA_J_TIDAL_AB: $(SRC_C)/calling.c $(SRC_C)/kerrphase.c $(SRC_C)/kerrtraj.c \
+                            $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c \
+                            $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c $(SRC_C)/Gamma.c \
+                            $(SRC_C)/Delta_J.c $(SRC_C)/$(C_HEADER)
+	$(CC) $(TEST_CFLAGS) $(TEST_OMPFLAGS) -DIS_DELTA_J_TIDAL_OMP -DAB_TIDAL2 $(SRC_C)/calling.c $(SRC_C)/kerrtraj.c \
+        $(SRC_C)/kerrgwem.c $(SRC_C)/kerrmode.c $(SRC_C)/resonance_find.c $(SRC_C)/J_dot.c $(SRC_C)/radialfunc_cached.c \
+        $(SRC_C)/kerrphase.c $(SRC_C)/Gamma.c $(SRC_C)/Delta_J.c \
         -I$(SRC_C) -o $@ $(TEST_LIBS)
 
 

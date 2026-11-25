@@ -552,7 +552,77 @@ int main(int argc, char **argv){
 
 	// printf("Keplerian J_dot_phi at resonance = %lg \n", J_dot_phi_Kepler(1.0, radius_outer, apo_res, peri, incline));
 	#endif
-	
+
+	#ifdef FROM_AMP
+	/* The quantities of SINGLEVALUE_OMP from the two routines that step 6 is built on: J_dot_tidal_amplitudes_openmp (the tidal */
+	/* resonance amplitudes of each harmonic, before any angle is applied) and J_dot_tidal_from_amplitudes (the tidal J_dot of both */
+	/* bodies at angle_torus). The l range and the orbit grid are those of step 6: nl_res_extend, Nr_res, Nt_res of pars.txt. */
+	/* With nl_res_extend = 0 and a 42 x 42 grid the sum has the terms of J_dot_tidal_openmp, so the lines below can be compared */
+	/* with the output of SINGLEVALUE_OMP. */
+	#ifndef GLOBALPAR_nl_res_extend
+	#define GLOBALPAR_nl_res_extend 0 /* pars.txt without the entry: nl_res values of l from max(2, s|m|), as J_dot_tidal_openmp */
+	#endif
+	#ifndef GLOBALPAR_Nr_res
+	#define GLOBALPAR_Nr_res 42 /* pars.txt without the entries: the 42 x 42 orbit grid written into J_dot_tidal_openmp */
+	#endif
+	#ifndef GLOBALPAR_Nt_res
+	#define GLOBALPAR_Nt_res 42
+	#endif
+	printf("=== OpenMP run info ===\n");
+
+	#pragma omp parallel
+	{
+    		#pragma omp single
+    			{
+        			printf("Threads available: %d\n", omp_get_num_threads());
+    			}
+	}
+
+	int n_used = 0, status_amp;
+	double *amp = (double*)malloc((size_t)(4 * N_res * sizeof(double)));
+	if (!amp) {
+		fprintf(stderr, "Error: memory allocation failed\n");
+		return 1;
+	}
+
+	printf("About to compute tidal J_dots and EQL_dots from the tidal resonance amplitudes using OpenMP \n");
+	printf("Tidal sum: nl_res = %d, nl_res_extend = %d, N_res = %d, orbit grid Nr x Nt = %d x %d \n", nl, GLOBALPAR_nl_res_extend, N_res, GLOBALPAR_Nr_res, GLOBALPAR_Nt_res);
+	double t0 = omp_get_wtime();
+	status_amp = J_dot_tidal_amplitudes_openmp(nl, GLOBALPAR_nl_res_extend, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, mass, spin, GLOBALPAR_Nr_res, GLOBALPAR_Nt_res, amp, NULL, NULL, &n_used);
+	if (status_amp != 0) {
+		fprintf(stderr, "Error: J_dot_tidal_amplitudes_openmp returned %d\n", status_amp);
+		return 1;
+	}
+	J_dot_tidal_from_amplitudes(N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, amp, angle_torus, mu_inner, mu_outer, J_dot_td_inner, J_dot_td_outer);
+	double t1 = omp_get_wtime();
+	printf("Time = %.6f s\n", t1 - t0);
+	printf("Harmonics summed: %d of %d \n", n_used, N_res);
+
+	printf("J_dot_r_tidal_inner = %.15g \n", J_dot_td_inner[0]);
+	printf("J_dot_theta_tidal_inner = %.15g \n", J_dot_td_inner[1]);
+	printf("J_dot_phi_tidal_inner = %.15g \n", J_dot_td_inner[2]);
+
+	printf("J_dot_r_tidal_outer = %.15g \n", J_dot_td_outer[0]);
+	printf("J_dot_theta_tidal_outer = %.15g \n", J_dot_td_outer[1]);
+	printf("J_dot_phi_tidal_outer = %.15g \n", J_dot_td_outer[2]);
+
+	/* Computes EQL_dot_tidal from J_dot_tidal_inner */
+	EQL_dot_tidal_inner[0] = M_res_inner[0] * J_dot_td_inner[0] + M_res_inner[3] * J_dot_td_inner[1] + M_res_inner[6] * J_dot_td_inner[2];
+	EQL_dot_tidal_inner[1] = M_res_inner[1] * J_dot_td_inner[0] + M_res_inner[4] * J_dot_td_inner[1] + M_res_inner[7] * J_dot_td_inner[2];
+	EQL_dot_tidal_inner[2] = M_res_inner[2] * J_dot_td_inner[0] + M_res_inner[5] * J_dot_td_inner[1] + M_res_inner[8] * J_dot_td_inner[2];
+
+	printf("EQL_dot_tidal_inner = %.15g %.15g %.15g \n", EQL_dot_tidal_inner[0], EQL_dot_tidal_inner[1], EQL_dot_tidal_inner[2]);
+
+	/* Computes EQL_dot_tidal from J_dot_tidal_outer */
+	EQL_dot_tidal_outer[0] = M_res_outer[0] * J_dot_td_outer[0] + M_res_outer[3] * J_dot_td_outer[1] + M_res_outer[6] * J_dot_td_outer[2];
+	EQL_dot_tidal_outer[1] = M_res_outer[1] * J_dot_td_outer[0] + M_res_outer[4] * J_dot_td_outer[1] + M_res_outer[7] * J_dot_td_outer[2];
+	EQL_dot_tidal_outer[2] = M_res_outer[2] * J_dot_td_outer[0] + M_res_outer[5] * J_dot_td_outer[1] + M_res_outer[8] * J_dot_td_outer[2];
+
+	printf("EQL_dot_tidal_outer = %.15g %.15g %.15g \n", EQL_dot_tidal_outer[0], EQL_dot_tidal_outer[1], EQL_dot_tidal_outer[2]);
+
+	free((char*)amp);
+	#endif
+
 	#ifdef LOOPANGLE
 	printf("About to start angle for loop for tidal J_dots \n");
 	printf("i \t angle_step \t Jr_dot_inner \t Jtheta_dot_inner \t L_dot_inner \t E_dot_inner \t Q_dot_inner \t Jr_dot_outer \t Jtheta_dot_outer \t L_dot_outer \t E_dot_outer \t Q_dot_outer \n------------\n");
@@ -978,11 +1048,64 @@ int main(int argc, char **argv){
 	//theta_res_F = (double)rand()/(double)RAND_MAX * 2*M_PI; //Random number generator from 0 to 2*pi for resonant angle value
 
 	//printf("system label \t n_inner \t k_inner \t n_outer \t k_outer \t m \t Gamma \t Delta_J_r \t Delta_J_theta \t Delta_J_phi \n------------\n");
+	#ifdef DELTA_J_ORIGINAL
+	/* make DELTA_J=original: the serial Delta_J_tidal2 (full sum over harmonics -N_res..N_res, inner body only, Gamma as given) and the 27-column row */
 	Delta_J_tidal2(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, radius_outer, I_inner, ra_outer, rp_outer, I_outer, M, astar, theta_res_F, ang_accel, mu_outer, Delta_J_tidal_value);
 	ratio_Delta_J_J_r = Delta_J_tidal_value[0]/J_res_inner_r;
 	ratio_Delta_J_J_theta = Delta_J_tidal_value[1]/J_res_inner_theta;
 	ratio_Delta_J_J_phi = Delta_J_tidal_value[2]/J_res_inner_phi;
 	printf("%i \t %i \t %i \t %i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \n", res_label, system_label, n_res_inner, k_res_inner, n_res_outer, k_res_outer, m_res_outer, theta_res_F, ang_accel, Omega_res_inner_r, Omega_res_inner_theta, Omega_res_inner_phi, Omega_res_outer_r, Omega_res_outer_theta, Omega_res_outer_phi, J_res_inner_r, J_res_inner_theta, J_res_inner_phi, J_res_outer_r, J_res_outer_theta, J_res_outer_phi, Delta_J_tidal_value[0], Delta_J_tidal_value[1], Delta_J_tidal_value[2], ratio_Delta_J_J_r, ratio_Delta_J_J_theta, ratio_Delta_J_J_phi);
+	#else
+	/* Default build: tidal resonance amplitudes (OpenMP, harmonics s = 1..N_res counted twice) -> Gamma stage -> jump of both bodies. */
+	/* Columns 0-26 of the row are those of the DELTA_J_ORIGINAL build; appended: 27-29 Delta J of the outer body (per unit outer-body mass), */
+	/* 30-32 Delta_J_outer / J_outer, 33 the Gamma source (GLOBALPAR_Gamma_source). Column 8 is the Gamma that was used. */
+	/* Nothing else may go to stdout: the step 6 driver reads this one row. On failure the Delta J columns are nan and the reason is on stderr. */
+	#ifndef GLOBALPAR_Gamma_source
+	#define GLOBALPAR_Gamma_source 0 /* pars.txt without the entry: Gamma as given on the command line */
+	#endif
+	#ifndef GLOBALPAR_nl_res_extend
+	#define GLOBALPAR_nl_res_extend 0 /* pars.txt without the entry: nl_res values of l from max(2, s|m|), the range of Delta_J_tidal2 */
+	#endif
+	#ifndef GLOBALPAR_Nr_res
+	#define GLOBALPAR_Nr_res 42 /* pars.txt without the entries: the 42 x 42 orbit grid written into Delta_J_tidal2 */
+	#endif
+	#ifndef GLOBALPAR_Nt_res
+	#define GLOBALPAR_Nt_res 42
+	#endif
+	int status, c;
+	double mu_inner = GLOBALPAR_mu_inner; /* optional 30th argument; older callers give 29 */
+	double Delta_J_outer_value[3], Gamma_parts[3], J_dot_sf_inner[3], J_dot_sf_outer[3];
+	double J_res_inner[3], J_res_outer[3];
+	double *amp;
+
+	if (argc > 30) sscanf(argv[30], "%lg", &mu_inner);
+	J_res_inner[0] = J_res_inner_r; J_res_inner[1] = J_res_inner_theta; J_res_inner[2] = J_res_inner_phi;
+	J_res_outer[0] = J_res_outer_r; J_res_outer[1] = J_res_outer_theta; J_res_outer[2] = J_res_outer_phi;
+
+	/* Amplitudes on the Nr_res x Nt_res orbit grid of pars.txt, l range set by nl_res and nl_res_extend; they do not depend on theta_res_F or on Gamma */
+	amp = (double*)malloc((size_t)(4 * N_res * sizeof(double)));
+	status = amp ? J_dot_tidal_amplitudes_openmp(nl, GLOBALPAR_nl_res_extend, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, M, astar, GLOBALPAR_Nr_res, GLOBALPAR_Nt_res, amp, NULL, NULL, NULL) : 3;
+
+	/* Gamma stage (Gamma_resonance, Gamma.c): Gamma_source 0 = the Gamma given on the command line (gamma of potential_resonances_*.txt), */
+	/* 1 = Eq. (17) of arXiv:2207.07733 with the self-force sum and grid of pars.txt */
+	if (status == 0) {
+		status = Gamma_resonance(GLOBALPAR_Gamma_source, ang_accel, GLOBALPAR_nl_self, GLOBALPAR_nmax, GLOBALPAR_kmax, GLOBALPAR_mmax, GLOBALPAR_Nr_self, GLOBALPAR_Nt_self, n_res_inner, k_res_inner, n_res_outer, k_res_outer, m_res_inner, J_res_inner, J_res_outer, mu_inner, mu_outer, M, astar, J_dot_sf_inner, J_dot_sf_outer, Gamma_parts);
+		if (status == 0) ang_accel = Gamma_parts[2];
+	}
+
+	/* The jump, Eq. (38) */
+	if (status == 0) status = Delta_J_from_amplitudes(N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, amp, theta_res_F, ang_accel, mu_inner, mu_outer, Delta_J_tidal_value, Delta_J_outer_value);
+	if (status != 0) {
+		fprintf(stderr, "Delta_J_single: resonance %d of system %d failed (status %d); its Delta J columns are nan\n", res_label, system_label, status);
+		for (c = 0; c < 3; c++) {Delta_J_tidal_value[c] = NAN; Delta_J_outer_value[c] = NAN;}
+	}
+	free((char*)amp);
+
+	ratio_Delta_J_J_r = Delta_J_tidal_value[0]/J_res_inner_r;
+	ratio_Delta_J_J_theta = Delta_J_tidal_value[1]/J_res_inner_theta;
+	ratio_Delta_J_J_phi = Delta_J_tidal_value[2]/J_res_inner_phi;
+	printf("%i \t %i \t %i \t %i \t %i \t %i \t %i \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %lg \t %i \n", res_label, system_label, n_res_inner, k_res_inner, n_res_outer, k_res_outer, m_res_outer, theta_res_F, ang_accel, Omega_res_inner_r, Omega_res_inner_theta, Omega_res_inner_phi, Omega_res_outer_r, Omega_res_outer_theta, Omega_res_outer_phi, J_res_inner_r, J_res_inner_theta, J_res_inner_phi, J_res_outer_r, J_res_outer_theta, J_res_outer_phi, Delta_J_tidal_value[0], Delta_J_tidal_value[1], Delta_J_tidal_value[2], ratio_Delta_J_J_r, ratio_Delta_J_J_theta, ratio_Delta_J_J_phi, Delta_J_outer_value[0], Delta_J_outer_value[1], Delta_J_outer_value[2], Delta_J_outer_value[0]/J_res_outer_r, Delta_J_outer_value[1]/J_res_outer_theta, Delta_J_outer_value[2]/J_res_outer_phi, GLOBALPAR_Gamma_source);
+	#endif
 	/* for(i = 0; i < MAX_ROW; i++){
 
 		//ang_accel = data[i].data_col5 * data[i].data_col7; 
@@ -996,6 +1119,277 @@ int main(int argc, char **argv){
 	// printf("Delta_J_theta_tidal = %lg \n", Delta_J_tidal_value[1]);
 	// printf("Delta_J_phi_tidal = %lg \n", Delta_J_tidal_value[2]);
 	//free((char*)data);
+	return(0);
+}
+#endif
+
+#ifdef IS_DELTA_J_TIDAL_OMP
+/* Delta J of both bodies at one resonance, from the tidal resonance amplitudes (J_dot_tidal_amplitudes_openmp, J_dot.c): */
+/* OpenMP over the mode-function calls, harmonics s = 1..N_res counted twice, Eq. (38) of arXiv:2207.07733 applied by */
+/* Delta_J_from_amplitudes (Delta_J.c). Unlike the other tidal tools, nl_res, N_res, the orbit grid Nr x Nt and the l range are inputs. */
+/* Usage (24 inputs, then the Gamma stage): */
+/*   J_inner(3) J_outer(3) n_inner k_inner m_inner n_outer k_outer m_outer theta_res mass spin mu_inner mu_outer */
+/*   nl_res N_res Nr Nt nl_res_extend omp_threads veclib_threads */
+/* nl_res_extend: 0 = nl_res values of l from max(2, s|m|) for every harmonic s (the range of Delta_J_tidal2), */
+/*                1 = carried on to nl_res values from the harmonic's threshold l = max(2, s|m|, s|m + k_inner|, s|m + k_outer|) */
+/* followed by EITHER */
+/*   Gamma                                    (25 inputs) Gamma supplied, in physical time (1/M^2), e.g. gamma of potential_resonances_*.txt */
+/* OR */
+/*   nl_self nmax kmax mmax Nr_self Nt_self   (30 inputs) Gamma from Eq. (17) (Gamma_dOmegadJ_selfforce) with this self-force sum and grid */
+/* Both choices go through Gamma_resonance (Gamma.c), the one place where Gamma is chosen. */
+/* The same inputs can come from stdin instead (no arguments), e.g. DELTA_J_TIDAL_OMP < delta_j.input > delta_j.output */
+/* Built with -DAB_TIDAL2 (test_exe/DELTA_J_TIDAL_AB) it also calls the unmodified Delta_J_tidal2 with the same nl_res, N_res, */
+/* theta_res, Gamma and mu_outer and prints the differences; Nr = Nt = 42 and nl_res_extend = 0 are then required (the grid and */
+/* the l range written into Delta_J_tidal2). */
+int main(int argc, char **argv){
+	setvbuf(stdout, NULL, _IOLBF, 0);
+	int i, s, status;
+	int n_res_inner, k_res_inner, m_res_inner;
+	int n_res_outer, k_res_outer, m_res_outer;
+	int nl, N_res, Nr, Nt, l_extend, omp_threads, veclib_threads;
+	int nl_self = 0, nmax = 0, kmax = 0, mmax = 0, Nr_self = 0, Nt_self = 0;
+	int Gamma_source = GAMMA_SOURCE_SUPPLIED, n_used = 0, n_tail = 0;
+	double J_inner[3], J_outer[3], J_roundtrip[3], EQL_inner[3], EQL_outer[3], anc_inner[3], anc_outer[3];
+	double Minv_inner[9], Minv_outer[9], Omega_inner[3], Omega_outer[3];
+	double ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer;
+	double theta_res_F, mass, spin, mu_inner, mu_outer, Gamma_supplied = NAN, tail[6];
+	double Gamma[3], J_dot_sf_inner[3], J_dot_sf_outer[3];
+	double J_dot_td_inner[3], J_dot_td_outer[3], Delta_J_inner[3], Delta_J_outer[3];
+	double *amp, *omegagw;
+	double t0, t1, t2, t3;
+
+	if (argc == 26 || argc == 31){
+	// command-line mode
+	for (i = 0; i < 3; i++){
+		sscanf(argv[1 + i], "%lg", &J_inner[i]);
+		sscanf(argv[4 + i], "%lg", &J_outer[i]);
+	}
+	sscanf(argv[7], "%d", &n_res_inner);
+	sscanf(argv[8], "%d", &k_res_inner);
+	sscanf(argv[9], "%d", &m_res_inner);
+	sscanf(argv[10], "%d", &n_res_outer);
+	sscanf(argv[11], "%d", &k_res_outer);
+	sscanf(argv[12], "%d", &m_res_outer);
+	sscanf(argv[13], "%lg", &theta_res_F);
+	sscanf(argv[14], "%lg", &mass);
+	sscanf(argv[15], "%lg", &spin);
+	sscanf(argv[16], "%lg", &mu_inner);
+	sscanf(argv[17], "%lg", &mu_outer);
+	sscanf(argv[18], "%d", &nl);
+	sscanf(argv[19], "%d", &N_res);
+	sscanf(argv[20], "%d", &Nr);
+	sscanf(argv[21], "%d", &Nt);
+	sscanf(argv[22], "%d", &l_extend);
+	sscanf(argv[23], "%d", &omp_threads);
+	sscanf(argv[24], "%d", &veclib_threads);
+	n_tail = argc - 25;
+	for (i = 0; i < n_tail; i++){sscanf(argv[25 + i], "%lg", &tail[i]);}
+	}
+	else if (argc == 1){
+	// stdin mode (works with < file)
+		if (scanf("%lf %lf %lf %lf %lf %lf %d %d %d %d %d %d %lf %lf %lf %lf %lf %d %d %d %d %d %d %d",
+			&J_inner[0], &J_inner[1], &J_inner[2],
+			&J_outer[0], &J_outer[1], &J_outer[2],
+			&n_res_inner, &k_res_inner, &m_res_inner,
+			&n_res_outer, &k_res_outer, &m_res_outer,
+			&theta_res_F, &mass, &spin, &mu_inner, &mu_outer,
+			&nl, &N_res, &Nr, &Nt, &l_extend,
+			&omp_threads, &veclib_threads) != 24) {
+
+		fprintf(stderr, "Error: expected 24 inputs, then Gamma or the 6 self-force settings\n");
+		return 1;
+		}
+		/* The Gamma stage inputs: 1 number (Gamma) or 6 (nl_self nmax kmax mmax Nr_self Nt_self) */
+		while (n_tail < 6 && scanf("%lf", &tail[n_tail]) == 1){n_tail++;}
+	}
+	else {
+		fprintf(stderr, "Error: expected 25 inputs (Gamma supplied) or 30 (Gamma from Eq. (17)), or none to read them from stdin\n");
+		fprintf(stderr, "       (nl_res_extend, 0 or 1, comes after Nt and before the two thread counts)\n");
+		return 1;
+	}
+
+	/* Gamma stage inputs */
+	if (n_tail == 1){
+		Gamma_source = GAMMA_SOURCE_SUPPLIED;
+		Gamma_supplied = tail[0];
+	}
+	else if (n_tail == 6){
+		Gamma_source = GAMMA_SOURCE_EQ17;
+		nl_self = (int)tail[0]; nmax = (int)tail[1]; kmax = (int)tail[2]; mmax = (int)tail[3];
+		Nr_self = (int)tail[4]; Nt_self = (int)tail[5];
+	}
+	else {
+		fprintf(stderr, "Error: after the 24 inputs give Gamma (1 number) or nl_self nmax kmax mmax Nr_self Nt_self (6 numbers); read %d\n", n_tail);
+		return 1;
+	}
+
+	/* Check thread inputs */
+	if (omp_threads < 1 || veclib_threads < 1) {
+		fprintf(stderr, "Error: thread counts must be >= 1\n");
+		return 1;
+	}
+
+	/* Check the mass ratios and the sum sizes */
+	if (!(mu_inner > 0.) || !(mu_outer > 0.)) {
+		fprintf(stderr, "Error: mu_inner and mu_outer must be > 0\n");
+		return 1;
+	}
+	if (nl < 1 || N_res < 1 || Nr < 1 || Nt < 1) {
+		fprintf(stderr, "Error: nl_res, N_res, Nr and Nt must be >= 1\n");
+		return 1;
+	}
+	if (l_extend != 0 && l_extend != 1) {
+		fprintf(stderr, "Error: nl_res_extend must be 0 or 1\n");
+		return 1;
+	}
+	#ifdef AB_TIDAL2
+	if (Nr != 42 || Nt != 42 || l_extend != 0) {
+		fprintf(stderr, "Error: the A/B against Delta_J_tidal2 needs Nr = Nt = 42 and nl_res_extend = 0, the grid and the l range written into Delta_J_tidal2\n");
+		return 1;
+	}
+	#endif
+
+	/* Set OpenMP thread count */
+	omp_set_num_threads(omp_threads);
+
+	/* Set vecLib thread count */
+	#ifdef __APPLE__
+	char veclib_threads_str[16];
+	snprintf(veclib_threads_str, sizeof(veclib_threads_str), "%d", veclib_threads);
+	setenv("VECLIB_MAXIMUM_THREADS", veclib_threads_str, 1);
+	#endif
+
+	/* Orbit data, converted as in the tidal J_dot tools: J -> EQL -> (I, rp, ra). J_inner and J_outer keep the input values */
+	for (i = 0; i < 3; i++){J_roundtrip[i] = J_inner[i];}
+	CKerr_J2EQL(J_roundtrip, EQL_inner, mass, spin);
+	CKerr_EQL2J(EQL_inner, J_roundtrip, mass, spin, anc_inner);
+	CKerr_Minverse(J_roundtrip, Minv_inner, mass, spin);
+	CKerr_Minv2Omega(Minv_inner, Omega_inner);
+
+	for (i = 0; i < 3; i++){J_roundtrip[i] = J_outer[i];}
+	CKerr_J2EQL(J_roundtrip, EQL_outer, mass, spin);
+	CKerr_EQL2J(EQL_outer, J_roundtrip, mass, spin, anc_outer);
+	CKerr_Minverse(J_roundtrip, Minv_outer, mass, spin);
+	CKerr_Minv2Omega(Minv_outer, Omega_outer);
+
+	I_inner = anc_inner[0];
+	rp_inner = anc_inner[1];
+	ra_inner = anc_inner[2];
+
+	I_outer = anc_outer[0];
+	rp_outer = anc_outer[1];
+	ra_outer = anc_outer[2];
+
+	double Delta_omega = (n_res_outer * Omega_outer[0] + k_res_outer * Omega_outer[1] + m_res_outer * Omega_outer[2]) - (n_res_inner * Omega_inner[0] + k_res_inner * Omega_inner[1] + m_res_inner * Omega_inner[2]);
+
+	printf("SMBH M: %lg spin: %lg \n", mass, spin);
+	printf("Resonance modes (n,k,m): inner: (%i, %i, %i) outer: (%i, %i, %i) \n", n_res_inner, k_res_inner, m_res_inner, n_res_outer, k_res_outer, m_res_outer);
+	printf("Resonance (Jr, Jtheta, Jphi): inner: (%.17g, %.17g, %.17g) outer: (%.17g, %.17g, %.17g)\n", J_inner[0], J_inner[1], J_inner[2], J_outer[0], J_outer[1], J_outer[2]);
+	printf("Resonance (Omegar, Omegatheta, Omegaphi): inner: (%12.5le, %12.5le, %12.5le) outer: (%12.5le, %12.5le, %12.5le)\n", Omega_inner[0], Omega_inner[1], Omega_inner[2], Omega_outer[0], Omega_outer[1], Omega_outer[2]);
+	printf("Resonance condition (omega_outer - omega_inner) = %12.5le \n", Delta_omega);
+	printf("I_inner, rp_inner, ra_inner, eccen_inner: %.17g %.17g %.17g %lg \n", I_inner, rp_inner, ra_inner, (ra_inner - rp_inner) / (ra_inner + rp_inner));
+	printf("I_outer, rp_outer, ra_outer, eccen_outer: %.17g %.17g %.17g %lg \n", I_outer, rp_outer, ra_outer, (ra_outer - rp_outer) / (ra_outer + rp_outer));
+	printf("Mass ratios: mu_inner = %.15g, mu_outer = %.15g \n", mu_inner, mu_outer);
+	printf("Tidal sum: nl_res = %d, N_res = %d, orbit grid Nr x Nt = %d x %d, theta_res = %.17g \n", nl, N_res, Nr, Nt, theta_res_F);
+	printf("l range: nl_res_extend = %d (%s) \n", l_extend, l_extend ? "nl_res values of l from each harmonic's threshold l, and every l below it" : "nl_res values of l from max(2, s|m|)");
+
+	#pragma omp parallel
+	{
+		#pragma omp single
+		{
+			printf("Threads available: %d\n", omp_get_num_threads());
+		}
+	}
+
+	/* Amplitudes: all of the Teukolsky work; they do not depend on theta_res or on Gamma */
+	amp = (double*)malloc((size_t)(4 * N_res * sizeof(double)));
+	omegagw = (double*)malloc((size_t)(2 * N_res * sizeof(double)));
+	if (!amp || !omegagw) {
+		fprintf(stderr, "Error: memory allocation failed\n");
+		return 1;
+	}
+
+	t0 = omp_get_wtime();
+	status = J_dot_tidal_amplitudes_openmp(nl, l_extend, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, mass, spin, Nr, Nt, amp, NULL, omegagw, &n_used);
+	t1 = omp_get_wtime();
+	if (status != 0) {
+		fprintf(stderr, "Error: J_dot_tidal_amplitudes_openmp returned %d\n", status);
+		return 1;
+	}
+
+	printf("Amplitudes: %d of %d harmonics summed (the rest are zero), time = %.3f s \n", n_used, N_res, t1 - t0);
+	printf("s \t omega_inner \t omega_outer \t frequency mismatch \t R1_inner \t R2_inner \t R1_outer \t R2_outer \t first l \t last l \n------------\n");
+	for (s = 1; s <= N_res; s++){
+		double om_in = omegagw[2 * (s - 1)], om_out = omegagw[2 * (s - 1) + 1];
+		double om_sum = fabs(om_in) + fabs(om_out);
+		/* l range of the harmonic as J_dot_tidal_amplitudes_openmp sets it (meaningful for the harmonics that were summed) */
+		int l_first = abs(s * m_res_inner) < 2 ? 2 : abs(s * m_res_inner);
+		int l_last = l_first + J_dot_tidal_nl_harmonic(nl, l_extend, s, k_res_inner, k_res_outer, m_res_inner) - 1;
+		printf("%i \t %.17g \t %.17g \t %.3e \t %.17g \t %.17g \t %.17g \t %.17g \t %i \t %i \n", s, om_in, om_out, om_sum > 0. ? 2. * fabs(om_in - om_out) / om_sum : 0., amp[4 * (s - 1)], amp[4 * (s - 1) + 1], amp[4 * (s - 1) + 2], amp[4 * (s - 1) + 3], l_first, l_last);
+	}
+
+	/* Gamma stage: the one place where the Gamma of the jump is chosen (Gamma_resonance, Gamma.c) */
+	t2 = omp_get_wtime();
+	status = Gamma_resonance(Gamma_source, Gamma_supplied, nl_self, nmax, kmax, mmax, Nr_self, Nt_self, n_res_inner, k_res_inner, n_res_outer, k_res_outer, m_res_inner, J_inner, J_outer, mu_inner, mu_outer, mass, spin, J_dot_sf_inner, J_dot_sf_outer, Gamma);
+	t3 = omp_get_wtime();
+	if (status != 0) {
+		fprintf(stderr, "Error: Gamma_resonance returned %d\n", status);
+		return 1;
+	}
+	if (Gamma_source == GAMMA_SOURCE_SUPPLIED){
+		printf("Gamma source: supplied \n");
+	}
+	else {
+		printf("Gamma source: Eq. (17), self-force sum nl_self/nmax/kmax/mmax = %d/%d/%d/%d on a %d x %d grid, time = %.3f s \n", nl_self, nmax, kmax, mmax, Nr_self, Nt_self, t3 - t2);
+		printf("J_dot_inner_sf: %.15g %.15g %.15g \n", J_dot_sf_inner[0], J_dot_sf_inner[1], J_dot_sf_inner[2]);
+		printf("J_dot_outer_sf: %.15g %.15g %.15g \n", J_dot_sf_outer[0], J_dot_sf_outer[1], J_dot_sf_outer[2]);
+		printf("Gamma_inner (N_inner.Omega_dot_inner) = %.10e \n", Gamma[0]);
+		printf("Gamma_outer (N_outer.Omega_dot_outer) = %.10e \n", Gamma[1]);
+	}
+	printf("Gamma (outer - inner) = %.17g \n", Gamma[2]);
+
+	/* Tidal J_dot at theta_res from the same amplitudes (compare with J2J_DOT_TIDAL_SINGLE_OMP) */
+	J_dot_tidal_from_amplitudes(N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, amp, theta_res_F, mu_inner, mu_outer, J_dot_td_inner, J_dot_td_outer);
+	printf("J_dot_r_tidal_inner = %.15g \n", J_dot_td_inner[0]);
+	printf("J_dot_theta_tidal_inner = %.15g \n", J_dot_td_inner[1]);
+	printf("J_dot_phi_tidal_inner = %.15g \n", J_dot_td_inner[2]);
+	printf("J_dot_r_tidal_outer = %.15g \n", J_dot_td_outer[0]);
+	printf("J_dot_theta_tidal_outer = %.15g \n", J_dot_td_outer[1]);
+	printf("J_dot_phi_tidal_outer = %.15g \n", J_dot_td_outer[2]);
+
+	/* The jump, Eq. (38) */
+	status = Delta_J_from_amplitudes(N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, amp, theta_res_F, Gamma[2], mu_inner, mu_outer, Delta_J_inner, Delta_J_outer);
+	if (status != 0) {
+		fprintf(stderr, "Error: Delta_J_from_amplitudes returned %d\n", status);
+		return 1;
+	}
+	printf("Delta_J_inner (r, theta, phi) = %.17g %.17g %.17g \n", Delta_J_inner[0], Delta_J_inner[1], Delta_J_inner[2]);
+	printf("Delta_J_outer (r, theta, phi) = %.17g %.17g %.17g \n", Delta_J_outer[0], Delta_J_outer[1], Delta_J_outer[2]);
+	printf("Delta_J_inner / J_inner = %.6e %.6e %.6e \n", Delta_J_inner[0] / J_inner[0], Delta_J_inner[1] / J_inner[1], Delta_J_inner[2] / J_inner[2]);
+	printf("Delta_J_outer / J_outer = %.6e %.6e %.6e \n", Delta_J_outer[0] / J_outer[0], Delta_J_outer[1] / J_outer[1], Delta_J_outer[2] / J_outer[2]);
+
+	#ifdef AB_TIDAL2
+	/* A/B: the unmodified Delta_J_tidal2 (serial, full sum s = -N_res..N_res, inner body only) on the same orbits, */
+	/* nl_res, N_res, 42 x 42 grid, theta_res, Gamma and mu_outer */
+	double Delta_J_old[3], t4, t5;
+	t4 = omp_get_wtime();
+	Delta_J_tidal2(nl, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, 0., I_inner, ra_outer, rp_outer, I_outer, mass, spin, theta_res_F, Gamma[2], mu_outer, Delta_J_old);
+	t5 = omp_get_wtime();
+	printf("A/B against Delta_J_tidal2 (same nl_res, N_res, 42 x 42 grid, theta_res, Gamma, mu_outer): \n");
+	printf("Delta_J_tidal2 (r, theta, phi) = %.17g %.17g %.17g \n", Delta_J_old[0], Delta_J_old[1], Delta_J_old[2]);
+	printf("Delta_J_inner  (r, theta, phi) = %.17g %.17g %.17g \n", Delta_J_inner[0], Delta_J_inner[1], Delta_J_inner[2]);
+	printf("new - old (absolute)   = %.3e %.3e %.3e \n", Delta_J_inner[0] - Delta_J_old[0], Delta_J_inner[1] - Delta_J_old[1], Delta_J_inner[2] - Delta_J_old[2]);
+	printf("|new - old| / |old|    =");
+	for (i = 0; i < 3; i++){
+		if (Delta_J_old[i] != 0.) printf(" %.3e", fabs(Delta_J_inner[i] - Delta_J_old[i]) / fabs(Delta_J_old[i]));
+		else printf(" (old = 0)");
+	}
+	printf(" \n");
+	printf("Time: Delta_J_tidal2 = %.3f s, new amplitudes = %.3f s \n", t5 - t4, t1 - t0);
+	#endif
+
+	free((char*)amp);
+	free((char*)omegagw);
 	return(0);
 }
 #endif
@@ -1492,6 +1886,44 @@ int main(int argc, char **argv){
 	}
 	printf("Finite difference check (same J_dots): Gamma_inner = %.10e, Gamma_outer = %.10e, Gamma = %.10e \n", Gamma_fd[0], Gamma_fd[1], Gamma_fd[1] - Gamma_fd[0]);
 
+	return(0);
+}
+#endif
+
+#ifdef IS_RK4_J_PSI_STEP
+/* One RK4 step of the actions and angles of both bodies (rk4_J_psi_step_openmp, J2J_dot.c): dJ/dt from the self-force, */
+/* d(psi)/dt = Omega(J). Used by the resonance-aware evolution, src/python/J_evolve_resonant.py */
+/* Usage (14 inputs): t  J_inner(3) psi_inner(3)  J_outer(3) psi_outer(3)  dt_max */
+/*   t      = time at the start of the step (physical time, units of M) */
+/*   psi    = (psi_r, psi_theta, psi_phi) in radians, measured from pericentre, the equatorial crossing with u_theta > 0, and phi = 0 */
+/*   dt_max > 0: the step is not longer than dt_max (to end a step at a resonance crossing); dt_max <= 0: no limit */
+/* The mass ratios, the spin, the self-force sum and its grid are those of pars.txt (compiled in), as for J_evolve_single_restart. */
+/* Output: one row of 20 numbers on stdout, the state at the end of the step: */
+/*   t  dt  J_inner(3) psi_inner(3) Omega_inner(3)  J_outer(3) psi_outer(3) Omega_outer(3) */
+/* or the line "It plunged." if either body has no bound orbit. Nothing else goes to stdout: the driver reads this one line. */
+int main(int argc, char **argv){
+	int j;
+	double t, y[12], y_new[12], dt_max, dt, Omega_new[6];
+
+	if (argc != 15){
+		fprintf(stderr, "Error: expected 14 inputs: t J_inner(3) psi_inner(3) J_outer(3) psi_outer(3) dt_max\n");
+		return 1;
+	}
+	sscanf(argv[1], "%lg", &t);
+	for (j = 0; j < 12; j++){sscanf(argv[2 + j], "%lg", &y[j]);}
+	sscanf(argv[14], "%lg", &dt_max);
+
+	if (rk4_J_psi_step_openmp(y, dt_max, GLOBALPAR_mu_inner, GLOBALPAR_mu_outer, GLOBALPAR_Nr_self, GLOBALPAR_Nt_self, GLOBALPAR_M, GLOBALPAR_astar, y_new, &dt, Omega_new) != 0){
+		printf("It plunged.\n");
+		return(0);
+	}
+
+	printf("%.17g %.17g", t + dt, dt);
+	for (j = 0; j < 6; j++){printf(" %.17g", y_new[j]);}
+	for (j = 0; j < 3; j++){printf(" %.17g", Omega_new[j]);}
+	for (j = 6; j < 12; j++){printf(" %.17g", y_new[j]);}
+	for (j = 3; j < 6; j++){printf(" %.17g", Omega_new[j]);}
+	printf("\n");
 	return(0);
 }
 #endif
