@@ -1006,14 +1006,15 @@ def ckerr_lindbladresonancestrength(M, astar, r0, mm, nl, jr1):
 
 
 #Inputs: a double (ra), a double (rp), a double (I), a double from 0 to 1 (astar), a double (M)
-#Outputs: an array of 3 doubles (EQL)
+#Outputs: an array of 3 doubles (EQL); all NaN if no orbit was found (the C function then leaves EQL unset)
 #void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, double M)
 def ra_rp_i2eql(ra, rp, I, astar, M):
 
     cdef double *EQL = <double *> malloc (3 * sizeof(double))
-    cdef double result = -1
+    for i in range(3):
+        EQL[i] = np.nan
     try:
-        gr_wrapper.ra_rp_I2EQL(<double> ra, EQL, <double> rp, <double> I, <double> M, <double> astar)
+        gr_wrapper.ra_rp_I2EQL(<double> ra, EQL, <double> rp, <double> I, <double> astar, <double> M)
     finally:
         output = np.array([EQL[i] for i in range(3)])
         free(EQL)
