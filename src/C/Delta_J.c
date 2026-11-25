@@ -349,3 +349,89 @@ void Delta_J_tidal2(int nl, int N_res, int n_res_inner, int n_res_outer, int k_r
 }
 
 // TODO: Make restriction on amplitudes for n < Nr/2 AND k < Nt/2
+
+/*
+------------------------------------------------------------
+Delta J of both bodies from the tidal resonance amplitudes
+------------------------------------------------------------
+Eq. (38) of arXiv:2207.07733: near the crossing Theta = Theta_res + Gamma (t - t_res)^2 / 2 (Eq. (16)), with
+Theta = N_outer.psi_outer - N_inner.psi_inner (Eq. (5)) and Gamma = N_outer.Omega_dot_outer - N_inner.Omega_dot_inner
+(Eq. (17)). Integrating each harmonic e^{i s Theta} of the tidal J_dot (Eq. (36)) over the crossing gives
+e^{i s Theta_res} e^{i pi sgn(s Gamma)/4} sqrt(2 pi/|s Gamma|). With the amplitudes R1, R2 of
+J_dot_tidal_amplitudes_openmp (J_dot.c), which already hold the sum over l and the 1/omega^3, and harmonic -s counted
+through the factor 2 (see the comment there for when that holds):
+
+  phase_s = s Theta_res + sgn(Gamma) pi/4
+  Delta_J_inner,j = 2 sum_{s=1}^{N_res} (-s N_inner,j) mu_outer (R1_inner,s cos(phase_s) + R2_inner,s sin(phase_s)) sqrt(2 pi/(s |Gamma|))
+  Delta_J_outer,j = 2 sum_{s=1}^{N_res} (-s N_outer,j) mu_inner (R1_outer,s cos(phase_s) + R2_outer,s sin(phase_s)) sqrt(2 pi/(s |Gamma|))
+
+The inner-body line is the sum Delta_J_tidal2 computes (its term + another_term + alphankm*last_term is
+R1 cos + R2 sin before the l sum and the 1/omega^3). The outer-body line applies the same crossing integral to the
+outer-body tidal J_dot of J_dot_tidal_openmp: both bodies see the same Theta(t).
+
+Units: theta_res_F in radians, ang_accel = Gamma in physical time (1/M^2), as gamma in potential_resonances_*.txt or
+Gamma[2] of Gamma_dOmegadJ. Delta_J_inner = Delta(J_inner/mu_inner), proportional to mu_outer; Delta_J_outer =
+Delta(J_outer/mu_outer), proportional to mu_inner.
+
+Gamma is an input on purpose: the amplitudes do not depend on it, so the same amplitudes can be reused with a
+different Gamma (Gamma_resonance in Gamma.c is where Gamma is chosen) or a different Theta_res.
+Returns 0, or 1 if Gamma is zero or not finite: the jump prescription has no meaning there and both outputs are NaN.
+*/
+int Delta_J_from_amplitudes(int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, const double *amp, double theta_res_F, double ang_accel, double mu_inner, double mu_outer, double *Delta_J_inner, double *Delta_J_outer){
+	int s, j;
+	double sgn_Gamma, Rtheta, Itheta, crossing, contrib_inner, contrib_outer;
+
+	if (!isfinite(ang_accel) || ang_accel == 0.){
+		fprintf(stderr, "Delta_J.c: Delta_J_from_amplitudes needs a finite, nonzero Gamma (got %lg)\n", ang_accel);
+		for (j = 0; j < 3; j++){Delta_J_inner[j] = NAN; Delta_J_outer[j] = NAN;}
+		return(1);
+	}
+
+	for (j = 0; j < 3; j++){Delta_J_inner[j] = 0; Delta_J_outer[j] = 0;}
+
+	/* s > 0 here, so sgn(s Gamma) = sgn(Gamma) */
+	sgn_Gamma = ang_accel > 0 ? 1. : -1.;
+
+	for (s = 1; s <= N_res; s++){
+		Rtheta = cos(s * theta_res_F + sgn_Gamma * M_PI/4.);
+		Itheta = sin(s * theta_res_F + sgn_Gamma * M_PI/4.);
+		crossing = sqrt(2. * M_PI / fabs(s * ang_accel));
+
+		contrib_inner = (amp[4*(s-1)] * Rtheta + amp[4*(s-1)+1] * Itheta) * crossing;
+		contrib_outer = (amp[4*(s-1)+2] * Rtheta + amp[4*(s-1)+3] * Itheta) * crossing;
+
+		/* factor 2 counts harmonic -s */
+		Delta_J_inner[0] += 2. * -(s * n_res_inner) * mu_outer * contrib_inner;
+		Delta_J_inner[1] += 2. * -(s * k_res_inner) * mu_outer * contrib_inner;
+		Delta_J_inner[2] += 2. * -(s * m_res_inner) * mu_outer * contrib_inner;
+
+		Delta_J_outer[0] += 2. * -(s * n_res_outer) * mu_inner * contrib_outer;
+		Delta_J_outer[1] += 2. * -(s * k_res_outer) * mu_inner * contrib_outer;
+		Delta_J_outer[2] += 2. * -(s * m_res_outer) * mu_inner * contrib_outer;
+	}
+	return(0);
+}
+
+/* Amplitudes (J_dot_tidal_amplitudes_openmp) + jump (Delta_J_from_amplitudes) in one call: the OpenMP, two-body
+ * counterpart of Delta_J_tidal2. Same inputs as Delta_J_tidal2 without radius_outer, plus l_extend (0 = the l range
+ * of Delta_J_tidal2, otherwise extended to each harmonic's threshold multipole; see J_dot_tidal_amplitudes_openmp),
+ * mu_inner (for the outer body's jump) and the orbit grid Nr x Nt (Delta_J_tidal2 has 42 x 42 written in).
+ * To try several Gamma or theta_res_F for one resonance, call the two routines separately and keep the amplitudes.
+ * Returns the first nonzero status of the two routines (outputs are then NaN), or 0. */
+int Delta_J_tidal_openmp(int nl, int l_extend, int N_res, int n_res_inner, int n_res_outer, int k_res_inner, int k_res_outer, int m_res_inner, int m_res_outer, double ra_inner, double rp_inner, double I_inner, double ra_outer, double rp_outer, double I_outer, double M, double astar, double theta_res_F, double ang_accel, double mu_inner, double mu_outer, int Nr, int Nt, double *Delta_J_inner, double *Delta_J_outer){
+	int j, status;
+	double *amp;
+
+	for (j = 0; j < 3; j++){Delta_J_inner[j] = NAN; Delta_J_outer[j] = NAN;}
+	if (N_res < 1) return(1);
+
+	amp = (double*)malloc((size_t)(4*N_res*sizeof(double)));
+	if (!amp) return(3);
+
+	status = J_dot_tidal_amplitudes_openmp(nl, l_extend, N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, ra_inner, rp_inner, I_inner, ra_outer, rp_outer, I_outer, M, astar, Nr, Nt, amp, NULL, NULL, NULL);
+	if (status == 0)
+		status = Delta_J_from_amplitudes(N_res, n_res_inner, n_res_outer, k_res_inner, k_res_outer, m_res_inner, m_res_outer, amp, theta_res_F, ang_accel, mu_inner, mu_outer, Delta_J_inner, Delta_J_outer);
+
+	free((char*)amp);
+	return(status);
+}

@@ -186,3 +186,32 @@ int Gamma_dOmegadJ_selfforce(int nl, int nmax, int kmax, int mmax, int Nr, int N
 
 	return(Gamma_dOmegadJ(n_inner, k_inner, n_outer, k_outer, m_res, J_inner, J_outer, J_dot_inner, J_dot_outer, M, astar, Gamma));
 }
+
+/* The one place where the Gamma used by the Delta J jump prescription (Eq. (38) of arXiv:2207.07733) is chosen. */
+/* Delta_J_from_amplitudes (Delta_J.c) takes Gamma as an input; this routine says where that number comes from: */
+/*   source = GAMMA_SOURCE_SUPPLIED (0): Gamma_supplied is used as given, e.g. gamma of potential_resonances_*.txt, which the */
+/*            resonance finder takes from the J evolution. Gamma[0], Gamma[1], J_dot_inner and J_dot_outer are set to NaN */
+/*            and the self-force arguments (nl_self ... Nt_self, J, mu) are not used. */
+/*   source = GAMMA_SOURCE_EQ17 (1): Eq. (17), Gamma = N_outer.(dOmega_outer/dJ).J_dot_sf,outer - N_inner.(dOmega_inner/dJ).J_dot_sf,inner, */
+/*            from Gamma_dOmegadJ_selfforce: the self-force of both bodies on the nl_self/nmax/kmax/mmax sum and Nr_self x Nt_self grid. */
+/* Output as Gamma_dOmegadJ: Gamma[0] = inner part, Gamma[1] = outer part, Gamma[2] = Gamma[1] - Gamma[0] = the Gamma to use, */
+/* in physical time (1/M^2); J_dot_inner[3], J_dot_outer[3] = the self-force rates used (source 1). */
+/* Returns 0, or 1 for an unknown source (Gamma = NaN). */
+/* Adding a contribution to Gamma (for example the tidal one): Gamma_dOmegadJ is linear in the J_dots it is given, so */
+/* the tidal part of Gamma at resonant angle Theta is Gamma_dOmegadJ called with the tidal J_dots of */
+/* J_dot_tidal_from_amplitudes (J_dot.c). It would enter here as a new source; none is implemented. */
+int Gamma_resonance(int source, double Gamma_supplied, int nl_self, int nmax, int kmax, int mmax, int Nr_self, int Nt_self, int n_inner, int k_inner, int n_outer, int k_outer, int m_res, double *J_inner, double *J_outer, double mu_inner, double mu_outer, double M, double astar, double *J_dot_inner, double *J_dot_outer, double *Gamma){
+	int i;
+
+	for (i = 0; i < 3; i++){J_dot_inner[i] = NAN; J_dot_outer[i] = NAN; Gamma[i] = NAN;}
+
+	if (source == GAMMA_SOURCE_SUPPLIED){
+		Gamma[2] = Gamma_supplied;
+		return(0);
+	}
+	if (source == GAMMA_SOURCE_EQ17){
+		return(Gamma_dOmegadJ_selfforce(nl_self, nmax, kmax, mmax, Nr_self, Nt_self, n_inner, k_inner, n_outer, k_outer, m_res, J_inner, J_outer, mu_inner, mu_outer, M, astar, J_dot_inner, J_dot_outer, Gamma));
+	}
+	fprintf(stderr, "Gamma.c: Gamma_resonance: unknown source %d (0 = supplied, 1 = Eq. (17))\n", source);
+	return(1);
+}

@@ -37,7 +37,17 @@ N_sys 1
 N_res 5
 
 #Number of \ell modes for resonance calculation
-nl_res 6
+nl_res 12
+
+#l range of each tidal harmonic s in step 6: 0 = nl_res values of l from max(2, s|m|); 1 = carried on to nl_res values from the first l the harmonic couples to, max(2, s|m|, s|m+k_inner|, s|m+k_outer|). Both converge to the same Delta J; 0 with nl_res 12 is the tested default (README, convergence notes)
+nl_res_extend 0
+
+#Radial and polar grid sizes (Nr, Nt) for the tidal amplitudes in step 6
+Nr_res 42
+Nt_res 42
+
+#Source of Gamma for Delta J (step 6): 0 = gamma from the resonance finder, 1 = Eq. (17) of arXiv:2207.07733 with the self-force sum below
+Gamma_source 0
 
 #Minimum Fourier mode (n,k,m)
 N_min_Fourier -5

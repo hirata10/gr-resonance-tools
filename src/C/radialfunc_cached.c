@@ -18,6 +18,8 @@
  * The cache is read-only inside CKerr_RadialFunc_cached, so one cache can be shared by all OpenMP threads.
  * Building with -DJDOT_SF_ORIGINAL (make JDOT_SF=original) makes J_dot.c call CKerr_RadialFunc instead; this file is
  * still compiled but unused. That build is the A/B reference for any change made here.
+ * The tidal resonance amplitudes (J_dot_tidal_amplitudes_openmp, J_dot.c) use it the same way, with one cache per
+ * body and lc from CKerr_RadialFunc_cached_lmax (below); their A/B switch is -DTIDAL_AMP_ORIGINAL (make TIDAL_AMP=original).
  *
  * WHAT A CALL RETURNS: for mode (qr,qt,mm) = (n,k,m) and each il = 0..nl-1 (l = max(2,|m|) + il),
  *   Coef[4*il+0], Coef[4*il+1] = Re, Im of the horizon ("down") amplitude Z^H_{lmkn},
@@ -107,6 +109,22 @@ void CKerr_OrbitCacheBuild(double *Minv, double *xuorig, double M, double astar,
 void CKerr_OrbitCacheFree(CKerr_OrbitCache *o) {
   free(o->XU); free(o->Y); free(o->dY);
   o->XU = o->Y = o->dY = NULL;
+}
+
+/* Largest l of the spherical-harmonic expansion that CKerr_RadialFunc_cached uses for mode (qr, qt, mm) = (n, k, m)
+ * with nl output values of l: lmin + nb - 1, where lmin = max(2,|m|) and nb is the basis size CKerr_SbCoefN needs
+ * at CKERR_ERRTOL_ANG (the same call, with the same arguments, that the mode function makes). A cache built with
+ * lc >= this value serves the mode from its Y table; with a smaller lc, or nb > NBMAX, sph_cached falls back to
+ * CKerr_SpheroidalYSLM (same numbers, original per-sample cost). Costs one small eigenvalue problem. */
+long CKerr_RadialFunc_cached_lmax(double *Minv, double M, double astar, long qr, long qt, long mm, long nl) {
+  double TOmega[3], *b, *E;
+  long nb, lmin = labs(mm) < 2 ? 2 : labs(mm);
+  CKerr_Minv2Omega(Minv, TOmega);
+  E = (double*)malloc((size_t)(nl * sizeof(double)));
+  nb = CKerr_SbCoefN(-2, mm, nl, E, &b, astar * M * (qr * TOmega[0] + qt * TOmega[1] + mm * TOmega[2]), CKERR_ERRTOL_ANG);
+  free((char*)b);
+  free((char*)E);
+  return lmin + nb - 1;
 }
 
 /* Spin-weighted spheroidal harmonics S_{lm}(theta_s) and dS/dtheta for the nu output modes l = lmin..lmin+nu-1

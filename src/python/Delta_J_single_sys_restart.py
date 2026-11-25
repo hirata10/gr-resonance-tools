@@ -40,6 +40,11 @@ row[15] = J_inner_res_phi
 row[16] = J_outer_res_r
 row[17] = J_outer_res_theta
 row[18] = J_outer_res_phi
+row[5] = mass_inner (30th argument: Delta J of the outer body is proportional to it)
+
+Usage: python src/python/Delta_J_single_sys_restart.py <system_label> [omp_threads]
+omp_threads = OpenMP threads of each Delta_J_single process (default 1). chunk_size processes run at a time,
+so keep chunk_size * omp_threads at or below the number of physical cores.
 
 """
 
@@ -74,6 +79,14 @@ os.makedirs(output_dir, exist_ok=True)
 
 #Directory to executables
 exe_dir = "td_res_exe"
+
+# OpenMP threads of each Delta_J_single process. Set explicitly (not inherited from the shell), because chunk_size
+# processes run at once: an OMP_NUM_THREADS left over from another step would multiply with chunk_size.
+omp_threads = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+if omp_threads < 1:
+    sys.exit("omp_threads must be >= 1")
+child_env = dict(os.environ, OMP_NUM_THREADS=str(omp_threads))
+print(f"Delta_J_single processes at a time: {chunk_size}, OpenMP threads each: {omp_threads}")
 
 for chunk_index in range(total_chunks):
 
@@ -148,8 +161,9 @@ for chunk_index in range(total_chunks):
               f"{float(row[27])} {float(row[26])} {float(row[25])} {float(row[30])} {float(row[29])} {float(row[28])} " \
               f"{float(row[7])} {theta_res_F} {float(row[6])} {int(row[1])} {int(row[0])} {float(row[19])} " \
               f"{float(row[20])} {float(row[21])} {float(row[22])} {float(row[23])} {float(row[24])} " \
-              f"{float(row[13])} {float(row[14])} {float(row[15])} {float(row[16])} {float(row[17])} {float(row[18])}"
-        processes.append(Popen(cmd, stdout=fout, shell=True))
+              f"{float(row[13])} {float(row[14])} {float(row[15])} {float(row[16])} {float(row[17])} {float(row[18])} " \
+              f"{float(row[5])}"
+        processes.append(Popen(cmd, stdout=fout, shell=True, env=child_env))
     
 
     # Monitor walltime and subprocess completion
@@ -175,6 +189,27 @@ for chunk_index in range(total_chunks):
 
 # Combine all chunk files into one sorted output
 combined_file = os.path.join(output_dir, f"tot_Delta_J_{system_label}.txt")
+
+# All chunk files must have the same number of columns: the default build of Delta_J_single writes 34, a
+# "make DELTA_J=original" build (or a version before the outer-body columns) writes 27. Mixed files cannot be combined.
+column_counts = {}
+for filename in sorted(os.listdir(output_dir)):
+    file_path = os.path.join(output_dir, filename)
+    if (os.path.isfile(file_path) and filename.endswith('.txt') and
+            filename != os.path.basename(combined_file)):
+        with open(file_path, 'r') as input_file:
+            for line in input_file:
+                if line.strip():
+                    column_counts.setdefault(len(line.split()), []).append(filename)
+                    break
+if len(column_counts) > 1:
+    print("Chunk files in " + output_dir + " have different numbers of columns, so they come from different "
+          "builds of Delta_J_single and cannot be combined:")
+    for n_columns, names in sorted(column_counts.items()):
+        print(f"  {n_columns} columns: {', '.join(names)}")
+    print("Move the files of the build you do not want out of the directory and rerun this script.")
+    sys.exit(1)
+
 with open(combined_file, 'w') as output_file:
     for filename in sorted(os.listdir(output_dir)):
         file_path = os.path.join(output_dir, filename)
