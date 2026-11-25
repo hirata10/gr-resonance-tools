@@ -75,7 +75,7 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 	constant_prefactor_ratio_LE = Coeff_rp[0]*Coeff_ra[3] - Coeff_ra[0]*Coeff_rp[3];
 	discriminant = linear_prefactor_ratio_LE*linear_prefactor_ratio_LE - 4*squared_prefactor_ratio_LE*constant_prefactor_ratio_LE;
 	if (!isfinite(discriminant) || discriminant < 0.0) {
-    printf("resonance_find.c: Warning: No real L/E solutions found!\n");
+    fprintf(stderr, "resonance_find.c: Warning: No real L/E solutions found!\n"); /* stderr: pipeline executables print their result on stdout */
     return;
 }
 
@@ -154,7 +154,7 @@ void ra_rp_I2EQL(double ra, double *EQL, double rp, double I, double astar, doub
 		return;
 	}
 	if (isnan(EQL[0]) || isnan(EQL[1]) || isnan(EQL[2])) {
-		printf("resonance_find.c: Warning: No physical EQL found! \n");
+		fprintf(stderr, "resonance_find.c: Warning: No physical EQL found! \n"); /* stderr, as above */
 	}
 }
 
